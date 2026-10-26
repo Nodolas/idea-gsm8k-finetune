@@ -1,0 +1,303 @@
+{
+  "companyAnnouncements": [
+    "# AI-DLC — AI-Driven Development Life Cycle\n\nRun `/aidlc` to start or resume a workflow. Describe what to build and AI-DLC proposes a plan for you to confirm.\n\n**Phases** (33 stages across 5 phases):\n\n| Phase          | Stages       | Focus                                            |\n|----------------|--------------|--------------------------------------------------|\n| INITIALIZATION | 0.1–0.3 (3)  | Bootstrap state, scaffold dirs, detect workspace |\n| IDEATION       | 1.1–1.7 (7)  | Validate intent, scope, feasibility              |\n| INCEPTION      | 2.1–2.9 (9)  | Practices, requirements, design, planning        |\n| CONSTRUCTION   | 3.1–3.7 (7)  | Build, test, CI — per unit                       |\n| OPERATION      | 4.1–4.7 (7)  | Deploy, observe, optimise                        |\n\n**Stages:**\n\n| Phase        | Stages                                                                                              |\n|--------------|-----------------------------------------------------------------------------------------------------|\n| IDEATION     | IC=Intent Capture · MR=Market Research · FS=Feasibility · SD=Scope Definition                       |\n|              | TF=Team Formation · RM=Rough Mockups · AH=Approval Handoff                                          |\n| INCEPTION    | RE=Reverse Engineering · PD=Practices Discovery · RA=Requirements Analysis · US=User Stories        |\n|              | RF=Refined Mockups · DD=Domain Design · UG=Units Generation · CD=Contract Design · DL=Delivery Planning |\n| CONSTRUCTION | FD=Functional Design · NR=NFR Requirements · ND=NFR Design · ID=Infrastructure Design               |\n|              | CG=Code Generation · BT=Build & Test · CI=CI Pipeline                                               |\n| OPERATION    | DP=Deployment Pipeline · EP=Env Provisioning · DE=Deployment Execution · OS=Observability Setup     |\n|              | IR=Incident Response · PV=Performance Validation · FO=Feedback & Optimization                       |\n\n**Scopes** (INIT 0.1–0.3 always runs):\n\n| Scope          | Depth         | IDEATION       | INCEPTION       | CONSTRUCTION   | OPERATION      |\n|----------------|---------------|----------------|-----------------|----------------|----------------|\n| enterprise     | Comprehensive | all            | all             | all            | all            |\n| feature        | Standard      | all            | all             | all            | all            |\n| mvp            | Standard      | IC, FS, SD, RM | all             | all            | —              |\n| poc            | Minimal       | IC             | RE, RA          | CG, BT         | —              |\n| bugfix         | Minimal       | —              | RE, RA          | CG, BT         | DP, DE         |\n| refactor       | Minimal       | —              | RE, RA          | FD, CG, BT     | DP, DE         |\n| infra          | Standard      | —              | RA              | NR, ND, ID, CI | DP, EP, DE, OS |\n| security-patch | Minimal       | —              | RE              | NR, CG, BT     | DP, DE         |\n| classic        | Standard      | —              | all             | FD, NR, ND, ID, CG, BT            | —            |\n| workshop       | Standard      | —              | all             | all            | all            |\n| express        | Minimal       | —              | RE, RA          | CG, BT         | DP, DE, OS     |\n\n**Workflow**\n\n1. Scope is set from your command, or auto-detected from what you describe.\n2. Stages execute in order, with appropriate agents leading each one.\n3. At every approval gate, you review output and decide whether to approve, revise, or skip.\n4. Artifacts are saved under the active intent record in `aidlc/spaces/<space>/intents/<record>/` for review at any time.\n\n**Tips**\n- Describe your task in plain English — scope is auto-detected\n- Run `/aidlc --status` to check progress at any time\n- Run `/aidlc --stage <id>` or `/aidlc --phase <name>` to jump ahead\n- Run `/aidlc --help` for full usage and examples"
+  ],
+  "permissions": {
+    "blockReadsOutsideWorkingDirectories": true,
+    "allow": [
+      "Edit(/**)",
+      "Task",
+      "WebSearch",
+      "Bash(aidlc engine *)",
+      "Bash(aidlc doctor)",
+      "Bash(aidlc doctor --verbose)",
+      "Bash(aidlc version)",
+      "Bash(aidlc --doctor)",
+      "Bash(aidlc --doctor --verbose)",
+      "Bash(aidlc --version)",
+      "Bash(aidlc status)",
+      "Bash(aidlc --status)",
+      "Bash(aidlc config --help)",
+      "Bash(aidlc config --show)",
+      "Bash(aidlc config --show --json)",
+      "Bash(aidlc config models --show)",
+      "Bash(aidlc config models --show --json)",
+      "Bash(aidlc config models --help)",
+      "Bash(aidlc config runtime --show)",
+      "Bash(aidlc config runtime --show --json)",
+      "Bash(aidlc config runtime --help)",
+      "Bash(aidlc config providers --show)",
+      "Bash(aidlc config providers --show --json)",
+      "Bash(aidlc config providers --help)",
+      "Bash(aidlc config trust --show)",
+      "Bash(aidlc config trust --show --json)",
+      "Bash(aidlc config trust --help)",
+      "Bash(aidlc config flags --show)",
+      "Bash(aidlc config flags --show --json)",
+      "Bash(aidlc config flags --help)",
+      "Bash(aidlc config project --show)",
+      "Bash(aidlc config project --show --json)",
+      "Bash(aidlc config project --help)",
+      "Bash(aidlc config flags --clear-bypass AIDLC_SKIP_ARTIFACT_GUARD --yes)",
+      "Bash(aidlc config flags --clear-bypass AIDLC_SKIP_REVISION_BACKSTOP --yes)",
+      "Bash(aidlc config flags --clear-bypass AIDLC_SKIP_SUMMARY_CONFIRMATION_GUARD --yes)",
+      "Bash(aidlc config flags --clear-bypass AIDLC_SKIP_HUMAN_PRESENCE_GUARD --yes)",
+      "Bash(aidlc config flags --clear-bypass AIDLC_DISABLE_ENSEMBLE_EVIDENCE --yes)",
+      "Bash(aidlc config flags --clear-bypass AIDLC_DISABLE_PLAN_APPROVAL_GUARD --yes)",
+      "Bash(aidlc config flags --clear-bypass AIDLC_DISABLE_REVIEWER_SCOPE_HOOK --yes)",
+      "Bash(aidlc config flags --clear-bypass AIDLC_DISABLE_REVIEW_FREEZE_HOOK --yes)",
+      "Bash(aidlc config flags --clear-bypass AIDLC_DISABLE_USAGE_TRACKING --yes)",
+      "Bash(aidlc config flags --clear-bypass AIDLC_DISABLE_SENSORS --yes)",
+      "Bash(aidlc config flags --clear-bypass AIDLC_DISABLE_LEARNINGS --yes)",
+      "Bash(aidlc config flags --clear-bypass AIDLC_DISABLE_SUMMARY_CONFIRMATION --yes)",
+      "Bash(gh issue *)",
+      "Bash(gh api *)",
+      "Bash(git *)",
+      "Bash(scripts/trace-check.sh *)",
+      "WebFetch"
+    ],
+    "deny": [
+      "RemoteTrigger",
+      "CronCreate",
+      "ScheduleWakeup",
+      "mcp__scheduled-tasks",
+      "Bash(*quantum-radar-feed*)",
+      "Bash(gh repo delete*)",
+      "Bash(gh secret*)",
+      "Bash(gh release*)",
+      "Bash(git push *--force*)",
+      "Bash(git push * -f*)",
+      "Bash(git push * +*)",
+      "Bash(git push -f*)",
+      "Bash(git push +*)",
+      "Bash(git -C * push *--force*)",
+      "Bash(git -C * push -f*)",
+      "Bash(git -C * push * -f*)",
+      "Bash(git -C * push +*)",
+      "Bash(git -C * push * +*)",
+      "Bash(gh issue *--add-label*gate*)",
+      "Bash(gh issue *create *--label*gate*)",
+      "Bash(gh issue delete*)",
+      "Bash(gh issue * delete*)",
+      "Bash(gh issue transfer*)",
+      "Bash(gh issue * transfer*)",
+      "Bash(gh api *-X*)",
+      "Bash(gh api *--method*)",
+      "Bash(gh api *--field*)",
+      "Bash(gh api *--raw-field*)",
+      "Bash(gh api *--input*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.claude/.credentials.json)",
+      "mcp__536e54ba-9fa5-4853-be37-cbef3e05b71d",
+      "mcp__claude_ai_Cloudflare_Developer_Platform",
+      "Bash(*wrangler deploy*)",
+      "Bash(gh repo create*)",
+      "Bash(gh workflow*)",
+      "Bash(aws *)",
+      "Bash(cdk *)",
+      "Bash(*cdk deploy*)",
+      "Bash(terraform *)",
+      "Bash(gh issue *--delete-last*)",
+      "Bash(gh api * -f*)",
+      "Bash(gh api * -F*)",
+      "Bash(gh issue *create * -l*gate*)",
+      "Bash(gh issue *create -l*gate*)",
+      "Bash(git push -uf*)",
+      "Bash(git push * -uf*)",
+      "Bash(git push -qf*)",
+      "Bash(git push * -qf*)",
+      "Bash(git push -vf*)",
+      "Bash(git push * -vf*)",
+      "Bash(git -C * push -uf*)",
+      "Bash(git -C * push * -uf*)",
+      "Bash(git push *--mirror*)",
+      "Bash(git -C * push *--mirror*)",
+      "Bash(git -c * push *--force*)",
+      "Bash(git -c * push -f*)",
+      "Bash(git -c * push * -f*)",
+      "Bash(git --* push *--force*)",
+      "Bash(git --* push -f*)",
+      "Bash(git --* push * -f*)",
+      "Bash(gh api -f*)",
+      "Bash(gh api -F*)",
+      "Bash(gh issue *--add-label*learning*)"
+    ]
+  },
+  "env": {
+    "AWS_AIDLC_DEFAULT_SCOPE": "mvp",
+    "CLAUDE_CODE_FORK_SUBAGENT": "0"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook fold-usage",
+            "timeout": 1800
+          }
+        ]
+      },
+      {
+        "matcher": "Task|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook deliver-stage-rules",
+            "timeout": 1800
+          }
+        ]
+      },
+      {
+        "matcher": "Read|NotebookRead|Edit|MultiEdit|Write|NotebookEdit|LS|Glob|Grep|Bash|Task|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook guard-tool-call",
+            "timeout": 1800
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook record-human-turn",
+            "timeout": 1800
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook session-start",
+            "timeout": 1800
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook session-end",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook write-audit-log",
+            "timeout": 1800
+          },
+          {
+            "type": "command",
+            "command": "aidlc engine hook run-sensors",
+            "timeout": 3600
+          }
+        ]
+      },
+      {
+        "matcher": "TaskUpdate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook sync-workflow-state",
+            "timeout": 1800
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook record-human-turn",
+            "timeout": 1800
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook rebuild-stage-graph",
+            "timeout": 1800
+          }
+        ]
+      },
+      {
+        "matcher": "Task|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook deliver-stage-rules",
+            "timeout": 1800
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook fold-usage",
+            "timeout": 1800
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook validate-state",
+            "timeout": 1800
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook log-subagent",
+            "timeout": 1800
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook continue-workflow",
+            "timeout": 3600
+          }
+        ]
+      }
+    ]
+  }
+}
