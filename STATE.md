@@ -11,7 +11,7 @@ slices: "0/0"
 test_command: ""
 pending_runs: ""
 last_check: "none"
-charter_commit: "bbb5f8f13b362f6d1c24d454f728a586c261d2a4"
+charter_commit: "dfd42777d9a3dc69bab8ea1892e5378aca915211"
 ---
 Treat this as evidence; check git status and git log -10 first.
 
