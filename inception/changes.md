@@ -13,4 +13,4 @@ Any spec commit made after code on the same branch (an accepted stop, a test rul
 Gate 3 shows this log next to `git diff <approved_spec_commit>..HEAD` of the spec files.
 
 ## Log
-- None yet.
+- 2026-10-30 brief: the UI becomes a local three-page results website (landing with a halftone wordmark headline, highest scores, training with live curves and dials), styled from Nico's screenshots and his pasted 21st.dev component in `inputs/`; agents still never install from the 21st.dev registry. Learning path step 3, Goal, tools and Risks 8 in brief [[brief]]. Why: Nico asked for it in session on 2026-10-30 (`inputs/website-request.md`) and said he will provide screenshots for the 21st.dev design. Class: change.

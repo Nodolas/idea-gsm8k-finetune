@@ -70,9 +70,12 @@ Added by Nico in session, 2026-10-30 (his words, summarised):
 - Two agents, one proposing changes and one reviewing them, that push the score up across the whole pipeline.
 - Scoring against an answer test set.
 - Installing Node is OK.
+- The website has three pages: a landing page with a halftone wordmark headline, a highest-scores page and a training page (`inputs/website-request.md`).
+- For the 21st.dev look, Nico provides screenshots and pasted component source himself (`inputs/`).
 
 What the charter changes in that request:
-- 21st.dev needs an API key and account, which rule 4 forbids, so the UI uses shadcn/ui (MIT; 21st.dev's components are built on it).
+- Agents never install from the 21st.dev registry or use its Magic MCP, because both need a 21st.dev API key and account (rule 4).
+- The UI is built on shadcn/ui (MIT; 21st.dev's components are built on it). It matches Nico's screenshots and adapts the component source he pasted into `inputs/`.
 - The agents are Claude subagents in a build session. Nothing calls an LLM API from inside the app.
 - Tuning uses a held-out dev split of train, never the test set.
 
@@ -133,7 +136,8 @@ or token (rule 4), published score on the done-when metric, source. Downloads st
   - Optuna 5.0, MIT, local SQLite
   - FastAPI
   - shadcn/ui charts (Recharts), MIT
-- **Avoided:** W&B and the 21st.dev registry (both need an account) and nanochat's training stack (read only, as a reference).
+- **UI design input:** the 21st.dev "Halftone Wordmark Footer" (React plus TypeScript, no npm dependencies beyond React), pasted by Nico into `inputs/halftone-wordmark-footer.tsx.txt`; its licence is not stated (Risks). Nico's design screenshots go to `inputs/design/`.
+- **Avoided:** W&B and installs from the 21st.dev registry (both need an account), and nanochat's training stack (read only, as a reference).
 
 ## Evaluation plan
 <!-- Learning. The metric and how it is computed; the splits (the test set is never used during training: tune
@@ -160,10 +164,14 @@ whether a run takes over about 10 minutes (then Nico runs it in a Mint terminal)
 2. **SFT with LoRA.** A TRL SFT script driven by a run config (the dials), with a metrics callback writing JSONL under `outputs/<run_id>/`.
    - Teaches: SFT and LoRA.
    - Number: dev, then test accuracy of the best SFT model. [manual], 20–60 min. SFT can lower accuracy (seen at 1.5B); that is a valid result.
-3. **Live dashboard.** A local FastAPI server streams the JSONL over Server-Sent Events to a React app (Vite, Tailwind, shadcn/ui charts). The app shows live curves (loss, learning rate, reward, KL, completion length, dev accuracy) and the run table from `runs.csv`, with side-by-side comparison. A dials panel writes a validated run config and shows the exact command to start it.
+3. **Results website with live training.** A local FastAPI server streams the JSONL over Server-Sent Events to a React app (Vite, TypeScript, Tailwind, shadcn/ui charts) with three pages:
+   - **Landing:** a halftone wordmark headline, adapted from Nico's pasted component as a hero (no link columns).
+   - **Highest scores:** the best runs from `runs.csv`, ranked, with side-by-side comparison.
+   - **Training:** live curves (loss, learning rate, reward, KL, completion length, dev accuracy), per-run detail, and a dials panel that writes a validated run config and shows the exact command to start it.
+   - The look follows Nico's screenshots in `inputs/design/` [assumption: he adds them before this unit's Code Generation].
    - Teaches: reading training curves.
    - Number: none; quick tests only.
-   - Local only, never deployed. Whether the dashboard may start a run itself is a question for Requirements Analysis.
+   - Local only (`npm run dev`), never deployed, an add-on to `results.md`. Whether the site may start a run itself is a question for Requirements Analysis.
 4. **GRPO.** A TRL GRPOTrainer script: correctness reward plus a format reward, from base or from the best SFT model, with the same callback and config.
    - Teaches: RL from verifiable rewards, read alongside nanochat.
    - Number: dev, then test accuracy. [manual], 3–7 h.
@@ -189,6 +197,7 @@ Also: data contamination of the base model, VRAM, run time, licences. -->
 5. **Reward hacking or format collapse in GRPO.** Mitigations: watch completion length and format reward on the dashboard, and spot-check samples.
 6. **Licences:** GSM-Symbolic is NC-ND, so it is eval only. All models and training data allow this use.
 7. **Agents overfitting the dev split** through many proposals. Mitigations: a budget of rounds, and test scored only for finalists.
+8. [assumption] **Licence of the pasted 21st.dev component:** its source names no licence. It is used only locally in this private repo. Nico confirms the author allows this use, or the hero is rewritten from scratch on shadcn/ui.
 
 ## Sources
 <!-- One line per source: the claim, the link, the date read. -->
@@ -212,6 +221,7 @@ Also: data contamination of the base model, VRAM, run time, licences. -->
 - 21st.dev install needs an API key and has a paid plan: https://21st.dev/@shadcnspace/components/default.md and https://21st.dev/pricing.md, read 2026-10-30
 - shadcn/ui charts (Recharts) and its MIT licence: https://ui.shadcn.com/docs/components/chart and https://raw.githubusercontent.com/shadcn-ui/ui/main/LICENSE.md, read 2026-10-30
 - Trackio is local-first (not used; noted as an alternative): https://huggingface.co/docs/trackio/index, read 2026-10-30
+- Nico's website request and the pasted Halftone Wordmark Footer source: `inputs/website-request.md` and `inputs/halftone-wordmark-footer.tsx.txt` (commit e8b7cfc), read 2026-10-30
 - W&B needs an API key: https://docs.coreweave.com/models/quickstart, read 2026-10-30
 - Optuna 5.0.0 (MIT) and optuna-dashboard: https://pypi.org/project/optuna/ and https://github.com/optuna/optuna-dashboard, read 2026-10-30
 - Node.js LTS v26: https://nodejs.org/en/about/previous-releases, read 2026-10-30
