@@ -2,7 +2,7 @@
 ticket: "https://github.com/Nodolas/idea-factory/issues/6"
 phase: inception
 engine: aidlc
-track: "product"
+track: "learning"
 spec_commit: null
 approved_spec_commit: null
 spec_path: ""
