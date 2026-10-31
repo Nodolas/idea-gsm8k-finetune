@@ -3,7 +3,9 @@
 # Mode aidlc (STATE.md says engine: aidlc, or has a spec_path): AI-DLC 2.11.1 files under spec_path.
 #   Criteria: the AC IDs (AC1.2.1) in stories.md, or the leaf FR IDs (FR1.2) when User Stories was skipped.
 #   Each criterion is named by a test in tests/ (AC1_2_1 or AC1.2.1), or marked [manual] on its line, or
-#   sits in a unit (story map) whose code-generation/code-summary.md does not exist yet.
+#   sits in a unit (story map) that is not built yet. A unit is built when construction/units-built.txt
+#   (one unit directory per line, written by /build at each batch end) lists it; without that file, when
+#   AI-DLC wrote its code-generation/code-summary.md (older projects).
 #   Every AC, FR and NFR ID a test names exists; one FR line carries "(loop)" (charter rule 2).
 #   AI-DLC's own traceability sensor runs too when aidlc is on PATH; its result is info only
 #   (AIDLC_SENSOR=0 skips it).
@@ -97,6 +99,10 @@ units_of(){ [ -f "$MAP" ] || return 0; local k=${1//./\\.}
   grep -E "^[[:space:]]*\|[[:space:]]*(\*\*)?$k([^.0-9]|\$)" "$MAP" |
   grep -oE '(^|[^a-z0-9-])u[0-9]+-[a-z0-9-]+' | sed -E 's/^[^u]*//' | sort -u; }
 
+is_built(){ if [ -f construction/units-built.txt ]; then
+    tr -d '\r' < construction/units-built.txt | sed 's/[[:space:]]*$//' | grep -qxF "$1"
+  else [ -f "$SP/construction/$1/code-generation/code-summary.md" ]; fi; }
+
 check_aidlc(){
 [ -n "$SP" ] || { err "spec_path is empty in STATE.md: set it to the AI-DLC intent folder"; return; }
 REQ=$SP/inception/requirements-analysis/requirements.md; STO=$SP/inception/user-stories/stories.md
@@ -128,7 +134,7 @@ for id in $crit; do
   if [ $kind = AC ]; then key=US${id#AC}; key=${key%.*}; else key=$id; fi
   units=$(units_of "$key"); [ -z "$units" ] && [ $kind = FR ] && units=$(units_of "${key%%.*}")
   [ -n "$units" ] || { err "$id has no test, and no unit in the story map covers $key"; continue; }
-  built=1; for u in $units; do [ -f "$SP/construction/$u/code-generation/code-summary.md" ] || built=0; done
+  built=1; for u in $units; do is_built "$u" || built=0; done
   [ $built = 1 ] && err "$id has no test, and its unit $(echo $units) is built" || n_open=$((n_open+1))
 done
 echo "criteria: $n_crit $kind, $n_test tested, $n_man manual, $n_open in units not built yet"

@@ -6,6 +6,7 @@ track: "learning"
 spec_commit: null
 approved_spec_commit: null
 spec_path: ""
+spec_route: "aidlc"
 current_task: none
 slices: "0/0"
 test_command: ""
@@ -18,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-In this session (Opus 5.5, Auto) type `/aidlc --scope mvp "Fine tune model for grade math: build it from the brief in inception/brief.md"`, answer its questions yourself, mark each criterion that needs a run over about 10 minutes `[manual]` with `Verify: results/runs.csv row <base id>`, reply `Approve, but let's stop there for today` at Delivery Planning, then type `/build`.
+Type `/build` in this folder (Sonnet 5.5 or Opus 5.5, Auto). It proposes AI-DLC's spec (ready to build); then add gate:go on the ticket and type `/build` again: it builds the units in parallel batches. Do not resume AI-DLC: its open u1 Functional Design questions are not needed (Nico, 2026-10-31).
 
 ## DO NOT
 - Do not build on local branch `wip/hello-file` (commit 8ac6241, `hello-i-am-here.txt`, never pushed). It is not a build task; it is left untouched for Nico to keep or delete. Conflict logged 2026-10-30: the session started on it while STATE.md named no task.
