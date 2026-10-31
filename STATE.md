@@ -5,7 +5,7 @@ engine: aidlc
 track: "learning"
 spec_commit: null
 approved_spec_commit: null
-spec_path: ""
+spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
 current_task: none
 slices: "0/0"
@@ -19,21 +19,24 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Type `/build` in this folder (Sonnet 5.5 or Opus 5.5, Auto). It proposes AI-DLC's spec (ready to build); then add gate:go on the ticket and type `/build` again: it builds the units in parallel batches. Do not resume AI-DLC: its open u1 Functional Design questions are not needed (Nico, 2026-10-31).
+Clear the blocker below (remove the AI-DLC sensor block from `scripts/trace-check.sh` outside a Claude session), then type `/build` in this folder (Opus 5.5, Auto): it runs the trace check and proposes AI-DLC's spec (2.3).
 
 ## DO NOT
 - Do not build on local branch `wip/hello-file` (commit 8ac6241, `hello-i-am-here.txt`, never pushed). It is not a build task; it is left untouched for Nico to keep or delete. Conflict logged 2026-10-30: the session started on it while STATE.md named no task.
 - Do not install from the 21st.dev registry or use its Magic MCP: both need a 21st.dev API key and account (rule 4). The UI is built on shadcn/ui and styled from Nico's screenshots (`inputs/design/`) and the component source he pasted into `inputs/` (brief [[brief]]).
 - Conflict logged 2026-10-30: commit e8b7cfc `chore(inputs)` (Nico's website request and the pasted halftone component) was made by another session on main during the brief run; it holds data only and is kept.
 - Do not tune on the GSM8K test split: all tuning and agent decisions use train-dev (brief, Evaluation plan).
+- 2026-10-31: AI-DLC's tool-call guard (`aidlc engine hook guard-tool-call`) refuses a session's Bash call that runs `scripts/trace-check.sh`, and any Edit of that file, because the script sets `AIDLC_SESSION_OVERRIDE_SOURCE` and calls `aidlc engine sensor-traceability` (lines 143-162). Do not retry it another way (no env prefix, no copy of the script, no `bash` wrapper).
+- Uncommitted on main, left for 2.3 step 4 (not a conflict): the whole intent folder `aidlc/spaces/default/intents/` (untracked), `aidlc/spaces/default/memory/{team,project}.md`, `inception/changes.md` (5 AI-DLC change lines of 2026-10-31) and `inputs/design/` (Nico's screenshot and README). AI-DLC was resumed into u1 Construction stages; those files are bookkeeping, not needed (Nico, 2026-10-31).
 
 ## Blockers
-- None. Open for Nico: drop his 21st.dev design screenshots into `inputs/design/` before the website unit's Code Generation, and confirm the pasted component's licence allows this use (brief Risks 8).
+- REQUEST: outside a Claude session (an editor is enough), delete the AI-DLC sensor from `scripts/trace-check.sh`: lines 143-162 (the comment, `sensor()`, `verdict()`, `aidlc_sensor()`) and ` && aidlc_sensor` on line 164; also the two header lines (11-12) that mention the sensor. Its result was info only, so PASS/FAIL does not change. Nico chose this in session (2026-10-31, "Sensor opt-in"), but the guard refuses agent edits of the file. The factory copy of the script needs the same fix for later projects. Then type `/build`.
+- Open for Nico (not blocking): confirm the pasted 21st.dev component's licence allows this use (brief Risks 8). The training-page screenshot is in `inputs/design/`.
 
 ## Done this run
-- 2026-10-30 track set to learning (the ticket carries the `learning` label); charter refreshed to dfd4277 (rule 3 now limits only Construction).
-- 2026-10-30 brief written: `inception/brief.md` [[brief]] (Qwen3-1.7B-Base, LoRA SFT then GRPO, live shadcn/ui dashboard, Optuna plus proposer/reviewer agent tuning loop, done-when +5 points on GSM8K test). Nico OK'd installing Node; the brief puts it under `.tools/node/` inside the folder.
-- 2026-10-30 brief updated (`inception/changes.md` [[changes]]): the UI is now a three-page local results website (landing with halftone headline, highest scores, training with live curves and dials), styled from Nico's screenshots and pasted 21st.dev component.
+- 2026-10-31 Start checks: track learning, charter dfd4277 unchanged, no gates; AI-DLC intent `261030-gsm8k-finetune` has delivery-planning `[x]`, so the run went to 2.3 (propose).
+- 2026-10-31 `spec_path` set to the intent folder.
+- 2026-10-31 blocked at 2.3 step 2: the trace check cannot run in a session (see Blockers).
 
 ## Goal
 Ticket https://github.com/Nodolas/idea-factory/issues/6: "Fine tune model for grade math". Learning track (CHARTER "Learning projects"): spec-first with AI-DLC (brief, spec at one approved commit via `gate:go`, units ending green on main), reach the brief's done-when on this PC, and end with `results.md` instead of a deploy.
