@@ -7,8 +7,7 @@
 #   (one unit directory per line, written by /build at each batch end) lists it; without that file, when
 #   AI-DLC wrote its code-generation/code-summary.md (older projects).
 #   Every AC, FR and NFR ID a test names exists; one FR line carries "(loop)" (charter rule 2).
-#   AI-DLC's own traceability sensor runs too when aidlc is on PATH; its result is info only
-#   (AIDLC_SENSOR=0 skips it).
+#   No AI-DLC call: AI-DLC's guard refuses sessions that run its engine from a script (Nico, 2026-10-31).
 # Mode sdd (else): inception/requirements.md criteria R<n>.<m>, construction/tasks.md slices, tests.
 # Both modes: STATE.md track: learning (quoted or not) skips the (loop) check and prints an info line
 #   (CHARTER "Learning projects"); every other check stays. No track line, or any other value, is a product.
@@ -140,26 +139,5 @@ done
 echo "criteria: $n_crit $kind, $n_test tested, $n_man manual, $n_open in units not built yet"
 }
 
-# AIDLC_SESSION_OVERRIDE_SOURCE=payload keeps the call read-only: without it, the first call in a Claude
-# session writes a chat binding under aidlc/.aidlc-sessions/. Cache path 0: no bun cache in ~/.bun.
-sensor(){ AIDLC_SESSION_OVERRIDE_SOURCE=payload BUN_RUNTIME_TRANSPILER_CACHE_PATH=${BUN_RUNTIME_TRANSPILER_CACHE_PATH:-0} \
-  aidlc engine sensor-traceability "$@" </dev/null 2>&1; }
-verdict(){ case "$1" in
-  *'"pass":true'*|*'"pass": true'*) echo pass;;
-  *'"pass":false'*|*'"pass": false'*) echo "fail: $(printf '%s' "$1" | tr '\n' ' ' | head -c 300)";;
-  *) echo "no result: $(printf '%s' "$1" | head -1 | head -c 200)";; esac; }
-aidlc_sensor(){
-[ "${AIDLC_SENSOR:-1}" != 0 ] || { echo "info: aidlc sensor skipped (AIDLC_SENSOR=0)"; return; }
-command -v aidlc >/dev/null 2>&1 || { echo "info: aidlc sensor skipped (aidlc not on PATH)"; return; }
-[ -f .claude/tools/data/harness.json ] || { echo "info: aidlc sensor skipped (AI-DLC not configured here)"; return; }
-local t st cg=0
-for t in $(find "$SP" -name traceability.json -not -path '*/.aidlc-*' 2>/dev/null | sort); do
-  st=$(basename "$(dirname "$t")"); [ "$st" = code-generation ] && cg=1
-  echo "info: aidlc sensor $st ${t#"$SP"/}: $(verdict "$(sensor --stage "$st" --output-path "$t")")"
-done
-[ $cg = 1 ] && [ "${n_open:-1}" = 0 ] && echo "info: aidlc sensor build-and-test: $(verdict "$(sensor --stage build-and-test)")"
-echo "info: aidlc sensor results are advisory; the verdict below does not depend on them"
-}
-
-if [ "$MODE" = aidlc ]; then check_aidlc; [ -n "$SP" ] && [ -d "$SP" ] && aidlc_sensor; else check_sdd; fi
+if [ "$MODE" = aidlc ]; then check_aidlc; else check_sdd; fi
 [ $fail -eq 0 ] && echo "trace-check: PASS" || { echo "trace-check: FAIL"; exit 1; }
