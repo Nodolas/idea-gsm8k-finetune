@@ -7,11 +7,11 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: "batch-2: u2-baselines, u3-sft"
-slices: "1/9"
+current_task: none
+slices: "3/9"
 test_command: "scripts/check.sh"
 pending_runs: ""
-last_check: "2026-11-06 cfa229b scripts/check.sh exit 0; scripts/trace-check.sh exit 0"
+last_check: "2026-11-06 99a7bc4 scripts/check.sh exit 0; scripts/trace-check.sh exit 0"
 charter_commit: "dfd42777d9a3dc69bab8ea1892e5378aca915211"
 ---
 Treat this as evidence; check git status and git log -10 first.
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Type /build: it goes on with batch-2.
+Type /build: batch-3 (u4-run-service, u7-grpo, u8-tuning, u9-ablations) is next; long runs per pending_runs (new session: Sonnet 5.5, Auto).
 
 ## DO NOT
 - Do not resume AI-DLC. It stopped after Delivery Planning; its u1 Construction files (functional-design, nfr-requirements, nfr-design under the intent's `construction/`) are bookkeeping, committed in the spec commit. Nico's answers there are decided and feed the builders.
@@ -33,12 +33,15 @@ Type /build: it goes on with batch-2.
 None.
 
 ## Notes for later units
+- Non-blocking from the batch-2 review: `gsm8k prune --yes` goes on when the run log has skipped malformed rows (a skipped best row would lose its adapter): refuse `--yes` when rows were skipped; `gsm8k train` prints an estimate for the training steps only (add the closing dev evaluation); `train_cmd.py` duplicates `run_config.TEST_SPLIT_MESSAGE`; the sft data-leak guard has no own test; prune's `ADAPTER_METHODS` (sft, grpo, terse, optuna) needs new adapter methods added; folders under checkpoints/ whose names are not run ids are left alone.
+- 1.7B SFT at default dials (batch 4, 1,744 steps) is estimated at 6-7 GB, tight near 512-token batches; an OOM ends the run failed with "GPU out of memory": then batch size 2 via a spec change.
 - AC1.1.4's import test passed before the parts' code existed because the lead's shared `_env.py` came in the shared-setup commit; the reviewer confirmed it is a real check.
 - `dataclasses.replace(cfg, model=...)` keeps the old model's `model_revision` (run_config.py): build a new `RunConfig` when the model changes.
 - Untested in u1 (no criterion gap): `gsm8k evaluate --config` (u4's worker uses it), the stopped and failed paths, timings on failure, the `--run-id` pattern check. Add tests when u4 starts.
 - The batch-1 reviewer saved check output to `/tmp/claude-review-check.log`, outside the project (test output only); left as is.
 
 ## Done this run
+- 2026-11-06 batch-2 done: u2-baselines (`gsm8k harness`, lm-eval cross-check) and u3-sft (`gsm8k train` LoRA SFT with live metrics, dial table and strict `check_dials`, 3-hour estimates, `gsm8k prune`), 4 parallel parts; 228 tests green, coverage 84%, trace PASS; both reviews PASS first round. Spec changes (class change): AC2.5.3 keeps the active run's adapter folder; C2 `evaluator` field (harness runs get their own config_hash). Nico ruled test_AC1_4_5_defaults_match_documented_values wrong (C2 field set); fixed by adding `evaluator`.
 - 2026-11-06 batch-1 done: u1-eval-skeleton (walking skeleton `gsm8k evaluate`), built by 3 parallel builders (data, records, command) after 3 test writers; 118 tests green on the CPU, coverage 84%, trace PASS. Review round 1 FAIL (adhoc temp run log in system /tmp, NFR5.2), fixed in cfa229b; round 2 PASS. The skeleton test scored 2 of 3 dev problems with the real 0.6B on the CPU (about 62 s per problem). Pins: openai/gsm8k 740312a, Qwen3-0.6B-Base da87bfb, Qwen3-1.7B-Base ea980cb.
 - 2026-11-06 spec changes on batch-1 (class change): C2 `max_new_tokens` field; C2 test-split note follows NFR8 (base-model test baselines allowed).
 - 2026-11-06 venv created with `uv venv --seed` on the system Python 3.12 (`python3-venv` is not installed and needs sudo); packages installed with pip from `requirements.txt` (torch 2.14.1+cu130).
