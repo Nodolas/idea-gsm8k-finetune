@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import importlib
 import os
 import re
 import signal
@@ -39,6 +40,10 @@ ATTEMPT_ID_PATTERN = re.compile(r"(?:q06|q17)-[a-z0-9]+-[a-z0-9]+-[0-9]+")
 
 # Flags that set configuration fields; with --config they may not be given (BR4.8: used unchanged).
 _CONFIG_FLAGS = ("split", "limit", "model", "adapter", "seed", "max_new_tokens")
+
+# Other units' commands: each module exposes ``register(subparsers)``, which adds its subcommand
+# and sets ``func`` (a callable taking the parsed arguments and returning the exit code).
+COMMAND_MODULES = ("gsm8k.harness", "gsm8k.train_cmd", "gsm8k.prune")
 
 
 class InvalidInput(Exception):
@@ -103,6 +108,14 @@ def build_parser() -> argparse.ArgumentParser:
     ev.add_argument("--adapter", help="adapter folder under checkpoints/")
     ev.add_argument("--seed", type=_non_negative_int)
     ev.add_argument("--max-new-tokens", type=_positive_int, help="generation cap per answer (default 512)")
+    for name in COMMAND_MODULES:
+        try:
+            module = importlib.import_module(name)
+        except ModuleNotFoundError as exc:  # a command whose unit is not built yet
+            if exc.name != name:
+                raise
+            continue
+        module.register(sub)
     return parser
 
 
@@ -399,5 +412,7 @@ def main(argv: list[str] | None = None) -> int:
         return exc.code if isinstance(exc.code, int) else EXIT_INVALID
     if args.command == "evaluate":
         return evaluate_command(args)
+    if getattr(args, "func", None) is not None:
+        return args.func(args)
     parser.print_help()
     return EXIT_INVALID
