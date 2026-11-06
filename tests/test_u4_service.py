@@ -804,3 +804,52 @@ def test_AC3_1_5_service_starts_without_loading_training_code(tmp_path):
         or any(name == bad or name.startswith(bad + ".") for bad in FORBIDDEN_GSM8K)
     ]
     assert loaded == [], loaded
+
+
+# --- C6 error codes added 2026-11-07 (spec 4456eb3): confirmation_required and internal --------------
+
+
+def test_AC3_6_3_finalist_test_split_confirm_without_second_confirmation_is_409(
+    tmp_project_dirs, monkeypatch
+):
+    _stub_build_argv(monkeypatch)
+    results, _ = _paths(tmp_project_dirs)
+    append_row(results, _row("q06-sft-dev-1", method="sft", value=0.41))
+    _run_folder(tmp_project_dirs.outputs, "q06-sft-dev-1", method="sft")
+    adapter = tmp_project_dirs.checkpoints / "q06-sft-dev-1"
+    adapter.mkdir()
+    dials = {"method": "best", "split": "test", "adapter_path": str(adapter)}
+    held = GpuLock()
+    held.acquire(ACTIVE_RUN, started_by="terminal")
+    try:
+        with _client(tmp_project_dirs) as client:
+            assert client.put(f"{API}/finalists/q06-sft-dev-1").status_code in (200, 204)
+            checked = _check(client, dials)
+            response = client.post(f"{API}/runs/confirm", json={"check_id": checked["check_id"]})
+            entries = _queue_entries(client)
+    finally:
+        held.release()
+
+    assert checked["needs_second_confirmation"] is True
+    _assert_error(response, 409, "confirmation_required")
+    assert entries == []
+    assert not (tmp_project_dirs.outputs / checked["attempt_id"] / "config.json").exists()
+
+
+def test_AC3_4_1_stop_failure_of_the_service_returns_500_internal(tmp_project_dirs, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    def broken_stop(*args, **kwargs):
+        raise RuntimeError("The run did not end after SIGKILL")
+
+    monkeypatch.setattr("gsm8k.run_control.stop.stop_active", broken_stop)
+    _run_folder(tmp_project_dirs.outputs, ACTIVE_RUN)
+    held = GpuLock()
+    held.acquire(ACTIVE_RUN, started_by="worker")
+    try:
+        with TestClient(_app(tmp_project_dirs), raise_server_exceptions=False) as client:
+            response = client.post(f"{API}/stop")
+    finally:
+        held.release()
+
+    _assert_error(response, 500, "internal")
