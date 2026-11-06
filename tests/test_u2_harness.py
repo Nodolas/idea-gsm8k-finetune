@@ -215,3 +215,47 @@ def test_AC1_5_5_harness_help_lists_its_options(capsys):
     assert rc == 0
     for flag in ("--model", "--run-id", "--results", "--limit", "--started-by"):
         assert flag in out, f"{flag} missing from gsm8k harness --help"
+
+
+# --- AC1.5.5 with spec change d50d4e6 (C2 `evaluator` field) ---------------------------------------
+
+
+@pytest.fixture
+def fake_harness(monkeypatch):
+    """run_harness returns a fixed accuracy, so these checks of the run folder stay fast."""
+    import gsm8k.harness
+
+    def fake_run_harness(model, tokenizer, *, limit, batch_size=8):
+        return 0.4
+
+    monkeypatch.setattr(gsm8k.harness, "run_harness", fake_run_harness)
+
+
+def test_AC1_5_5_config_records_lm_eval_harness_evaluator_and_own_hash(
+    tmp_project_dirs, capsys, use_tiny_model, fake_harness, project_results_untouched
+):
+    from gsm8k import run_config
+
+    results = tmp_project_dirs.results
+    rc = _run_cli(_harness_argv(results))
+    assert rc == 0, "".join(capsys.readouterr())
+    run_dir = tmp_project_dirs.outputs / RUN_ID
+    config = json.loads((run_dir / "config.json").read_text(encoding="utf-8"))
+    assert config["evaluator"] == "lm-eval-harness"
+
+    _, rows = _read_csv(results)
+    assert len(rows) == 1
+    project_eval_hash = run_config.config_hash(
+        run_config.RunConfig(run_id=RUN_ID, model=config["model"], method="base", split="test", limit=5)
+    )
+    assert rows[0]["config_hash"] != project_eval_hash
+
+
+def test_AC1_5_5_timings_seconds_per_problem_is_null(
+    tmp_project_dirs, capsys, use_tiny_model, fake_harness, project_results_untouched
+):
+    rc = _run_cli(_harness_argv(tmp_project_dirs.results))
+    assert rc == 0, "".join(capsys.readouterr())
+    timings = json.loads((tmp_project_dirs.outputs / RUN_ID / "timings.json").read_text(encoding="utf-8"))
+    assert "seconds_per_problem" in timings
+    assert timings["seconds_per_problem"] is None
