@@ -10,7 +10,7 @@ spec_route: "aidlc"
 current_task: none
 slices: "3/9"
 test_command: "scripts/check.sh"
-pending_runs: ""
+pending_runs: "q06-base-dev-1:running:91216,q06-base-test-1:queued,q17-base-dev-1:queued,q17-base-test-1:queued,q17-base-harness-1:queued,q06-sft-dev-1:queued,q17-sft-dev-1:queued"
 last_check: "2026-11-06 99a7bc4 scripts/check.sh exit 0; scripts/trace-check.sh exit 0"
 charter_commit: "dfd42777d9a3dc69bab8ea1892e5378aca915211"
 ---
@@ -41,6 +41,7 @@ None.
 - The batch-1 reviewer saved check output to `/tmp/claude-review-check.log`, outside the project (test output only); left as is.
 
 ## Done this run
+- 2026-11-06 long run q06-base-dev-1 started detached (pid 91216): 0.6B baseline on the 496 scored dev problems (AC1.5.1); six more queued, one GPU run at a time.
 - 2026-11-06 batch-2 done: u2-baselines (`gsm8k harness`, lm-eval cross-check) and u3-sft (`gsm8k train` LoRA SFT with live metrics, dial table and strict `check_dials`, 3-hour estimates, `gsm8k prune`), 4 parallel parts; 228 tests green, coverage 84%, trace PASS; both reviews PASS first round. Spec changes (class change): AC2.5.3 keeps the active run's adapter folder; C2 `evaluator` field (harness runs get their own config_hash). Nico ruled test_AC1_4_5_defaults_match_documented_values wrong (C2 field set); fixed by adding `evaluator`.
 - 2026-11-06 batch-1 done: u1-eval-skeleton (walking skeleton `gsm8k evaluate`), built by 3 parallel builders (data, records, command) after 3 test writers; 118 tests green on the CPU, coverage 84%, trace PASS. Review round 1 FAIL (adhoc temp run log in system /tmp, NFR5.2), fixed in cfa229b; round 2 PASS. The skeleton test scored 2 of 3 dev problems with the real 0.6B on the CPU (about 62 s per problem). Pins: openai/gsm8k 740312a, Qwen3-0.6B-Base da87bfb, Qwen3-1.7B-Base ea980cb.
 - 2026-11-06 spec changes on batch-1 (class change): C2 `max_new_tokens` field; C2 test-split note follows NFR8 (base-model test baselines allowed).
