@@ -367,7 +367,7 @@ components:
       type: object
       required: [error, message]
       properties:
-        error: { type: string, enum: [invalid_dial, queue_full, not_finalist, no_active_run, not_found, run_log_unreadable, finalists_unreadable, check_expired] }
+        error: { type: string, enum: [invalid_dial, queue_full, not_finalist, no_active_run, not_found, run_log_unreadable, finalists_unreadable, check_expired, confirmation_required, internal] }
         message: { type: string }
         field: { type: string }
         file: { type: string }
@@ -377,7 +377,7 @@ components:
       content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
 ```
 
-Error mapping: invalid dial → 422 `invalid_dial` with `field`; queue full → 409 `queue_full`; test split for a non-finalist → 409 `not_finalist`; stop with nothing running → 409 `no_active_run`; unreadable run log or finalists → 500 with `file`. A check expires after 10 minutes (`check_expired`), so a stale summary is never confirmed.
+Error mapping: invalid dial → 422 `invalid_dial` with `field`; queue full → 409 `queue_full`; test split for a non-finalist → 409 `not_finalist`; stop with nothing running → 409 `no_active_run`; unreadable run log or finalists → 500 with `file`. A check expires after 10 minutes (`check_expired`), so a stale summary is never confirmed. A finalist's test-split confirm without the second confirmation → 409 `confirmation_required`, nothing launched (AC3.6.3); any other failure of the service itself (a stop that does not end the run, an unreadable `metrics.jsonl`, `status.json` or `config.json`) → 500 `internal` with a message and, when a file is the cause, `file` (added 2026-11-07).
 
 ## C7 Live Event Stream
 
