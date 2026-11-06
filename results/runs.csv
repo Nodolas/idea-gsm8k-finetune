@@ -1,0 +1,2 @@
+date,run_id,model,method,data,metric,value,minutes,config_hash,adapter_run
+2026-11-06T22:59:29Z,q06-base-dev-1,Qwen/Qwen3-0.6B-Base,base,gsm8k-dev,accuracy,0.5968,7.0,843f9d1d08a9885b6a6138b63b9246bc33ef8b429801fcd095ebddd5df553bc3,
