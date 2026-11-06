@@ -9,7 +9,7 @@ spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
 current_task: none
 slices: "0/9"
-test_command: ""
+test_command: "scripts/in-env.sh .venv/bin/python -m pytest -q --cov=src/gsm8k --cov-report=term-missing:skip-covered --cov-fail-under=80"
 pending_runs: ""
 last_check: "2026-11-06 37fb5a4 (no tests yet); scripts/trace-check.sh exit 0"
 charter_commit: "dfd42777d9a3dc69bab8ea1892e5378aca915211"
