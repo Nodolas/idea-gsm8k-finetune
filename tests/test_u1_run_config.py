@@ -52,6 +52,7 @@ C2_FIELDS = {
     "max_new_tokens",
     "grpo_steps",
     "grpo_generations",
+    "evaluator",
 }
 
 # One non-default value for every C2 field that enters the hash (all but run_id and v).
@@ -115,6 +116,7 @@ def test_AC1_4_5_defaults_match_documented_values():
     assert cfg.max_new_tokens == 512
     assert cfg.grpo_steps is None
     assert cfg.grpo_generations is None
+    assert cfg.evaluator == "project"
 
 
 def test_AC1_4_5_same_config_and_seed_give_same_hash():
