@@ -74,7 +74,7 @@ files:
     run_id: string
     model: string                   # C1 enum
     method: string                  # C1 enum
-    split: string                   # dev | test | gsmplus-testmini | gsmsym-p1; test only for method best (NFR8)
+    split: string                   # dev | test | gsmplus-testmini | gsmsym-p1; test only through the finalist flow (method best) or an explicit command such as the base-model baselines (NFR8, AC1.5.2, AC1.5.4) (changed 2026-11-06)
     adapter_path: string|null       # checkpoints/<run_id>/ of the adapter evaluated or continued
     learning_rate: number           # the eleven dials, ranges in stories.md Training Dials
     epochs: integer
