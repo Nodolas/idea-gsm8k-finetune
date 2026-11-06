@@ -195,7 +195,7 @@ As Nico, I want old adapters pruned except the best run's and the finalists', so
 
 - **AC2.5.1** Given several runs of one model in the results file, when the best run is picked, then it is the run with the highest dev accuracy for that model, and a tie goes to the earlier run.
 - **AC2.5.2** Given adapters under `checkpoints/`, when the prune command runs without `--yes`, then it only lists the adapters it would delete and deletes nothing.
-- **AC2.5.3** Given adapters under `checkpoints/`, when the prune command runs with `--yes`, then it deletes every adapter except each model's best run and every finalist in `results/finalists.json`, and `results/runs.csv` is unchanged.
+- **AC2.5.3** Given adapters under `checkpoints/`, when the prune command runs with `--yes`, then it deletes every adapter except each model's best run and every finalist in `results/finalists.json`, and `results/runs.csv` is unchanged; an adapter folder with no row in the results file is deleted too, unless its run holds the GPU lock (a run still in progress).
 - **AC2.5.4** Given a run row whose adapter folder is already gone, when the prune command runs, then it skips that run and reports it as already pruned.
 
 ---
