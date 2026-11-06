@@ -489,7 +489,7 @@ def test_AC3_2_5_shell_characters_reach_the_run_as_one_argument(
 ):
     victim = tmp_path / "victim"
     victim.write_text("keep", encoding="utf-8")
-    weird = tmp_path / f"res; rm -rf {victim} ; echo" / "runs.csv"
+    weird = tmp_path / f"res; rm -rf {victim.name} ; echo" / "runs.csv"
     weird.parent.mkdir()
     tmp_project_dirs.results = weird  # the worker passes this run log path to the launched run
 
