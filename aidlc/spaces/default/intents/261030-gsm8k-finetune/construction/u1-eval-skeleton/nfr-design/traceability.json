@@ -1,0 +1,20 @@
+{
+  "stage": "nfr-design",
+  "unit": "u1-eval-skeleton",
+  "upstream_ids": ["NFR1.1", "NFR2.1", "NFR3.1", "NFR4.1", "NFR5.1", "NFR5.2", "NFR5.3", "NFR6.1", "NFR6.2", "NFR6.3", "NFR6.4", "NFR7.1", "NFR8.1"],
+  "coverage": [
+    { "id": "NFR1.1", "status": "OK", "target": "security-design.md NFR1.1 and NFR2.1: per-model batch size, peak-memory measurement, out-of-memory as a clean failure" },
+    { "id": "NFR2.1", "status": "OK", "target": "security-design.md NFR1.1 and NFR2.1: seconds per problem in timings.json" },
+    { "id": "NFR3.1", "status": "OK", "target": "security-design.md NFR3.1 and NFR4.1: only AC1.4.1 uses the GPU on 10 problems" },
+    { "id": "NFR4.1", "status": "OK", "target": "security-design.md NFR3.1 and NFR4.1: coverage enforced by scripts/check.sh" },
+    { "id": "NFR5.1", "status": "OK", "target": "logical-components.md _env.py; security-design.md NFR5.1" },
+    { "id": "NFR5.2", "status": "OK", "target": "logical-components.md run_records/paths.py; security-design.md NFR5.2 and NFR5.3" },
+    { "id": "NFR5.3", "status": "OK", "target": "security-design.md NFR5.2 and NFR5.3: run-id pattern, adhoc id format, adapter confinement" },
+    { "id": "NFR6.1", "status": "OK", "target": "security-design.md NFR6.1: no listener, Hub only via the loader" },
+    { "id": "NFR6.2", "status": "OK", "target": "security-design.md NFR6.2: bootstrap disables implicit tokens and removes token variables" },
+    { "id": "NFR6.3", "status": "OK", "target": "security-design.md NFR6.3 and NFR6.4: safetensors only, no remote code" },
+    { "id": "NFR6.4", "status": "OK", "target": "security-design.md NFR6.3 and NFR6.4: single pin table, revisions in config.json" },
+    { "id": "NFR7.1", "status": "OK", "target": "security-design.md NFR7.1: pins, split seed, greedy stop rule, fixed batch size, hash, seeded torch" },
+    { "id": "NFR8.1", "status": "OK", "target": "security-design.md NFR8.1: test split only with --split test; split builder guard" }
+  ]
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "uuid": "01a18de4-49d2-752e-b357-09b4911bdce3",
+    "slug": "gsm8k-finetune",
+    "dirName": "261030-gsm8k-finetune",
+    "scope": "mvp",
+    "status": "in-flight",
+    "request": "c536de60"
+  }
+]

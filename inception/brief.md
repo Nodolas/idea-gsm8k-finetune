@@ -79,9 +79,9 @@ What the charter changes in that request:
 - The agents are Claude subagents in a build session. Nothing calls an LLM API from inside the app.
 - Tuning uses a held-out dev split of train, never the test set.
 
-Done-when:
-- The best tuned checkpoint of `Qwen/Qwen3-1.7B-Base` (SFT and/or GRPO) scores **at least 5 points above that model's own baseline** on the full GSM8K test split (1,319 problems), under the same fixed eval protocol (Evaluation plan).
-- Its accuracy on GSM-Plus testmini does not fall below the baseline's (a generalisation check).
+Done-when (Nico, 2026-10-30: "any measurable gain", intent-capture Q3 and Q9, answer C; generalisation "report only", requirements Q5, answer A):
+- The best tuned checkpoint of `Qwen/Qwen3-1.7B-Base` (SFT and/or GRPO) scores **higher than that model's own baseline**, however small the gain, on the full GSM8K test split (1,319 problems), under the same fixed eval protocol (Evaluation plan). `results.md` says whether the gain is within noise (FR6.2).
+- GSM-Plus testmini and GSM-Symbolic p1 are scored on the baseline and the final model and reported with no pass or fail (FR5.1).
 - `results.md` explains what moved the number and why.
 
 ## What to learn
@@ -102,13 +102,15 @@ and time; disk space for models, datasets and checkpoints. What does not fit, an
 
 | Run | Model | Method | Seq len, batch | VRAM est. | Time est. | Who runs it |
 |---|---|---|---|---|---|---|
-| Full test eval | 1.7B / 0.6B | bf16, greedy, HF generate | 512 new tokens, batch 8–16 | ~5 / ~2 GB | 15–40 min | Nico ([manual]) |
-| SFT, 1 epoch of 7.0k | 1.7B | bf16 LoRA r16–32, all linear layers | 512, micro-batch 4, grad accum 4, grad ckpt | ~6–7 GB | 20–60 min | Nico |
-| GRPO, ~300 steps | 1.7B | bf16 LoRA r1–16, beta 0, 8 generations | 384–512 completion | ~7–8 GB (tight) | ~60–90 s/step, 5–7 h | Nico |
-| GRPO, ~300 steps | 0.6B | bf16 LoRA | 384–512 | ~4–5 GB | ~30–45 s/step, 3–4 h | Nico |
-| Tuning proxy trial | 0.6B | SFT or GRPO on 100–200 train, 200 dev | as above | ~4 GB | under 10 min | agent loop / quick test |
-| Quick tests | 0.6B or tiny | 5–20 examples | short | small | minutes | session |
+| Full test eval | 1.7B / 0.6B | bf16, greedy, HF generate | 512 new tokens, batch 8–16 | ~5 / ~2 GB | 15–40 min | detached long run ([manual]) |
+| SFT, 1 epoch of 7.0k | 1.7B | bf16 LoRA r16–32, all linear layers | 512, micro-batch 4, grad accum 4, grad ckpt | ~6–7 GB | 20–60 min | detached long run |
+| GRPO, ~300 steps | 1.7B | bf16 LoRA r1–16, beta 0, 8 generations | 384–512 completion | ~7–8 GB (tight) | ~60–90 s/step, 5–7 h: over the 3 h cap, so steps are cut to fit | detached long run |
+| GRPO, ~300 steps | 0.6B | bf16 LoRA | 384–512 | ~4–5 GB | ~30–45 s/step, 3–4 h: steps cut to fit 3 h | detached long run |
+| Tuning proxy trial | 0.6B | SFT or GRPO on 100–200 train, 200 dev | as above | ~4 GB | under 10 min | inside the detached Optuna study (the agents only propose runs) |
+| Quick tests | 0.6B on the CPU, or tiny fixtures | 3 dev problems (skeleton), else fixtures or mocks | up to 256 new tokens | CPU only | minutes | session, on the CPU |
 
+- **Run cap (Nico, 2026-10-30: feasibility Q3, answer B; Q9, answer D):** every run takes up to about 3 hours. Real step times are measured first, then GRPO's step count (and model size) is set so a run fits the cap (NFR2, FR7.1).
+- **Who runs it:** a detached long run is started by the `/build` lead with `scripts/run-detached.sh` (one GPU run at a time) or by Nico from the website; Nico never types a command in a terminal (inception/changes.md, 2026-10-31).
 - **Doesn't fit:** full fine-tuning of 1.7B; bf16 LoRA at 3B and up; vLLM colocated with 1.7B GRPO [assumption].
 - **Fallback:** GRPO on `Qwen3-0.6B-Base`; QLoRA 4-bit for `SmolLM3-3B-Base`; fewer generations or shorter completions.
 - **Disk:** under 30 GB for models (~4.5 GB for 1.7B and ~1.5 GB for 0.6B in bf16), datasets, adapters and logs, all under `.cache/`, `checkpoints/` and `outputs/`.
@@ -136,13 +138,13 @@ or token (rule 4), published score on the done-when metric, source. Downloads st
   - Optuna 5.0, MIT, local SQLite
   - FastAPI
   - shadcn/ui charts (Recharts), MIT
-- **UI design input:** the 21st.dev "Halftone Wordmark Footer" (React plus TypeScript, no npm dependencies beyond React), pasted by Nico into `inputs/halftone-wordmark-footer.tsx.txt`; its licence is not stated (Risks). Nico's design screenshots go to `inputs/design/`.
+- **UI design input:** the 21st.dev "Halftone Wordmark Footer" (React plus TypeScript, no npm dependencies beyond React), pasted by Nico into `inputs/halftone-wordmark-footer.tsx.txt`; its licence is not stated, and Nico cleared it for this personal use (Risks 8). Nico's design screenshots go to `inputs/design/`.
 - **Avoided:** W&B and installs from the 21st.dev registry (both need an account), and nanochat's training stack (read only, as a reference).
 
 ## Evaluation plan
 <!-- Learning. The metric and how it is computed; the splits (the test set is never used during training: tune
 on a held-out part of train); baselines; a check for real generalisation; sample counts; how a quick test checks
-the same code on a tiny sample. Quick tests write their rows to a temp path; only a long run Nico starts appends one row to `results/runs.csv` (run_id = an attempt id `<base id>-<n>`). -->
+the same code on a tiny sample. Quick tests write their rows to a temp path; only a long run (started detached by the `/build` lead, or by Nico from the website) appends one row to `results/runs.csv` (run_id = an attempt id `<base id>-<n>`). -->
 - **Metric:** exact-match accuracy of the final number. The prediction is taken from `#### <n>`, with a fallback to the last number in the output; commas are stripped and values compared numerically. The gold answer comes from GSM8K's `####` line.
 - **One fixed protocol for every checkpoint:** the same 4-shot prompt (fixed exemplars from train-dev), greedy decoding, 512 max new tokens.
 - **Cross-check:** lm-eval `gsm8k` 5-shot flexible-extract, run once on the baseline and once on the final model.
@@ -153,11 +155,11 @@ the same code on a tiny sample. Quick tests write their rows to a temp path; onl
 - **Baselines:** the 0.6B and 1.7B base models under the same protocol.
 - **Generalisation:** GSM-Plus testmini and GSM-Symbolic p1 on the baseline and the final model.
 - **Noise:** 1,319 problems give a 95% confidence interval of about ±2.5 points. A gain under ~3 points is reported as noise.
-- **Run log:** `results/runs.csv`, columns `date,run_id,model,method,data,metric,value,minutes` plus the config hash. Only Nico's long runs append to it, each with run_id `<base id>-<n>` passed as `--run-id`. Quick tests run the same code on 5–20 problems with the 0.6B model and write their rows to a temp path.
+- **Run log:** `results/runs.csv`, columns `date,run_id,model,method,data,metric,value,minutes` plus the config hash. Only long runs append to it (started detached by the `/build` lead, or by Nico from the website), each with run_id `<base id>-<n>` passed as `--run-id`. Quick tests run on the CPU (`scripts/in-env.sh` hides the GPU): the skeleton test runs the same code with the 0.6B model on 3 dev problems, other tests use tiny fixtures or mocks, and all write their rows to a temp path. GPU use is first proven by the first detached long run, the 0.6B baseline evaluation.
 
 ## Learning path
 <!-- Learning. Ordered steps, each a likely unit: what it builds, what it teaches, the number it should move, and
-whether a run takes over about 10 minutes (then Nico runs it in a Mint terminal). -->
+whether a run takes over about 10 minutes (then it is a detached long run, never in a session's foreground). -->
 1. **Data and eval harness.** Builds the GSM8K splits, the answer extractor, the evaluator and the `runs.csv` writer.
    - Teaches: evaluation and contamination.
    - Number: the baselines for 0.6B and 1.7B on test and dev. The full runs are [manual], 15–40 min each.
@@ -171,18 +173,17 @@ whether a run takes over about 10 minutes (then Nico runs it in a Mint terminal)
    - The look follows Nico's screenshots in `inputs/design/` [assumption: he adds them before this unit's Code Generation].
    - Teaches: reading training curves.
    - Number: none; quick tests only.
-   - Local only (`npm run dev`), never deployed, an add-on to `results.md`. Whether the site may start a run itself is a question for Requirements Analysis.
+   - Local only (`npm run dev`), never deployed, an add-on to `results.md`. The site may start training runs and dev evaluations, and a test evaluation only for a finalist after a second confirmation (Nico, 2026-10-30, requirements Q4).
 4. **GRPO.** A TRL GRPOTrainer script: correctness reward plus a format reward, from base or from the best SFT model, with the same callback and config.
    - Teaches: RL from verifiable rewards, read alongside nanochat.
-   - Number: dev, then test accuracy. [manual], 3–7 h.
+   - Number: dev, then test accuracy. [manual], up to about 3 h: the step count is sized from measured step times to fit the cap, on 0.6B if 1.7B cannot learn enough in 3 h (Nico, 2026-10-30: feasibility Q3 and Q9).
 5. **Tuning loop.**
    - An Optuna study over proxy trials (0.6B, 100–200 train, scored on train-dev only, under 10 min each) with local SQLite. The study as a whole is [manual].
    - Two project agents: a proposer reads `runs.csv`, the study and the curves and writes the next run config with a reason; a reviewer checks it against the rules (dev only, VRAM fit, one main change, budget) and approves or sends it back.
-   - Nico types one command to start a round in a Claude Code session; the agents never start long runs.
+   - Nico starts a round in a Claude Code session; the agents only propose and check, and the proposed run is started by Nico from the website or by the `/build` lead as a detached run.
    - Dials across the pipeline:
      - SFT: learning rate, epochs, LoRA rank and alpha, CoT versus terse targets.
      - GRPO: learning rate, `num_generations`, `beta`, temperature, `max_completion_length`, LoRA rank.
-     - Eval: number of shots.
    - Number: the dev accuracy of the configs it proposes.
 6. **Final runs, ablations and write-up.** The best config at 1.7B on test, the generalisation sets, and ablations. Then `results.md`.
    - Number: the done-when. [manual].
@@ -190,14 +191,14 @@ whether a run takes over about 10 minutes (then Nico runs it in a Mint terminal)
 ## Risks
 <!-- Learning. Each tagged [assumption], riskiest first; start with the ticket record's riskiest_assumption.
 Also: data contamination of the base model, VRAM, run time, licences. -->
-1. [assumption] **Headroom:** the 1.7B base model has enough room for +5 points. Qwen3 base models may already have seen GSM8K-style data (contamination). Mitigations: report GSM-Plus and GSM-Symbolic, keep 0.6B as a model with more headroom, and fall back to a lower done-when for 0.6B (+8 points) if the 1.7B baseline is already above about 80%.
+1. [assumption] **Headroom:** the 1.7B base model has room for a measurable gain. Qwen3 base models may already have seen GSM8K-style data (contamination). Done-when is any measurable gain over the model's own baseline, labelled within or outside noise in `results.md` (Nico, 2026-10-30: intent-capture Q9, answer C); the generalisation sets are reported only (Nico, 2026-10-30: requirements Q5, answer A). Mitigations: report GSM-Plus and GSM-Symbolic, and keep 0.6B as a model with more headroom (the same done-when then applies to it).
 2. [assumption] **GRPO at 1.7B fits 8 GB** with 8 generations and 384–512 tokens. Fallbacks: 4 generations, shorter completions, or GRPO on 0.6B.
-3. [assumption] **Run times:** GRPO runs of 3–7 h are acceptable to Nico. Tuning needs proxies small enough to stay under 10 min, and proxy rankings may not carry over to 1.7B.
+3. [assumption] **Run times:** every run is capped at about 3 h (Nico, 2026-10-30: feasibility Q3, answer B), so GRPO gets only as many steps as fit (about 120–180 at 1.7B, 240–360 at 0.6B, from the estimates above); the assumption is that this is enough for GRPO to move the dev score. Real step times are measured before the plan is fixed (Q9, answer D). Tuning needs proxies small enough to stay under 10 min, and proxy rankings may not carry over to 1.7B.
 4. **SFT on terse GSM8K answers can hurt accuracy** (seen at 1.5B). That's why GRPO from base is also tried.
 5. **Reward hacking or format collapse in GRPO.** Mitigations: watch completion length and format reward on the dashboard, and spot-check samples.
 6. **Licences:** GSM-Symbolic is NC-ND, so it is eval only. All models and training data allow this use.
 7. **Agents overfitting the dev split** through many proposals. Mitigations: a budget of rounds, and test scored only for finalists.
-8. [assumption] **Licence of the pasted 21st.dev component:** its source names no licence. It is used only locally in this private repo. Nico confirms the author allows this use, or the hero is rewritten from scratch on shadcn/ui.
+8. **Licence of the pasted 21st.dev component:** its source names no licence. Cleared: Nico confirmed its author allows this personal use, and it is adapted as the landing headline, used only locally in this private repo (Nico, 2026-10-30: requirements Q6, "A. Yes: cleared for this personal use").
 
 ## Sources
 <!-- One line per source: the claim, the link, the date read. -->

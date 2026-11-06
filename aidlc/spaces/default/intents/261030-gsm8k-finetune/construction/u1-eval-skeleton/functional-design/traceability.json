@@ -1,0 +1,38 @@
+{
+  "stage": "functional-design",
+  "unit": "u1-eval-skeleton",
+  "upstream_ids": [
+    "AC1.1.1", "AC1.1.2", "AC1.1.3", "AC1.1.4", "AC1.1.5",
+    "AC1.2.1", "AC1.2.2", "AC1.2.3",
+    "AC1.3.1", "AC1.3.2", "AC1.3.3", "AC1.3.4",
+    "AC1.4.1", "AC1.4.2", "AC1.4.3", "AC1.4.4", "AC1.4.5", "AC1.4.6"
+  ],
+  "coverage": [
+    { "id": "AC1.1.1", "status": "OK", "target": "BR1.1, BR1.2" },
+    { "id": "AC1.1.2", "status": "OK", "target": "BR1.3, BR1.4" },
+    { "id": "AC1.1.3", "status": "OK", "target": "BR1.5" },
+    { "id": "AC1.1.4", "status": "OK", "target": "BR1.1" },
+    { "id": "AC1.1.5", "status": "OK", "target": "BR1.6" },
+    { "id": "AC1.2.1", "status": "OK", "target": "BR2.1" },
+    { "id": "AC1.2.2", "status": "OK", "target": "BR2.2" },
+    { "id": "AC1.2.3", "status": "OK", "target": "BR2.3" },
+    { "id": "AC1.3.1", "status": "OK", "target": "BR3.1" },
+    { "id": "AC1.3.2", "status": "OK", "target": "BR3.2" },
+    { "id": "AC1.3.3", "status": "OK", "target": "BR3.3" },
+    { "id": "AC1.3.4", "status": "OK", "target": "BR3.4" },
+    { "id": "AC1.4.1", "status": "OK", "target": "BR3.5, BR4.1" },
+    { "id": "AC1.4.2", "status": "OK", "target": "BR4.2" },
+    { "id": "AC1.4.3", "status": "OK", "target": "BR4.2, BR4.3" },
+    { "id": "AC1.4.4", "status": "OK", "target": "BR4.4" },
+    { "id": "AC1.4.5", "status": "OK", "target": "BR4.5" },
+    { "id": "AC1.4.6", "status": "OK", "target": "BR4.6" }
+  ],
+  "reverse": [
+    { "id": "BR4.7", "status": "N/A", "target": "labelling of adapter evaluations from contract C1 adapter_run; first exercised by u3-sft's closing evaluation (AC2.2.4)" },
+    { "id": "BR4.8", "status": "N/A", "target": "launch contract C5 (--config, --started-by) owned by this unit; consumed by the u4-run-service worker (AC3.2.2)" },
+    { "id": "BR5.1", "status": "N/A", "target": "lock contract C3 owned by this unit; its criteria AC3.3.1 and AC3.3.2 are tested in u4-run-service" },
+    { "id": "BR5.2", "status": "N/A", "target": "exit-code contract C5 owned by this unit; consumed by the u4-run-service worker (AC3.5.1, AC3.7.6)" },
+    { "id": "BR5.3", "status": "N/A", "target": "run-id uniqueness from contract C1; units-generation review R-01 (attempt reuse)" },
+    { "id": "BR5.4", "status": "N/A", "target": "technical rule from the contract common rules (atomic writes)" }
+  ]
+}
