@@ -1,10 +1,10 @@
 ---
 ticket: "https://github.com/Nodolas/idea-factory/issues/6"
-phase: ready-to-build
+phase: construction
 engine: aidlc
 track: "learning"
 spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
-approved_spec_commit: null
+approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
 current_task: none
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Read the spec at https://github.com/Nodolas/idea-gsm8k-finetune/tree/37fb5a4ae310a9d33f3c87dd4e011c421571ec6a/aidlc/spaces/default/intents/261030-gsm8k-finetune/inception, then add gate:go to https://github.com/Nodolas/idea-factory/issues/6 or comment what to change. Next session: Sonnet 5.5, Auto, `/build`.
+Construction: type /build (new sessions on Sonnet 5.5, Auto).
 
 ## DO NOT
 - Do not resume AI-DLC. It stopped after Delivery Planning; its u1 Construction files (functional-design, nfr-requirements, nfr-design under the intent's `construction/`) are bookkeeping, committed in the spec commit. Nico's answers there are decided and feed the builders.
@@ -33,6 +33,7 @@ Read the spec at https://github.com/Nodolas/idea-gsm8k-finetune/tree/37fb5a4ae31
 None.
 
 ## Done this run
+- 2026-11-06 gate:go consumed: spec 37fb5a4 approved (record and STATE.md), stage:construction.
 - 2026-11-06 Start checks: not paused, charter dfd4277 unchanged, track learning, no gates; stage inception, AI-DLC delivery-planning `[x]`, so 2.3 (propose).
 - 2026-11-06 Trace check PASS (138 AC, 26 manual). Spec review round 1 FAIL: brief said GRPO 3–7 h against Nico's 3 h cap (feasibility Q3, Q9); two criteria loaded the real 0.6B model in CPU tests (NFR3); three lock criteria contradicted contract C3. Fixed in the brief and stories.md with two changes.md lines; round 2 PASS.
 - 2026-11-06 Committed `inputs/design/` (Nico's screenshot and README) and the spec `spec(inception)` 37fb5a4: 9 FR groups (37 FRs), 10 NFRs, 31 stories, 138 AC, 9 units.
