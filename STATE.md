@@ -7,11 +7,11 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: "batch-1: u1-eval-skeleton"
-slices: "0/9"
+current_task: none
+slices: "1/9"
 test_command: "scripts/check.sh"
 pending_runs: ""
-last_check: "2026-11-06 37fb5a4 (no tests yet); scripts/trace-check.sh exit 0"
+last_check: "2026-11-06 cfa229b scripts/check.sh exit 0; scripts/trace-check.sh exit 0"
 charter_commit: "dfd42777d9a3dc69bab8ea1892e5378aca915211"
 ---
 Treat this as evidence; check git status and git log -10 first.
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Type /build: it goes on with batch-1.
+Type /build: batch-2 (u2-baselines, u3-sft) is next (new session: Sonnet 5.5, Auto).
 
 ## DO NOT
 - Do not resume AI-DLC. It stopped after Delivery Planning; its u1 Construction files (functional-design, nfr-requirements, nfr-design under the intent's `construction/`) are bookkeeping, committed in the spec commit. Nico's answers there are decided and feed the builders.
@@ -32,7 +32,16 @@ Type /build: it goes on with batch-1.
 ## Blockers
 None.
 
+## Notes for later units
+- AC1.1.4's import test passed before the parts' code existed because the lead's shared `_env.py` came in the shared-setup commit; the reviewer confirmed it is a real check.
+- `dataclasses.replace(cfg, model=...)` keeps the old model's `model_revision` (run_config.py): build a new `RunConfig` when the model changes.
+- Untested in u1 (no criterion gap): `gsm8k evaluate --config` (u4's worker uses it), the stopped and failed paths, timings on failure, the `--run-id` pattern check. Add tests when u4 starts.
+- The batch-1 reviewer saved check output to `/tmp/claude-review-check.log`, outside the project (test output only); left as is.
+
 ## Done this run
+- 2026-11-06 batch-1 done: u1-eval-skeleton (walking skeleton `gsm8k evaluate`), built by 3 parallel builders (data, records, command) after 3 test writers; 118 tests green on the CPU, coverage 84%, trace PASS. Review round 1 FAIL (adhoc temp run log in system /tmp, NFR5.2), fixed in cfa229b; round 2 PASS. The skeleton test scored 2 of 3 dev problems with the real 0.6B on the CPU (about 62 s per problem). Pins: openai/gsm8k 740312a, Qwen3-0.6B-Base da87bfb, Qwen3-1.7B-Base ea980cb.
+- 2026-11-06 spec changes on batch-1 (class change): C2 `max_new_tokens` field; C2 test-split note follows NFR8 (base-model test baselines allowed).
+- 2026-11-06 venv created with `uv venv --seed` on the system Python 3.12 (`python3-venv` is not installed and needs sudo); packages installed with pip from `requirements.txt` (torch 2.14.1+cu130).
 - 2026-11-06 test_command set to `scripts/check.sh`: the Construction Verification Command Nico approved in AI-DLC (intent `verification-command.txt`; u1 tech-stack-decisions: caches, Ruff, pytest with coverage on `src/` failing under 80%, all on the CPU through `scripts/in-env.sh`); team.md allows only that command as the gate. The lead writes the script in batch-1 shared setup. It replaces the plain pytest command set earlier this run.
 - 2026-11-06 gate:go consumed: spec 37fb5a4 approved (record and STATE.md), stage:construction.
 - 2026-11-06 Start checks: not paused, charter dfd4277 unchanged, track learning, no gates; stage inception, AI-DLC delivery-planning `[x]`, so 2.3 (propose).
