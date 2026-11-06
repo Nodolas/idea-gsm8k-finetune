@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import os
+import re
 import signal
 import sys
 import tempfile
@@ -31,6 +32,10 @@ EXIT_FAILED = 1
 EXIT_INVALID = 2
 EXIT_LOCKED = 3
 EXIT_STOPPED = 130
+
+# A run id given with --run-id must be a C1 attempt id; "adhoc-<timestamp>" is only the name the
+# command gives itself when --run-id is absent, and never goes into a real results file (C1, BR4.2).
+ATTEMPT_ID_PATTERN = re.compile(r"(?:q06|q17)-[a-z0-9]+-[a-z0-9]+-[0-9]+")
 
 # Flags that set configuration fields; with --config they may not be given (BR4.8: used unchanged).
 _CONFIG_FLAGS = ("split", "limit", "model", "adapter", "seed", "max_new_tokens")
@@ -165,6 +170,11 @@ def _prepare(args: argparse.Namespace) -> Prepared:
         except (TypeError, run_config.ConfigError) as exc:
             raise InvalidInput(str(exc)) from exc
 
+    if args.run_id is not None and not ATTEMPT_ID_PATTERN.fullmatch(args.run_id):
+        raise InvalidInput(
+            f"Invalid run id: {args.run_id!r} (--run-id takes an attempt id <base id>-<n>, "
+            "e.g. q06-base-dev-1)"
+        )
     try:
         paths.check_run_id(run_id)
     except ValueError as exc:
@@ -214,9 +224,10 @@ def _prepare(args: argparse.Namespace) -> Prepared:
     )
 
 
-def _new_temp_results() -> Path:
-    """BR4.2: a run without --run-id writes its row to a new temporary file, never results/runs.csv."""
-    fd, name = tempfile.mkstemp(prefix="gsm8k-runs-", suffix=".csv")
+def _new_temp_results(run_dir: Path) -> Path:
+    """BR4.2: a run without --run-id writes its row to a new temporary file, never results/runs.csv.
+    The file is made inside the run's own folder, so nothing is written above the project (NFR5.2)."""
+    fd, name = tempfile.mkstemp(prefix="gsm8k-runs-", suffix=".csv", dir=run_dir)
     os.close(fd)
     return Path(name).resolve()
 
@@ -244,6 +255,22 @@ def _failure_reason(exc: BaseException) -> str:
     return str(exc) or type(exc).__name__
 
 
+def _write_known_timings(run_dir: Path, progress: dict) -> None:
+    """BR4.4: on a failure after generation started, save what is known about the timings."""
+    if progress["gen_started"] is None or progress["timings_written"]:
+        return
+    scored = progress["scored"]
+    seconds = (time.monotonic() - progress["gen_started"]) / scored if scored else None
+    try:
+        peak = evaluation.peak_gpu_memory_gb(progress["model"])
+    except Exception:  # the GPU itself may be what failed
+        peak = 0.0
+    try:
+        folder.write_timings(run_dir, seconds_per_problem=seconds, peak_gpu_memory_gb=peak)
+    except OSError as exc:
+        print(f"Timings could not be written: {exc}", file=sys.stderr)
+
+
 def _run(prep: Prepared) -> int:
     """W4 steps 5-9, inside the lock. Every exit writes status.json (BR5.2)."""
     from gsm8k.datasets_prompts import hub, prompt, split
@@ -251,6 +278,13 @@ def _run(prep: Prepared) -> int:
     cfg = prep.cfg
     started = time.monotonic()
     prep.run_dir.mkdir(parents=True, exist_ok=True)
+    # What is known about timings if the run fails after generation started (BR4.4).
+    progress = {"model": None, "gen_started": None, "scored": 0, "timings_written": False}
+
+    def on_prediction(record: dict) -> None:
+        folder.append_prediction(prep.run_dir, record)
+        progress["scored"] += 1
+
     previous = _install_sigterm()
     try:
         own_config = prep.run_dir / "config.json"
@@ -270,6 +304,8 @@ def _run(prep: Prepared) -> int:
 
         torch.manual_seed(cfg.seed)
         torch.backends.cuda.matmul.allow_tf32 = False
+        progress["model"] = model
+        progress["gen_started"] = time.monotonic()
         result = evaluation.evaluate(
             model,
             tokenizer,
@@ -277,20 +313,21 @@ def _run(prep: Prepared) -> int:
             lambda p: prompt.build_prompt(exemplars, p.question),
             batch_size=evaluation.batch_size_for(cfg.model),
             max_new_tokens=cfg.max_new_tokens,
-            on_prediction=lambda record: folder.append_prediction(prep.run_dir, record),
+            on_prediction=on_prediction,
         )
         folder.write_timings(
             prep.run_dir,
             seconds_per_problem=result.seconds_per_problem,
             peak_gpu_memory_gb=result.peak_gpu_memory_gb,
         )
+        progress["timings_written"] = True
         minutes = (time.monotonic() - started) / 60
         print(f"accuracy: {result.accuracy:.4f} ({result.correct}/{result.scored})")
         print(f"problems scored: {result.scored}")
         print(f"minutes: {minutes:.1f}")
         print(f"run folder: {prep.run_dir}")
 
-        results = prep.results if prep.results is not None else _new_temp_results()
+        results = prep.results if prep.results is not None else _new_temp_results(prep.run_dir)
         log.append_row(
             results,
             log.RunRow(
@@ -325,6 +362,7 @@ def _run(prep: Prepared) -> int:
     except Exception as exc:
         reason = _failure_reason(exc)
         traceback.print_exc(file=sys.stderr)
+        _write_known_timings(prep.run_dir, progress)
         folder.write_status(
             prep.run_dir, run_id=prep.run_id, status="failed", exit_code=EXIT_FAILED, reason=reason
         )

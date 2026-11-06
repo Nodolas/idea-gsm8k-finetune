@@ -65,6 +65,15 @@ def _model_device(model: Any) -> Any:
     return device
 
 
+def peak_gpu_memory_gb(model: Any) -> float:
+    """Peak allocated GPU memory in GiB since the last reset when the model is on CUDA, else 0.0."""
+    if getattr(_model_device(model), "type", "cpu") != "cuda":
+        return 0.0
+    import torch
+
+    return torch.cuda.max_memory_allocated() / _GIB
+
+
 def _reached_stop(text: str) -> bool:
     """BR3.5: the generated text has passed its stop point (the end of the first ``#### <number>``
     line, or a new ``Question:``) exactly when the scoring cut would shorten it."""
@@ -164,7 +173,7 @@ def evaluate(
                     }
                 )
     scored = len(problems)
-    peak = torch.cuda.max_memory_allocated() / _GIB if use_cuda else 0.0
+    peak = peak_gpu_memory_gb(model)
     return EvalResult(
         accuracy=correct / scored if scored else 0.0,
         scored=scored,
