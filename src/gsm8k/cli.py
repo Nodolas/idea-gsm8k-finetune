@@ -43,7 +43,13 @@ _CONFIG_FLAGS = ("split", "limit", "model", "adapter", "seed", "max_new_tokens")
 
 # Other units' commands: each module exposes ``register(subparsers)``, which adds its subcommand
 # and sets ``func`` (a callable taking the parsed arguments and returning the exit code).
-COMMAND_MODULES = ("gsm8k.harness", "gsm8k.train_cmd", "gsm8k.prune")
+COMMAND_MODULES = (
+    "gsm8k.harness",
+    "gsm8k.train_cmd",
+    "gsm8k.prune",
+    "gsm8k.worker_cmd",
+    "gsm8k.serve_cmd",
+)
 
 
 class InvalidInput(Exception):
