@@ -22,9 +22,16 @@ METHODS = ("base", "sft", "grpo", "best", "terse", "vote", "calc", "optuna")
 SPLITS = ("dev", "test", "gsmplus-testmini", "gsmsym-p1")
 ANSWER_FORMATS = ("step-by-step", "terse")
 LORA_RANKS = (4, 8, 16, 32, 64)
+EVALUATORS = ("project", "lm-eval-harness")
 TRAIN_SPLIT_SIZE = 6973  # 7,473 training problems minus the 500 dev problems
 MAX_SEED = 2**31 - 1
 MAX_NEW_TOKENS_CAP = 4096
+# Methods that train or tune, so never read the test split (NFR8, AC2.1.5). The terse ablation fine-tunes;
+# vote and calc are evaluation-only ablations, base and best only evaluate.
+TRAINING_METHODS = ("sft", "grpo", "optuna", "terse")
+TEST_SPLIT_MESSAGE = "The test split is never used for training or tuning"
+# The run id check_dials puts in its config when the caller gives none (the caller sets the real one).
+UNSET_RUN_ID = "unset"
 
 # Fields that never enter the hash (C2).
 _NOT_HASHED = ("run_id", "v")
@@ -66,6 +73,7 @@ class RunConfig:
     max_new_tokens: int = 512
     grpo_steps: int | None = None
     grpo_generations: int | None = None
+    evaluator: str = "project"
 
     def __post_init__(self) -> None:
         if self.model_revision is None:
@@ -177,6 +185,8 @@ def validate(cfg: RunConfig) -> None:
     _one_of("model", cfg.model, MODELS)
     _one_of("method", cfg.method, METHODS)
     _one_of("split", cfg.split, SPLITS)
+    if cfg.method in TRAINING_METHODS and cfg.split == "test":
+        raise ConfigError(TEST_SPLIT_MESSAGE)
     if cfg.adapter_path is not None and (not isinstance(cfg.adapter_path, str) or not cfg.adapter_path):
         raise ConfigError(f"adapter_path must be empty or a path, got {cfg.adapter_path!r}")
     _number_in("learning_rate", cfg.learning_rate, 1e-5, 5e-4)
@@ -204,3 +214,87 @@ def validate(cfg: RunConfig) -> None:
     _int_in("max_new_tokens", cfg.max_new_tokens, 1, MAX_NEW_TOKENS_CAP)
     _optional_int_from("grpo_steps", cfg.grpo_steps, 1)
     _optional_int_from("grpo_generations", cfg.grpo_generations, 1)
+    _one_of("evaluator", cfg.evaluator, EVALUATORS)
+
+
+# --- strict parsing of user-given dials (AC2.1.4) ---
+
+_FLOAT_FIELDS = ("learning_rate", "warmup_ratio")
+_INT_FIELDS = (
+    "v",
+    "epochs",
+    "lora_rank",
+    "lora_alpha",
+    "max_seq_len",
+    "batch_size",
+    "seed",
+    "split_seed",
+    "vote_samples",
+    "max_new_tokens",
+)
+_STR_FIELDS = (
+    "run_id",
+    "model",
+    "method",
+    "split",
+    "model_revision",
+    "dataset_revision",
+    "answer_format",
+    "evaluator",
+)
+_OPTIONAL_INT_FIELDS = ("limit", "grpo_steps", "grpo_generations")
+
+
+def _check_type(name: str, value: Any) -> Any:
+    """Return the value if its JSON type fits the field (ints widen to floats for float fields), else
+    raise ConfigError naming the field. Nothing is coerced from strings or booleans."""
+    if name in _FLOAT_FIELDS:
+        if not _is_number(value):
+            raise ConfigError(f"{name} must be a number, got {value!r}")
+        return float(value)
+    if name in _INT_FIELDS:
+        if not _is_int(value):
+            raise ConfigError(f"{name} must be a whole number, got {value!r}")
+        return value
+    if name in _STR_FIELDS:
+        if not isinstance(value, str):
+            raise ConfigError(f"{name} must be text, got {value!r}")
+        return value
+    if name in _OPTIONAL_INT_FIELDS:
+        if value is not None and not _is_int(value):
+            raise ConfigError(f"{name} must be empty or a whole number, got {value!r}")
+        return value
+    if name == "train_examples":
+        if value != "all" and not _is_int(value):
+            raise ConfigError(f"train_examples must be 'all' or a whole number, got {value!r}")
+        return value
+    if name == "adapter_path":
+        if value is not None and not isinstance(value, str):
+            raise ConfigError(f"adapter_path must be empty or a path, got {value!r}")
+        return value
+    if name == "calculator":
+        if not isinstance(value, bool):
+            raise ConfigError(f"calculator must be true or false, got {value!r}")
+        return value
+    raise ConfigError(f"Unknown configuration field: {name}")  # pragma: no cover - every field is listed
+
+
+def check_dials(d: dict, run_id: str = UNSET_RUN_ID) -> RunConfig:
+    """Parse user-given dials (C2 field names) strictly and return a fully checked RunConfig.
+
+    An unknown name or a value of the wrong type raises ConfigError naming the field (AC2.1.4); then
+    every field is checked as ``validate`` does (AC2.1.2, AC2.1.3, AC2.1.5). Fields not given take their
+    defaults; the model revision follows the model unless given. ``run_id`` is the run id to put in the
+    config (a ``run_id`` key in ``d`` takes precedence).
+    """
+    if not isinstance(d, dict):
+        raise ConfigError("Dials must be given as a mapping of field names to values")
+    unknown = [name for name in d if name not in _FIELD_NAMES]
+    if unknown:
+        listed = ", ".join(str(name) for name in unknown)
+        raise ConfigError(f"Unknown configuration field: {listed}")
+    fields = {name: _check_type(name, value) for name, value in d.items()}
+    fields.setdefault("run_id", run_id)
+    cfg = RunConfig(**fields)
+    validate(cfg)
+    return cfg
