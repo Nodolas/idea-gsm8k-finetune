@@ -92,6 +92,7 @@ files:
     limit: integer|null             # evaluation problem limit; null = whole split
     vote_samples: integer           # 1 = single greedy sample; >1 = majority vote (US9.1)
     calculator: boolean             # calculator tool on or off (US9.1)
+    max_new_tokens: integer         # generation cap per answer; default 512 (BR3.5); quick tests use 256 (AC1.4.1) (added 2026-11-06)
     grpo_steps: integer|null        # GRPO only (US7.1)
     grpo_generations: integer|null  # GRPO samples per problem (US7.1)
   metrics.jsonl:                    # one JSON object per line, appended as the run goes (FR2.3)
