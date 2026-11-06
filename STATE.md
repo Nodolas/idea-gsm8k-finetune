@@ -9,7 +9,7 @@ spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
 current_task: none
 slices: "0/9"
-test_command: "scripts/in-env.sh .venv/bin/python -m pytest -q --cov=src/gsm8k --cov-report=term-missing:skip-covered --cov-fail-under=80"
+test_command: "scripts/check.sh"
 pending_runs: ""
 last_check: "2026-11-06 37fb5a4 (no tests yet); scripts/trace-check.sh exit 0"
 charter_commit: "dfd42777d9a3dc69bab8ea1892e5378aca915211"
@@ -33,6 +33,7 @@ Construction: type /build (new sessions on Sonnet 5.5, Auto).
 None.
 
 ## Done this run
+- 2026-11-06 test_command set to `scripts/check.sh`: the Construction Verification Command Nico approved in AI-DLC (intent `verification-command.txt`; u1 tech-stack-decisions: caches, Ruff, pytest with coverage on `src/` failing under 80%, all on the CPU through `scripts/in-env.sh`); team.md allows only that command as the gate. The lead writes the script in batch-1 shared setup. It replaces the plain pytest command set earlier this run.
 - 2026-11-06 gate:go consumed: spec 37fb5a4 approved (record and STATE.md), stage:construction.
 - 2026-11-06 Start checks: not paused, charter dfd4277 unchanged, track learning, no gates; stage inception, AI-DLC delivery-planning `[x]`, so 2.3 (propose).
 - 2026-11-06 Trace check PASS (138 AC, 26 manual). Spec review round 1 FAIL: brief said GRPO 3–7 h against Nico's 3 h cap (feasibility Q3, Q9); two criteria loaded the real 0.6B model in CPU tests (NFR3); three lock criteria contradicted contract C3. Fixed in the brief and stories.md with two changes.md lines; round 2 PASS.
