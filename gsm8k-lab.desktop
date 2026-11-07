@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=gsm8k lab
+Comment=Start the run service, the worker and the website, then open it (local only)
+Exec=/home/nodolas/Projects/idea-gsm8k-finetune/scripts/start-website.sh
+Icon=applications-science
+Terminal=false
+Categories=Development;
+Actions=stop;
+
+[Desktop Action stop]
+Name=Stop the website
+Exec=/home/nodolas/Projects/idea-gsm8k-finetune/scripts/stop-website.sh
