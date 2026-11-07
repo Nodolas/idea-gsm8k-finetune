@@ -84,7 +84,7 @@ Done-when (Nico, 2026-10-30: "any measurable gain", intent-capture Q3 and Q9, an
 - GSM-Plus testmini and GSM-Symbolic p1 are scored on the baseline and the final model and reported with no pass or fail (FR5.1).
 - `results.md` explains what moved the number and why.
 
-Done-when for this build (Nico, 2026-11-07, `inception/changes.md`): the baselines (both models, dev and test, harness cross-check) and the default-dial reference fine-tunes (q06-sft-dev, q17-sft-dev) are measured, the website is ready for tuning, and `results.md` reports them with the gains labelled against noise. Beating the baseline with a tuned checkpoint, its test score and harness cross-check, and the GSM-Plus and GSM-Symbolic scores (AC5.1.3-AC5.1.6, AC6.1.2, AC6.1.3) are deferred: Nico runs them from the website after this build. The goal above stays his.
+Done-when for this build (Nico, 2026-11-07, `inception/changes.md`): the baselines (both models, dev and test, harness cross-check) and the default-dial reference fine-tunes (q06-sft-dev, q17-sft-dev) are measured, the website is ready for tuning, and `results.md` reports them with the gains labelled against noise. Beating the baseline with a tuned checkpoint, its test score and harness cross-check, and the GSM-Plus and GSM-Symbolic scores (AC5.1.3-AC5.1.6, AC6.1.2, AC6.1.3) are deferred until after this build: the website starts a finalist's test-split run; the GSM-Plus, GSM-Symbolic and harness runs are started detached by a later lead session on Nico's request (Nico runs nothing in a terminal). The goal above stays his.
 
 ## What to learn
 <!-- Learning. The concepts and skills, in the order the units teach them; what Nico knows already. -->

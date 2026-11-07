@@ -444,7 +444,7 @@ As Nico, I want `results.md` built from my run log, with the gain judged against
 - **AC6.2.1** Given a results file, when the results generator runs, then it writes the run table into `results.md` with one line per row.
 - **AC6.2.2** Given a baseline and a best test accuracy on 1,319 problems, when the gain is reported, then a gain smaller than about 3 points is labelled "within noise" and a larger one "outside noise".
 - **AC6.2.3** Given harness rows, when `results.md` is built, then the harness numbers are shown labelled as a cross-check and are not used to compute the gain.
-- **AC6.2.4** Given the finished project, when Nico reads `results.md`, then it holds the baseline and best test accuracy, the gain with its noise label, the generalisation results, what moved the number and why, and what to try next. [manual] Verify: Nico reads `results.md` and approves it at the write-up unit's checkpoint
+- **AC6.2.4** Given the finished project, when Nico reads `results.md`, then it holds the baselines (both models, dev and test, and the harness cross-check), the default-dial reference fine-tunes with their dev gains labelled against noise, what moved the number and why, and what to try next (changed 2026-11-07: the best checkpoint's test, harness and generalisation results are deferred). [manual] Verify: Nico reads `results.md` and approves it at the write-up unit's checkpoint
 
 ### US6.3 Check what each unit taught me
 
