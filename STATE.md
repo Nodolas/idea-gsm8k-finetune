@@ -1,6 +1,6 @@
 ---
 ticket: "https://github.com/Nodolas/idea-factory/issues/6"
-phase: construction
+phase: ready-to-ship
 engine: aidlc
 track: "learning"
 spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
@@ -10,8 +10,8 @@ spec_route: "aidlc"
 current_task: none
 slices: "6/6"
 test_command: "scripts/check.sh"
-pending_runs: "q17-base-harness-2:running:264006,q17-base-gsmplus-1:queued,q17-base-gsmsym-1:queued"
-last_check: "2026-11-07 c860275 scripts/check.sh exit 0; scripts/trace-check.sh exit 0"
+pending_runs: ""
+last_check: "2026-11-07 f3dd6ac scripts/check.sh exit 0; scripts/trace-check.sh exit 0"
 charter_commit: "dfd42777d9a3dc69bab8ea1892e5378aca915211"
 ---
 Treat this as evidence; check git status and git log -10 first.
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Converge passed for u1-u6 (2026-11-07). Waiting for q17-base-harness-2 (AC1.5.6) and q17-sft-dev-2 (AC2.4.3, batch size 2); when both rows exist: commit them, write results.md (gsm8k report plus the hand-written sections), and move the ticket to ready-to-ship (4.2, learning). Open [manual] checks for Nico, listed in the ready-to-ship comment: AC4.1.3, AC4.5.6, AC6.2.4; AC6.3.2 answers for batch-3.
+Waiting for gate:ship on https://github.com/Nodolas/idea-factory/issues/6: Nico reads results.md, then adds gate:ship (no deploy, no URL); the next /build consumes it. The Construction slot is free for other builds. Tuning is Nico's on the website (desktop launcher gsm8k-lab.desktop); deferred runs and units are listed in inception/changes.md.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping, and BR4.7/BR4.8 there are superseded by contract C5's 2026-11-07 "method best" note).
@@ -44,10 +44,11 @@ None.
 - Reviewer scratch files outside the folder (`/tmp/claude-review-check.log`, `/tmp/null_unused`): test output only, left as is (rule 8).
 
 ## Done this run
+- 2026-11-07 ready to ship: q17-base-harness-2 0.7089 (55 min, with the cap fix), q17-sft-dev-2 dev 0.7863 at batch size 2 (−0.4 vs base, within noise; 43.8 min, peak 5.0 GB). results.md written (docs(results) 4ddfe66), stage:ready-to-ship. Website started for Nico (service, worker, Vite on 127.0.0.1). Batch-3 check questions: Nico gave no answers (AC6.3.2); the lead explained them in session.
 - 2026-11-07 Converge: two reviewers re-read every live criterion of u1-u6 against the final code: PASS, no gaps. Spec fixes from it: AC6.2.4 matches this build's done-when; the brief says who starts the deferred runs. Deferred (Nico, "Yes defer the best model runs"): AC5.1.3-AC5.1.6, AC6.1.2, AC6.1.3.
 - 2026-11-07 units u7-grpo, u8-tuning, u9-ablations deferred (Nico: "Let's skip those for now"; spec(inception) commit): the build ends after the reference runs; tuning the score is Nico's.
 - 2026-11-07 batch-4 done: u5-website (landing, scores and compare, live training page, run controls; service gains run fields and `GET /dials`) and u6-final-and-report (GSM-Plus/GSM-Symbolic evaluation pinned, training-data guard, method `best` for finalists, `gsm8k report`), 8 parallel parts; 99 web tests and 356 Python tests green, coverage 84.7%, trace PASS; both reviews PASS first round. Spec changes (class change): BR4.7/BR4.8 accept `best` (C5); AC5.1.1 uses C1 data names; GSM-Plus leaves out 307 non-decimal answers; C6 Run fields and `/dials`; C7 paused line on EventSource error, C6 Status FINISHED; harness keeps lm-eval's 256-token cap (fix after q17-base-harness-1 ran at 16 s per problem; that run was stopped at 7%, no row). Node 24.22.2 in `.tools/node`. Website smoke check 2026-11-07: service and Vite started, /api/v1 answers through the proxy with the 7 runs, all three pages compile (no browser screenshot: Playwright is not installed here). Check questions (AC6.3.1): (1) Why does the 1.7B base model score 11 points lower on test than on dev, and what does that suggest about the dev split? (2) Why is a test-split gain under about 3 points called "within noise" on 1,319 problems? (3) Why did SFT at default dials lower the 0.6B dev score? Answers (AC6.3.2), Nico 2026-11-07: "I don't know the answers"; the lead explained them in session.
-- 2026-11-07 batch-3 done: u4-run-service (run list and status, finalists, queue with `gsm8k worker`, check/confirm, stop, local FastAPI service). Check questions: (1) Why does the worker remove a queue entry only once the launched run holds the GPU lock? (2) Why is a run launched as an argument list in its own session rather than a shell command? Answers: none yet.
+- 2026-11-07 batch-3 done: u4-run-service (run list and status, finalists, queue with `gsm8k worker`, check/confirm, stop, local FastAPI service). Check questions: (1) Why does the worker remove a queue entry only once the launched run holds the GPU lock? (2) Why is a run launched as an argument list in its own session rather than a shell command? Answers: none given; explained by the lead 2026-11-07.
 - 2026-11-07 long runs: q06-base-test-1 0.4966; q17-base-dev-1 0.7903; q17-base-test-1 0.6778 (both models score about 10-11 points lower on test than dev: contamination hint, brief Risk 1). q17-base-harness-1 stopped (generation cap bug). q06-sft-dev-1 done: dev 0.5524, 24.4 min, 4.4 points BELOW the 0.6B baseline 0.5968 (SFT at default dials hurt; a results.md point and a reason to tune). q17-sft-dev-1 FAILED: GPU out of memory at step ~200 (batch size 4, 6.2 GB in the process plus the desktop's share of 8 GB); no row. q17-base-harness-2 started with the fix: 2.4 s per problem (was 16).
 - 2026-11-06 batches 1-2 (u1-eval-skeleton, u2-baselines, u3-sft) and q06-base-dev-1 0.5968: see git history.
 
