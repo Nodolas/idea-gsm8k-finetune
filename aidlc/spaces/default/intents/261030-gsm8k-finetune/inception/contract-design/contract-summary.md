@@ -262,6 +262,7 @@ paths:
   /dials:
     get:
       summary: The dial table with ranges and defaults (AC4.6.1)
+      description: 'Added 2026-11-07: returns {"dials": [DialSpec]}, the eleven dials in stories.md Training Dials order; DialSpec = {name, label, kind: select|number|integer, options: list|null, min: number|null, max: number|null, allow_all: bool, default, help}'
   /runs/check:
     post:
       summary: Step one of a start; checks and summarises, launches nothing (AC3.2.1)
@@ -332,6 +333,9 @@ components:
         date: { type: string }
         status: { type: string, enum: [finished, failed, stopped, running, queued] }
         finalist: { type: boolean }
+        adapter_run: { type: [string, 'null'] }   # added 2026-11-07
+        started_at: { type: [string, 'null'] }    # added 2026-11-07: row date minus minutes, or the lock's started_at for the active run
+      description: 'test_accuracy is the run''s own gsm8k-test row, else the latest gsm8k-test row whose adapter_run is this run, else (a base dev run) its model''s latest base gsm8k-test row with an empty adapter_run; gain is dev_accuracy minus the dev accuracy of the model''s latest base gsm8k-dev run, null for that baseline and for runs without a dev score (2026-11-07)'
     RunDetail:
       type: object
       properties:
