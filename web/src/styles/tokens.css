@@ -1,0 +1,55 @@
+/*
+ * Design tokens: the dark "night" theme of refined-mockups/design-system-mapping.md, defined
+ * once and mapped onto shadcn/ui's variables. Components use the Tailwind names
+ * (bg-background, text-muted-foreground, border-hairline, text-accent, text-danger, ...)
+ * and never raw colours.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Site tokens (design-system-mapping.md, Design Tokens). */
+  --bg: #0c0c0b;
+  --panel: #141413;
+  --ink: #e9e4da;
+  --ink-muted: #8c8882;
+  --hairline: color-mix(in srgb, var(--ink) 16%, transparent);
+  --grid: color-mix(in srgb, var(--ink) 12%, transparent);
+  --accent-orange: #e9762b;
+  --danger: #ff6b5b;
+  --ok: #8fd19e;
+  --scrim: color-mix(in srgb, var(--bg) 70%, transparent);
+
+  /* Type, space and shape. */
+  --font-sans-stack: ui-sans-serif, system-ui, sans-serif;
+  --font-mono-stack: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius: 6px;
+  --radius-field: 4px;
+  --content-width: 1280px;
+  --gutter: 24px;
+
+  /* shadcn/ui variables mapped onto the site tokens. */
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--panel);
+  --card-foreground: var(--ink);
+  --popover: var(--panel);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--bg);
+  --secondary: var(--panel);
+  --secondary-foreground: var(--ink);
+  --muted: var(--panel);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--panel);
+  --accent-foreground: var(--ink);
+  --destructive: var(--danger);
+  --destructive-foreground: var(--bg);
+  --border: var(--hairline);
+  --input: var(--hairline);
+  --ring: var(--accent-orange);
+  --chart-1: var(--ink);
+  --chart-2: var(--accent-orange);
+  --chart-3: var(--ink-muted);
+  --chart-4: var(--ok);
+  --chart-5: var(--danger);
+}
