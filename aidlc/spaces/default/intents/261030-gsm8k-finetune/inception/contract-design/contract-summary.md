@@ -348,7 +348,7 @@ components:
     Status:
       type: object
       properties:
-        status: { type: string, enum: [IDLE, RUNNING, STOPPED, FAILED] }
+        status: { type: string, enum: [IDLE, RUNNING, STOPPED, FAILED, FINISHED] }   # FINISHED only in last_run (2026-11-07)
         run_id: { type: [string, 'null'] }
         reason: { type: [string, 'null'] }
         log_tail: { type: array, items: { type: string } }
@@ -425,7 +425,7 @@ Stream rules:
 - A new line is sent within 1 second of being written, inside the 5-second budget (NFR10).
 - The server sends `retry: 3000`, so the browser reconnects after 3 seconds.
 - On reconnect the browser sends `Last-Event-ID`, and the server resends the lines after it, so nothing is lost.
-- A comment line every 15 seconds keeps the connection alive. If the page sees nothing for 20 seconds it shows "Live updates paused, reconnecting" (AC4.5.3).
+- A comment line every 15 seconds keeps the connection alive. When the browser's EventSource reports an error (the connection dropped; the browser never shows the keep-alive comments to the page) the page shows "Live updates paused, reconnecting" with the time of the last update, and clears it on reconnect or the next event (AC4.5.3; changed 2026-11-07).
 
 ## Contract Ownership Rules
 
