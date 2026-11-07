@@ -10,7 +10,7 @@ import { defineConfig } from "vite";
 // jsdom is a pinned devDependency here, so that check is skipped.
 process.env.VITEST_SKIP_INSTALL_CHECKS ??= "1";
 
-const webDir =fileURLToPath(new URL(".", import.meta.url));
+const webDir = fileURLToPath(new URL(".", import.meta.url));
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 const srcDir = fileURLToPath(new URL("./src", import.meta.url));
 
