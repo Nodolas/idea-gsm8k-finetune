@@ -68,6 +68,12 @@ def run_harness(model: Any, tokenizer: Any, *, limit: int | None, batch_size: in
     from lm_eval import simple_evaluate
     from lm_eval.models.huggingface import HFLM
 
+    # HFLM caps generation through max_length (context + 256 new tokens), but a generation_config
+    # max_new_tokens (2048 for Qwen3) overrides it in transformers; clear it so the harness's own cap
+    # applies (inception/changes.md 2026-11-07).
+    generation_config = getattr(model, "generation_config", None)
+    if generation_config is not None:
+        generation_config.max_new_tokens = None
     lm = HFLM(pretrained=model, tokenizer=tokenizer, batch_size=batch_size)
     out = simple_evaluate(
         model=lm,
