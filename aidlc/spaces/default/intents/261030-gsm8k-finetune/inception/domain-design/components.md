@@ -16,8 +16,9 @@ components:
       deterministically from the dev split and removes them from dev scoring (496 scored). Builds training
       targets in step-by-step or terse format. Refuses any request that would put a test-split, GSM-Plus or
       GSM-Symbolic problem into training or tuning data. GSM-Plus testmini and GSM-Symbolic p1 are pinned to a
-      Hub commit hash in the code, like openai/gsm8k; GSM-Plus rows whose answer is not a number are left out
-      and counted (2026-11-07).
+      Hub commit hash in the code, like openai/gsm8k; GSM-Plus rows whose answer is not a plain decimal number are
+      left out and counted: 307 of 2,400 at the pin, 300 critical-thinking "None" answers and 7 fractions
+      (2026-11-07).
     responsibilities:
       - Dataset loading with in-folder caches
       - Fixed dev and train split by seed
