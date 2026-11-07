@@ -10,7 +10,7 @@ spec_route: "aidlc"
 current_task: none
 slices: "6/9"
 test_command: "scripts/check.sh"
-pending_runs: "q06-sft-dev-1:running:246047,q17-sft-dev-1:queued,q17-base-harness-2:queued,q17-base-gsmplus-1:queued,q17-base-gsmsym-1:queued"
+pending_runs: "q17-sft-dev-1:running:260442,q17-base-harness-2:queued,q17-base-gsmplus-1:queued,q17-base-gsmsym-1:queued"
 last_check: "2026-11-07 c860275 scripts/check.sh exit 0; scripts/trace-check.sh exit 0"
 charter_commit: "dfd42777d9a3dc69bab8ea1892e5378aca915211"
 ---
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Type /build: it starts the queued long runs as the GPU frees up, then picks batch-5 (u7-grpo, u8-tuning, u9-ablations, the Could Have units). Website checkpoint for Nico (AC4.1.3, AC4.5.6): ask the lead in a session to start `make serve` and `make web`, open http://127.0.0.1:5173, compare the pages with `inputs/design/` and watch a live run.
+Type /build after q17-sft-dev-1 ends (about 40 min from 08:10 UTC): it commits the row, starts the next queued run (q17-base-harness-2, then q17-base-gsmplus-1, q17-base-gsmsym-1) and picks batch-5 (u7-grpo, u8-tuning, u9-ablations; it edits training code, so it waits for a running SFT run). Website checkpoint for Nico (AC4.1.3, AC4.5.6): ask the lead in a session to start `make serve` and `make web`, open http://127.0.0.1:5173, compare the pages with `inputs/design/` and watch a live run.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping, and BR4.7/BR4.8 there are superseded by contract C5's 2026-11-07 "method best" note).
@@ -45,7 +45,7 @@ None.
 ## Done this run
 - 2026-11-07 batch-4 done: u5-website (landing, scores and compare, live training page, run controls; service gains run fields and `GET /dials`) and u6-final-and-report (GSM-Plus/GSM-Symbolic evaluation pinned, training-data guard, method `best` for finalists, `gsm8k report`), 8 parallel parts; 99 web tests and 356 Python tests green, coverage 84.7%, trace PASS; both reviews PASS first round. Spec changes (class change): BR4.7/BR4.8 accept `best` (C5); AC5.1.1 uses C1 data names; GSM-Plus leaves out 307 non-decimal answers; C6 Run fields and `/dials`; C7 paused line on EventSource error, C6 Status FINISHED; harness keeps lm-eval's 256-token cap (fix after q17-base-harness-1 ran at 16 s per problem; that run was stopped at 7%, no row). Node 24.22.2 in `.tools/node`. Check questions (AC6.3.1): (1) Why does the 1.7B base model score 11 points lower on test than on dev, and what does that suggest about the dev split? (2) Why is a test-split gain under about 3 points called "within noise" on 1,319 problems? Answers: none yet.
 - 2026-11-07 batch-3 done: u4-run-service (run list and status, finalists, queue with `gsm8k worker`, check/confirm, stop, local FastAPI service). Check questions: (1) Why does the worker remove a queue entry only once the launched run holds the GPU lock? (2) Why is a run launched as an argument list in its own session rather than a shell command? Answers: none yet.
-- 2026-11-07 long runs: q06-base-test-1 0.4966; q17-base-dev-1 0.7903; q17-base-test-1 0.6778 (both models score about 10-11 points lower on test than dev: contamination hint, brief Risk 1). q17-base-harness-1 stopped (generation cap bug). q06-sft-dev-1 started (pid 246047).
+- 2026-11-07 long runs: q06-base-test-1 0.4966; q17-base-dev-1 0.7903; q17-base-test-1 0.6778 (both models score about 10-11 points lower on test than dev: contamination hint, brief Risk 1). q17-base-harness-1 stopped (generation cap bug). q06-sft-dev-1 done: dev 0.5524, 24.4 min, 4.4 points BELOW the 0.6B baseline 0.5968 (SFT at default dials hurt; a results.md point and a reason to tune). q17-sft-dev-1 started (pid 260442, about 40 min).
 - 2026-11-06 batches 1-2 (u1-eval-skeleton, u2-baselines, u3-sft) and q06-base-dev-1 0.5968: see git history.
 
 ## Goal
