@@ -2,7 +2,7 @@
 
 PORT ?= 8000
 
-.PHONY: serve
+.PHONY: serve web
 
 # The run service and the run-queue worker as two local processes. The worker keeps the GPU visible
 # (--gpu), because the runs it launches use it; the service never needs it. Ctrl-C stops both; a run
@@ -12,3 +12,7 @@ serve:
 	scripts/in-env.sh --gpu .venv/bin/python -m gsm8k worker & \
 	scripts/in-env.sh .venv/bin/python -m gsm8k serve --port $(PORT) & \
 	wait
+
+# The website (Vite) on 127.0.0.1:5173; it proxies /api to the service on 127.0.0.1:8000.
+web:
+	scripts/in-env.sh npm run web:dev

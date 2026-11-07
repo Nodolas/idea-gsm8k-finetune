@@ -49,6 +49,7 @@ COMMAND_MODULES = (
     "gsm8k.prune",
     "gsm8k.worker_cmd",
     "gsm8k.serve_cmd",
+    "gsm8k.report",
 )
 
 

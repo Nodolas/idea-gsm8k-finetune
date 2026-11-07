@@ -1,5 +1,7 @@
 # Factory template: build and test byproducts, local secrets. AI-DLC's config adds its own block below.
 node_modules/
+.tools/
+web/dist/
 .wrangler/
 .dev.vars*
 .env*
