@@ -12,9 +12,12 @@ Nine units grouping the building blocks in `inception/domain-design/components.m
 | U4 | u4-run-service | service | L | Must | US3.1, US3.2, US3.3, US3.4, US3.5, US3.6, US3.7 |
 | U5 | u5-website | ui | L | Must | US4.1, US4.2, US4.3, US4.4, US4.5, US4.6 |
 | U6 | u6-final-and-report | library | M | Must | US5.1, US6.1, US6.2, US6.3 |
-| U7 | u7-grpo | library | M | Could | US7.1 |
-| U8 | u8-tuning | library | M | Could | US8.1, US8.2 |
-| U9 | u9-ablations | library | M | Could | US9.1 |
+
+Deferred (Nico, 2026-11-07, `inception/changes.md`): U7 u7-grpo, U8 u8-tuning and U9 u9-ablations (Could Have) are not built in this build; their sections below and their stories stay as written. To build them later, move their three rows back into this table and their entries back into the `units:` block of `unit-of-work-dependency.md`:
+
+| (deferred) U7 | u7-grpo | library | M | Could | (deferred) US7.1 |
+| (deferred) U8 | u8-tuning | library | M | Could | (deferred) US8.1, US8.2 |
+| (deferred) U9 | u9-ablations | library | M | Could | (deferred) US9.1 |
 
 Kinds: `library` is code with commands but no long-running server; `service` is the long-running local service and worker; `ui` is the website.
 

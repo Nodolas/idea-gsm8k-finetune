@@ -24,16 +24,9 @@ units:
   - name: u6-final-and-report
     kind: library
     depends_on: [u2-baselines, u3-sft, u4-run-service]
-  - name: u7-grpo
-    kind: library
-    depends_on: [u3-sft]
-  - name: u8-tuning
-    kind: library
-    depends_on: [u3-sft]
-  - name: u9-ablations
-    kind: library
-    depends_on: [u3-sft]
 ```
+
+Deferred (Nico, 2026-11-07): u7-grpo, u8-tuning and u9-ablations are out of the `units:` block above and not built in this build. Each depends on u3-sft (kind library); the graph and table below still show them for when they come back.
 
 ```mermaid
 graph TD
