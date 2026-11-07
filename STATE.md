@@ -7,7 +7,7 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: none
+current_task: "batch-4: u5-website, u6-final-and-report"
 slices: "4/9"
 test_command: "scripts/check.sh"
 pending_runs: "q17-base-test-1:running:172473,q17-base-harness-1:queued,q06-sft-dev-1:queued,q17-sft-dev-1:queued"
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Type /build: it picks batch-4 (u5-website, u6-final-and-report). Long run q17-base-test-1 is running (1.7B baseline, test split, about 45 min); three more queued.
+Type /build: it goes on with batch-4. Long run q17-base-test-1 is running (1.7B baseline, test split, about 45 min); three more queued.
 
 ## DO NOT
 - Do not resume AI-DLC. It stopped after Delivery Planning; its u1 Construction files (functional-design, nfr-requirements, nfr-design under the intent's `construction/`) are bookkeeping, committed in the spec commit. Nico's answers there are decided and feed the builders.
@@ -43,7 +43,7 @@ None.
 - The batch-1 reviewer saved check output to `/tmp/claude-review-check.log`, outside the project (test output only); left as is.
 
 ## Done this run
-- 2026-11-07 batch-3 done: u4-run-service (run list and status, finalists, run queue with a separate `gsm8k worker`, check/confirm launch, stop, FastAPI service on 127.0.0.1 with the C6 API and C7 events), 3 parallel parts; 297 tests green, coverage 83%, trace PASS; review PASS first round. Spec changes (class change): C6 error codes `confirmation_required` and `internal`; Nico ruled test_AC3_2_5_shell_characters_reach_the_run_as_one_argument wrong (setup only).
+- 2026-11-07 batch-3 done: u4-run-service (run list and status, finalists, run queue with a separate `gsm8k worker`, check/confirm launch, stop, FastAPI service on 127.0.0.1 with the C6 API and C7 events), 3 parallel parts; 297 tests green, coverage 83%, trace PASS; review PASS first round. Check questions (AC6.3.1): (1) Why does the worker remove a queue entry only once the launched run holds the GPU lock, not when it starts the process? (2) Why is a run launched as an argument list in its own session rather than as a shell command? Answers: none yet. Spec changes (class change): C6 error codes `confirmation_required` and `internal`; Nico ruled test_AC3_2_5_shell_characters_reach_the_run_as_one_argument wrong (setup only).
 - 2026-11-07 long run q17-base-dev-1 done: Qwen3-1.7B-Base dev accuracy 0.7903 (496 problems), 17.6 min. Long run q17-base-test-1 started detached (pid 172473).
 - 2026-11-07 long run q06-base-test-1 done: Qwen3-0.6B-Base test accuracy 0.4966 (1,319 problems), 22.3 min, peak 2.27 GB; 10 points below its dev score (0.5968): dev comes from GSM8K train, a contamination hint for results.md (brief Risk 1). Row in results/runs.csv, committed on main after batch-3.
 - 2026-11-06 long run q06-base-dev-1 done: Qwen3-0.6B-Base dev accuracy 0.5968 (496 problems), 7.0 min, 0.83 s per problem, peak 2.28 GB (row committed).
