@@ -410,10 +410,10 @@ As Nico, I want the baseline and my final model scored on GSM-Plus and GSM-Symbo
 
 - **AC5.1.1** Given GSM-Plus testmini and GSM-Symbolic p1 with a limit of 5 problems each, when they are evaluated, then each is loaded, prompted and scored with the same protocol as GSM8K and writes one row with data `gsmplus-testmini` or `gsmsym-p1` (contract C1) to the results file.
 - **AC5.1.2** Given any training or tuning data build, when it is checked, then it is refused if it would include a GSM-Plus or GSM-Symbolic problem.
-- **AC5.1.3** Given the baseline `Qwen/Qwen3-1.7B-Base`, when it is scored on GSM-Plus testmini, then the result is recorded with no pass or fail mark. [manual] Verify: results/runs.csv row q17-base-gsmplus
-- **AC5.1.4** Given the baseline `Qwen/Qwen3-1.7B-Base`, when it is scored on GSM-Symbolic p1, then the result is recorded with no pass or fail mark. [manual] Verify: results/runs.csv row q17-base-gsmsym
-- **AC5.1.5** Given the best tuned checkpoint, when it is scored on GSM-Plus testmini, then the result is recorded with no pass or fail mark. [manual] Verify: results/runs.csv row q17-best-gsmplus
-- **AC5.1.6** Given the best tuned checkpoint, when it is scored on GSM-Symbolic p1, then the result is recorded with no pass or fail mark. [manual] Verify: results/runs.csv row q17-best-gsmsym
+- ~~**AC5.1.3** Given the baseline `Qwen/Qwen3-1.7B-Base`, when it is scored on GSM-Plus testmini, then the result is recorded with no pass or fail mark. [manual] Verify: results/runs.csv row q17-base-gsmplus~~ Deferred (Nico, 2026-11-07): run later from the website, outside this build.
+- ~~**AC5.1.4** Given the baseline `Qwen/Qwen3-1.7B-Base`, when it is scored on GSM-Symbolic p1, then the result is recorded with no pass or fail mark. [manual] Verify: results/runs.csv row q17-base-gsmsym~~ Deferred (Nico, 2026-11-07): run later from the website, outside this build.
+- ~~**AC5.1.5** Given the best tuned checkpoint, when it is scored on GSM-Plus testmini, then the result is recorded with no pass or fail mark. [manual] Verify: results/runs.csv row q17-best-gsmplus~~ Deferred (Nico, 2026-11-07): run later from the website, outside this build.
+- ~~**AC5.1.6** Given the best tuned checkpoint, when it is scored on GSM-Symbolic p1, then the result is recorded with no pass or fail mark. [manual] Verify: results/runs.csv row q17-best-gsmsym~~ Deferred (Nico, 2026-11-07): run later from the website, outside this build.
 
 ---
 
@@ -429,8 +429,8 @@ As Nico, I want my best tuned checkpoint scored once on the full test split and 
 - **INVEST:** independent once a finalist exists; the long runs are detached runs.
 
 - **AC6.1.1** Given a finalist's adapter and a limit of 5 test problems, when the final evaluation runs, then it writes one row with method `best`, data `gsm8k-test` and the finalist's run id in the `adapter_run` field to the results file (contract C1).
-- **AC6.1.2** Given the best tuned checkpoint, when it is scored on all 1,319 test problems, then its test accuracy is higher than its own baseline's (`q17-base-test`), however small the gain. [manual] Verify: results/runs.csv row q17-best-test
-- **AC6.1.3** Given the best tuned checkpoint, when the lm-evaluation-harness cross-check runs, then the harness accuracy is recorded beside the project's own number. [manual] Verify: results/runs.csv row q17-best-harness
+- ~~**AC6.1.2** Given the best tuned checkpoint, when it is scored on all 1,319 test problems, then its test accuracy is higher than its own baseline's (`q17-base-test`), however small the gain. [manual] Verify: results/runs.csv row q17-best-test~~ Deferred (Nico, 2026-11-07): run later from the website, outside this build.
+- ~~**AC6.1.3** Given the best tuned checkpoint, when the lm-evaluation-harness cross-check runs, then the harness accuracy is recorded beside the project's own number. [manual] Verify: results/runs.csv row q17-best-harness~~ Deferred (Nico, 2026-11-07): run later from the website, outside this build.
 
 ### US6.2 Write results.md
 
