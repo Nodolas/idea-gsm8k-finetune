@@ -24,7 +24,7 @@ Q4 fixed the allowed range and default of every dial (FR2.1, FR2.2). The first u
 | LoRA alpha | 1 to 128 (whole number) | 32 |
 | max sequence length | 256 to 1024 tokens (whole number) | 512 |
 | training examples | 50 to the size of the training split (6,973), or `all` | `all` |
-| batch size | 1 to 16 (whole number) | 4 |
+| batch size | 1 to 16 (whole number) | 4 (use 2 or less with `Qwen/Qwen3-1.7B-Base` on this 8 GB GPU) |
 | warmup ratio | 0 to 0.2 | 0.03 |
 | random seed | 0 to 2³¹−1 (whole number) | 42 |
 | answer format | `step-by-step` or `terse` | `step-by-step` |
@@ -182,7 +182,7 @@ As Nico, I want to run the default fine-tune on both models and see their dev sc
 
 - **AC2.4.1** Given any training or evaluation run, when it ends, then its peak GPU memory in gigabytes is saved in `outputs/<run_id>/`.
 - **AC2.4.2** Given the default dials on `Qwen/Qwen3-0.6B-Base`, when the fine-tune runs, then it finishes within 3 hours without running out of GPU memory and records its dev accuracy. [manual] Verify: results/runs.csv row q06-sft-dev
-- **AC2.4.3** Given the default dials with `Qwen/Qwen3-1.7B-Base`, when the fine-tune runs, then it finishes within 3 hours without running out of GPU memory and records its dev accuracy. [manual] Verify: results/runs.csv row q17-sft-dev
+- **AC2.4.3** Given the default dials with `Qwen/Qwen3-1.7B-Base` and batch size 2 (changed 2026-11-07: batch size 4 ran out of memory on this 8 GB GPU), when the fine-tune runs, then it finishes within 3 hours without running out of GPU memory and records its dev accuracy. [manual] Verify: results/runs.csv row q17-sft-dev
 
 ### US2.5 Keep only the weights that matter
 
