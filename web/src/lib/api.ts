@@ -96,7 +96,7 @@ export interface MetricsPage {
   next: number;
 }
 
-export type ServiceState = "IDLE" | "RUNNING" | "STOPPED" | "FAILED";
+export type ServiceState = "IDLE" | "RUNNING" | "STOPPED" | "FAILED" | "FINISHED";
 
 /** C6 Status: the active run, or the last one with its reason and log tail. */
 export interface Status {

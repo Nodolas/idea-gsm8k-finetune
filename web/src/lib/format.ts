@@ -8,11 +8,11 @@ export function formatPct(value: number | null | undefined): string {
   return `${(value * 100).toFixed(1)}%`;
 }
 
-/** 0.094 -> "+9.4 pts"; -0.02 -> "−2.0 pts" (U+2212); 0 -> "0.0 pts"; null -> "—". */
+/** 0.094 -> "+9.4 pts"; -0.02 -> "−2.0 pts" (U+2212); 0 -> "±0.0 pts"; null -> "—". */
 export function formatGain(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return "—";
   const points = Math.round(Math.abs(value) * 1000) / 10;
-  if (points === 0) return "0.0 pts";
+  if (points === 0) return "±0.0 pts"; // AC4.3.2: every gain carries a sign
   return `${value > 0 ? "+" : MINUS}${points.toFixed(1)} pts`;
 }
 
