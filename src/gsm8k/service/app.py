@@ -45,6 +45,7 @@ SECOND_CONFIRMATION_NEEDED = "A test-split evaluation needs a second confirmatio
 CHECK_EXPIRED = "This check expired; check the run again"
 
 _FIELD_NAMES = tuple(f.name for f in dataclasses.fields(run_config.RunConfig))
+_DEFAULTS = {f.name: f.default for f in dataclasses.fields(run_config.RunConfig)}
 _UNKNOWN_FIELD = re.compile(r"Unknown configuration field: ([A-Za-z0-9_]+)")
 _EVENT_ID = re.compile(r"^(.+):([0-9]+)$")
 
@@ -195,6 +196,88 @@ def _sse(event: str | None = None, data: Any = None, event_id: str | None = None
         parts.append(f"id: {event_id}")
     parts.append("data: " + json.dumps(data, separators=(",", ":")))
     return "\n".join(parts) + "\n\n"
+
+
+# --- the Training Dials (C6 GET /dials, stories.md Training Dials) -------------------------------------
+#
+# Bounds as run_config.validate checks them; the defaults are the RunConfig defaults, so a run started
+# with untouched dials hashes the same as one started with no dials.
+
+
+def _dial(
+    name: str,
+    label: str,
+    kind: str,
+    help_text: str,
+    *,
+    options: list | None = None,
+    low: float | None = None,
+    high: float | None = None,
+    allow_all: bool = False,
+) -> dict:
+    return {
+        "name": name,
+        "label": label,
+        "kind": kind,
+        "options": options,
+        "min": low,
+        "max": high,
+        "allow_all": allow_all,
+        "default": _DEFAULTS[name],
+        "help": help_text,
+    }
+
+
+def _or_list(values: tuple) -> str:
+    """``"a, b or c"``."""
+    items = [str(value) for value in values]
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " or " + items[-1]
+
+
+def dial_specs() -> list[dict]:
+    """The eleven Training Dials in stories.md order, each a C6 DialSpec."""
+    max_seed = run_config.MAX_SEED
+    train_size = run_config.TRAIN_SPLIT_SIZE
+    return [
+        _dial("model", "Model", "select", _or_list(run_config.MODELS), options=list(run_config.MODELS)),
+        _dial("learning_rate", "Learning rate", "number", "1e-5 to 5e-4", low=1e-5, high=5e-4),
+        _dial("epochs", "Epochs", "integer", "1 to 3 (whole number)", low=1, high=3),
+        _dial(
+            "lora_rank",
+            "LoRA rank",
+            "select",
+            _or_list(run_config.LORA_RANKS),
+            options=list(run_config.LORA_RANKS),
+        ),
+        _dial("lora_alpha", "LoRA alpha", "integer", "1 to 128 (whole number)", low=1, high=128),
+        _dial(
+            "max_seq_len",
+            "Max sequence length",
+            "integer",
+            "256 to 1024 tokens (whole number)",
+            low=256,
+            high=1024,
+        ),
+        _dial(
+            "train_examples",
+            "Training examples",
+            "integer",
+            f"50 to {train_size}, or all",
+            low=50,
+            high=train_size,
+            allow_all=True,
+        ),
+        _dial("batch_size", "Batch size", "integer", "1 to 16 (whole number)", low=1, high=16),
+        _dial("warmup_ratio", "Warmup ratio", "number", "0 to 0.2", low=0.0, high=0.2),
+        _dial("seed", "Random seed", "integer", f"0 to {max_seed} (whole number)", low=0, high=max_seed),
+        _dial(
+            "answer_format",
+            "Answer format",
+            "select",
+            _or_list(run_config.ANSWER_FORMATS),
+            options=list(run_config.ANSWER_FORMATS),
+        ),
+    ]
 
 
 # --- the application -----------------------------------------------------------------------------------
@@ -457,6 +540,12 @@ def create_app(
         except OSError as exc:
             raise ServiceError(500, "internal", f"Metrics could not be read: {path}", file=str(path)) from exc
         return {"lines": lines, "next": next_line}
+
+    # --- dials ---
+
+    @app.get(f"{API_PREFIX}/dials")
+    def get_dials() -> dict:
+        return {"dials": dial_specs()}
 
     # --- status and stop ---
 
