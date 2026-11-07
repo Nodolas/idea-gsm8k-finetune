@@ -9465,3 +9465,1315 @@
 **Agent ID**: a7c627e553da84e2e
 
 ---
+
+## Human Turn
+**Timestamp**: 2026-11-07T06:53:49Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 1bb1a47b
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T06:53:50Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: Plan
+**Agent ID**: af8831b3a62a9a2c4
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:01:12Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: ec03d63e
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:01:12Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: ad8893d74a0b0a5e2
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:01:42Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 310a4a30
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:01:42Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: a37a1f69b61c7f293
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:02:04Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 3d6bced9
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:02:04Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: a4dc024547cc00562
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:02:58Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 11ea3d70
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:02:59Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: a14279a36ca93854c
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:06:06Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 95ed60c8
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:06:07Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: af188a2d80bed2078
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:08:49Z
+**Event**: SENSOR_FIRED
+**Fire id**: 8a8a23c0
+**Sensor ID**: linter
+**Stage slug**: functional-design
+**Output path**: web/src/lib/api.ts
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:08:50Z
+**Event**: SENSOR_PASSED
+**Fire id**: 8a8a23c0
+**Sensor ID**: linter
+**Stage slug**: functional-design
+**Output path**: web/src/lib/api.ts
+**Duration ms**: 553
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:08:51Z
+**Event**: SENSOR_FIRED
+**Fire id**: 79dfb088
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/lib/api.ts
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:08:51Z
+**Event**: SENSOR_PASSED
+**Fire id**: 79dfb088
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/lib/api.ts
+**Duration ms**: 524
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:09:33Z
+**Event**: SENSOR_FIRED
+**Fire id**: 00bb5439
+**Sensor ID**: linter
+**Stage slug**: functional-design
+**Output path**: web/src/lib/queries.ts
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:09:33Z
+**Event**: SENSOR_PASSED
+**Fire id**: 00bb5439
+**Sensor ID**: linter
+**Stage slug**: functional-design
+**Output path**: web/src/lib/queries.ts
+**Duration ms**: 393
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:09:34Z
+**Event**: SENSOR_FIRED
+**Fire id**: 126045a8
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/lib/queries.ts
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:09:34Z
+**Event**: SENSOR_PASSED
+**Fire id**: 126045a8
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/lib/queries.ts
+**Duration ms**: 430
+**Note**: tool-unavailable
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:10:25Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: e5737aa4
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:10:25Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: a33474110795e4375
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:10:59Z
+**Event**: SENSOR_FIRED
+**Fire id**: 18709c65
+**Sensor ID**: linter
+**Stage slug**: functional-design
+**Output path**: web/src/test/setup.ts
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:10:59Z
+**Event**: SENSOR_PASSED
+**Fire id**: 18709c65
+**Sensor ID**: linter
+**Stage slug**: functional-design
+**Output path**: web/src/test/setup.ts
+**Duration ms**: 403
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:10:59Z
+**Event**: SENSOR_FIRED
+**Fire id**: 6d4a2aa9
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/test/setup.ts
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:11:00Z
+**Event**: SENSOR_PASSED
+**Fire id**: 6d4a2aa9
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/test/setup.ts
+**Duration ms**: 414
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:11:46Z
+**Event**: SENSOR_FIRED
+**Fire id**: ca6894a6
+**Sensor ID**: linter
+**Stage slug**: functional-design
+**Output path**: web/src/test/fake-api.ts
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:11:47Z
+**Event**: SENSOR_PASSED
+**Fire id**: ca6894a6
+**Sensor ID**: linter
+**Stage slug**: functional-design
+**Output path**: web/src/test/fake-api.ts
+**Duration ms**: 638
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:11:47Z
+**Event**: SENSOR_FIRED
+**Fire id**: 02c49d05
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/test/fake-api.ts
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:11:48Z
+**Event**: SENSOR_PASSED
+**Fire id**: 02c49d05
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/test/fake-api.ts
+**Duration ms**: 606
+**Note**: tool-unavailable
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:12:53Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 6a872f1f
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:12:54Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: ad9c34580c4b50506
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:13:10Z
+**Event**: SENSOR_FIRED
+**Fire id**: e7e795a2
+**Sensor ID**: linter
+**Stage slug**: functional-design
+**Output path**: web/vite.config.ts
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:13:10Z
+**Event**: SENSOR_PASSED
+**Fire id**: e7e795a2
+**Sensor ID**: linter
+**Stage slug**: functional-design
+**Output path**: web/vite.config.ts
+**Duration ms**: 405
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:13:11Z
+**Event**: SENSOR_FIRED
+**Fire id**: fbc76beb
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/vite.config.ts
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:13:11Z
+**Event**: SENSOR_PASSED
+**Fire id**: fbc76beb
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/vite.config.ts
+**Duration ms**: 406
+**Note**: tool-unavailable
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:14:50Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: a0a757cad49bf9b1e
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:18:07Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: c309eded
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:22:38Z
+**Event**: SENSOR_FIRED
+**Fire id**: 77978a45
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/landing.test.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:22:39Z
+**Event**: SENSOR_PASSED
+**Fire id**: 77978a45
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/landing.test.tsx
+**Duration ms**: 395
+**Note**: script-error: exit-1
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:23:14Z
+**Event**: SENSOR_FIRED
+**Fire id**: b719f87e
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/shell.test.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:23:15Z
+**Event**: SENSOR_PASSED
+**Fire id**: b719f87e
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/shell.test.tsx
+**Duration ms**: 394
+**Note**: script-error: exit-1
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:23:35Z
+**Event**: SENSOR_FIRED
+**Fire id**: 3cae91d3
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/scores.test.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:23:36Z
+**Event**: SENSOR_PASSED
+**Fire id**: 3cae91d3
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/scores.test.tsx
+**Duration ms**: 405
+**Note**: script-error: exit-1
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:23:50Z
+**Event**: SENSOR_FIRED
+**Fire id**: c2ac38d4
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/run-controls.test.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:23:51Z
+**Event**: SENSOR_PASSED
+**Fire id**: c2ac38d4
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/run-controls.test.tsx
+**Duration ms**: 405
+**Note**: script-error: exit-1
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:24:11Z
+**Event**: SENSOR_FIRED
+**Fire id**: dad4e338
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/training-live.test.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:24:11Z
+**Event**: SENSOR_PASSED
+**Fire id**: dad4e338
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/training-live.test.tsx
+**Duration ms**: 402
+**Note**: script-error: exit-1
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:24:20Z
+**Event**: SENSOR_FIRED
+**Fire id**: d7548b92
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/compare.test.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:24:21Z
+**Event**: SENSOR_PASSED
+**Fire id**: d7548b92
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/compare.test.tsx
+**Duration ms**: 437
+**Note**: script-error: exit-1
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:24:22Z
+**Event**: SENSOR_FIRED
+**Fire id**: fd111c3b
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/training-live.test.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:24:22Z
+**Event**: SENSOR_PASSED
+**Fire id**: fd111c3b
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/training-live.test.tsx
+**Duration ms**: 466
+**Note**: script-error: exit-1
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:24:59Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 2d34a9d5
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:25:00Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: a8b95020d51fc05b5
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:25:51Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: b54b8d99
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:25:52Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: a69f5a63327020996
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:26:01Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 3a43c23a
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:26:02Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: a85bfce1b8ce36585
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:26:36Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 9a5a1e9c
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:26:36Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: a78f00300df48f5df
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:29:25Z
+**Event**: SENSOR_FIRED
+**Fire id**: 5411b706
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/top-bar.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:29:25Z
+**Event**: SENSOR_PASSED
+**Fire id**: 5411b706
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/top-bar.tsx
+**Duration ms**: 392
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:29:29Z
+**Event**: SENSOR_FIRED
+**Fire id**: 825bc3f0
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/app-layout.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:29:29Z
+**Event**: SENSOR_PASSED
+**Fire id**: 825bc3f0
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/app-layout.tsx
+**Duration ms**: 400
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:29:33Z
+**Event**: SENSOR_FIRED
+**Fire id**: 38837422
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/halftone-headline.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:29:33Z
+**Event**: SENSOR_PASSED
+**Fire id**: 38837422
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/halftone-headline.tsx
+**Duration ms**: 412
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:29:50Z
+**Event**: SENSOR_FIRED
+**Fire id**: 7b5dc8f8
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/best-so-far.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:29:51Z
+**Event**: SENSOR_PASSED
+**Fire id**: 7b5dc8f8
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/best-so-far.tsx
+**Duration ms**: 411
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:29:55Z
+**Event**: SENSOR_FIRED
+**Fire id**: 597bc7b1
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/pages/landing.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:29:56Z
+**Event**: SENSOR_PASSED
+**Fire id**: 597bc7b1
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/pages/landing.tsx
+**Duration ms**: 415
+**Note**: tool-unavailable
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:30:24Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 172bac68
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:30:25Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: a0ef05780195f022b
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:31:01Z
+**Event**: SENSOR_FIRED
+**Fire id**: 4d8c348d
+**Sensor ID**: linter
+**Stage slug**: functional-design
+**Output path**: web/src/lib/ranking.ts
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:31:01Z
+**Event**: SENSOR_PASSED
+**Fire id**: 4d8c348d
+**Sensor ID**: linter
+**Stage slug**: functional-design
+**Output path**: web/src/lib/ranking.ts
+**Duration ms**: 415
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:31:01Z
+**Event**: SENSOR_FIRED
+**Fire id**: f752aa12
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/lib/ranking.ts
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:31:02Z
+**Event**: SENSOR_PASSED
+**Fire id**: f752aa12
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/lib/ranking.ts
+**Duration ms**: 401
+**Note**: tool-unavailable
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:31:04Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: f6edf192
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:31:05Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: ab3f66f5f4f740906
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:31:11Z
+**Event**: SENSOR_FIRED
+**Fire id**: 913265fb
+**Sensor ID**: linter
+**Stage slug**: functional-design
+**Output path**: web/src/lib/live-stream.ts
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:31:11Z
+**Event**: SENSOR_PASSED
+**Fire id**: 913265fb
+**Sensor ID**: linter
+**Stage slug**: functional-design
+**Output path**: web/src/lib/live-stream.ts
+**Duration ms**: 398
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:31:12Z
+**Event**: SENSOR_FIRED
+**Fire id**: cc9b3c5a
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/lib/live-stream.ts
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:31:12Z
+**Event**: SENSOR_PASSED
+**Fire id**: cc9b3c5a
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/lib/live-stream.ts
+**Duration ms**: 402
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:31:21Z
+**Event**: SENSOR_FIRED
+**Fire id**: 3c375a0f
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/dials-panel.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:31:21Z
+**Event**: SENSOR_PASSED
+**Fire id**: 3c375a0f
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/dials-panel.tsx
+**Duration ms**: 394
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:31:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: 88770d67
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/scores-table.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:31:28Z
+**Event**: SENSOR_PASSED
+**Fire id**: 88770d67
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/scores-table.tsx
+**Duration ms**: 402
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:31:51Z
+**Event**: SENSOR_FIRED
+**Fire id**: 7364f9b3
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/test-split-dialog.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:31:52Z
+**Event**: SENSOR_PASSED
+**Fire id**: 7364f9b3
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/test-split-dialog.tsx
+**Duration ms**: 409
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:31:58Z
+**Event**: SENSOR_FIRED
+**Fire id**: 74e18ea6
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/confirm-run-dialog.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:31:59Z
+**Event**: SENSOR_PASSED
+**Fire id**: 74e18ea6
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/confirm-run-dialog.tsx
+**Duration ms**: 406
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:32:05Z
+**Event**: SENSOR_FIRED
+**Fire id**: 3fdc35aa
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/hourglass-band.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:32:06Z
+**Event**: SENSOR_PASSED
+**Fire id**: 3fdc35aa
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/hourglass-band.tsx
+**Duration ms**: 400
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:32:15Z
+**Event**: SENSOR_FIRED
+**Fire id**: 345e171e
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/stop-run-dialog.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:32:15Z
+**Event**: SENSOR_PASSED
+**Fire id**: 345e171e
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/stop-run-dialog.tsx
+**Duration ms**: 404
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:32:31Z
+**Event**: SENSOR_FIRED
+**Fire id**: 117e9d80
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/queued-runs.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:32:31Z
+**Event**: SENSOR_PASSED
+**Fire id**: 117e9d80
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/queued-runs.tsx
+**Duration ms**: 407
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:32:37Z
+**Event**: SENSOR_FIRED
+**Fire id**: d83ca662
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/compare-view.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:32:37Z
+**Event**: SENSOR_PASSED
+**Fire id**: d83ca662
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/compare-view.tsx
+**Duration ms**: 404
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:32:49Z
+**Event**: SENSOR_FIRED
+**Fire id**: 3df02ed3
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/curves-panel.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:32:49Z
+**Event**: SENSOR_PASSED
+**Fire id**: 3df02ed3
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/curves-panel.tsx
+**Duration ms**: 414
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:33:04Z
+**Event**: SENSOR_FIRED
+**Fire id**: 30595fe0
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/run-controls.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:33:05Z
+**Event**: SENSOR_PASSED
+**Fire id**: 30595fe0
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/run-controls.tsx
+**Duration ms**: 406
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:33:17Z
+**Event**: SENSOR_FIRED
+**Fire id**: db971f2e
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/past-runs-list.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:33:18Z
+**Event**: SENSOR_PASSED
+**Fire id**: db971f2e
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/past-runs-list.tsx
+**Duration ms**: 408
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:33:22Z
+**Event**: SENSOR_FIRED
+**Fire id**: d03a9605
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/pages/scores.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:33:22Z
+**Event**: SENSOR_PASSED
+**Fire id**: d03a9605
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/pages/scores.tsx
+**Duration ms**: 401
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:33:31Z
+**Event**: SENSOR_FIRED
+**Fire id**: 1beda9aa
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/failure-panel.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:33:31Z
+**Event**: SENSOR_PASSED
+**Fire id**: 1beda9aa
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/failure-panel.tsx
+**Duration ms**: 412
+**Note**: tool-unavailable
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:34:35Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: dde48929
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:34:36Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: ab36bbb1206e7bbba
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-07T07:34:38Z
+**Event**: SENSOR_FIRED
+**Fire id**: 4065fac2
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/pages/training.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-07T07:34:39Z
+**Event**: SENSOR_PASSED
+**Fire id**: 4065fac2
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/pages/training.tsx
+**Duration ms**: 406
+**Note**: tool-unavailable
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:35:14Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: c3fdd22e
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:35:14Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: af4c656210c719e47
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:36:08Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 1254f9ce
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:36:08Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: ad792e5e5b34b88f9
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:37:02Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: b6a57fd9
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:37:02Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: ab36bbb1206e7bbba
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:47:40Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 0b78c32f
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:47:41Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: a14279a36ca93854c
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:48:14Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 8c86e984
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:48:15Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: reviewer
+**Agent ID**: ae6c59ca8cef1d9d8
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:49:26Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 44d9cacf
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:49:26Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: ad9c34580c4b50506
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:50:05Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 11a94142
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:50:05Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: reviewer
+**Agent ID**: a226bef46a6fc7f89
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-07T07:58:47Z
+**Event**: HUMAN_TURN
+**Session**: 4f19e9d7-b59c-5a62-80cd-4c8851a1397a
+**Origin**: person
+**Source**: typed
+**Message Id**: 4a8ef5ab
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-07T07:58:48Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: reviewer
+**Agent ID**: ae3ef61f2d6cecfcf
+
+---
