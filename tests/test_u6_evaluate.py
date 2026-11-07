@@ -598,3 +598,44 @@ def test_AC6_1_1_harness_best_non_finalist_is_refused(
     assert NOT_A_FINALIST in text
     assert harness_tiny_model == []
     _assert_nothing_written(tmp_project_dirs, run_id)
+
+
+# --- AC1.5.5 (changed 2026-11-07): the harness generates within lm-eval's own 256-token cap ----------
+
+
+def test_AC1_5_5_harness_keeps_lm_eval_generation_cap(monkeypatch, tiny_model):
+    """lm-eval's HFLM caps generation through max_length (context + 256), but a model whose
+    generation_config sets max_new_tokens (2048 for Qwen3) overrides it; run_harness must clear that
+    value before the harness runs, so lm-eval's own cap applies (inception/changes.md 2026-11-07)."""
+    import lm_eval
+    import lm_eval.models.huggingface
+
+    import gsm8k.harness
+
+    model, tokenizer = tiny_model
+    monkeypatch.setattr(model.generation_config, "max_new_tokens", 2048)
+    seen: dict = {}
+
+    class FakeHFLM:
+        def __init__(self, pretrained=None, tokenizer=None, **kwargs):
+            seen["hflm_model"] = pretrained
+            self.model = pretrained
+
+    def fake_simple_evaluate(*, model, **kwargs):
+        wrapped = getattr(model, "model", model)
+        seen["max_new_tokens"] = wrapped.generation_config.max_new_tokens
+        return {"results": {gsm8k.harness.TASK: {gsm8k.harness.RESULT_KEY: 0.5}}}
+
+    monkeypatch.setattr(lm_eval.models.huggingface, "HFLM", FakeHFLM)
+    monkeypatch.setattr(lm_eval, "simple_evaluate", fake_simple_evaluate)
+    monkeypatch.setattr(gsm8k.harness, "_task_config", lambda: {"task": gsm8k.harness.TASK})
+
+    accuracy = gsm8k.harness.run_harness(model, tokenizer, limit=1)
+
+    assert accuracy == 0.5
+    assert seen.get("hflm_model") is model, "run_harness did not hand the given model to HFLM"
+    assert "max_new_tokens" in seen, "lm_eval.simple_evaluate was not called"
+    assert seen["max_new_tokens"] is None, (
+        f"generation_config.max_new_tokens was {seen['max_new_tokens']} when the harness ran; "
+        "it must be cleared so lm-eval's 256-token cap applies"
+    )
