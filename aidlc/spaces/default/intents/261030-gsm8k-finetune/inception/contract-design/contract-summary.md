@@ -198,6 +198,7 @@ commands:
     - the worker always passes --config (written by the service before launch) and --started-by worker
     - a terminal run may omit --config and give options as flags; the command then writes config.json itself
     - --started-by defaults to terminal and is recorded only in the lock content
+    - method best (added 2026-11-07): evaluate and harness take --method base|best and --finalists <path>; best needs --adapter (or adapter_path) of a finalist run whose method makes an adapter (sft, grpo, terse, optuna); the row keeps method best with adapter_run = the adapter run id; a worker config.json with method best is used unchanged; a test-split evaluation with an adapter must be method best
 environment: the six cache variables set to absolute project paths before any other import (NFR5)
 exit_codes:
   0: finished, row written

@@ -408,7 +408,7 @@ As Nico, I want the baseline and my final model scored on GSM-Plus and GSM-Symbo
 - **Depends on:** US1.4, US6.1
 - **INVEST:** independent once the evaluation exists; the long runs are detached runs.
 
-- **AC5.1.1** Given GSM-Plus testmini and GSM-Symbolic p1 with a limit of 5 problems each, when they are evaluated, then each is loaded, prompted and scored with the same protocol as GSM8K and writes one row with data `gsmplus` or `gsmsym` to the results file.
+- **AC5.1.1** Given GSM-Plus testmini and GSM-Symbolic p1 with a limit of 5 problems each, when they are evaluated, then each is loaded, prompted and scored with the same protocol as GSM8K and writes one row with data `gsmplus-testmini` or `gsmsym-p1` (contract C1) to the results file.
 - **AC5.1.2** Given any training or tuning data build, when it is checked, then it is refused if it would include a GSM-Plus or GSM-Symbolic problem.
 - **AC5.1.3** Given the baseline `Qwen/Qwen3-1.7B-Base`, when it is scored on GSM-Plus testmini, then the result is recorded with no pass or fail mark. [manual] Verify: results/runs.csv row q17-base-gsmplus
 - **AC5.1.4** Given the baseline `Qwen/Qwen3-1.7B-Base`, when it is scored on GSM-Symbolic p1, then the result is recorded with no pass or fail mark. [manual] Verify: results/runs.csv row q17-base-gsmsym
