@@ -61,9 +61,11 @@ def load_training_data(cfg: RunConfig) -> TrainingData:
     """Load GSM8K and the fixed split; ``train_examples`` takes the first N training problems by index.
 
     The dev problems to score are limited by ``cfg.limit``. Raises ValueError if a training problem
-    were a dev or test problem (NFR8.1).
+    were a dev or test problem (NFR8.1), and ``guard.TrainingDataError`` (a ValueError) if it held
+    any other evaluation problem, such as GSM-Plus, GSM-Symbolic or text with the GSM-Symbolic
+    canary (AC5.1.2).
     """
-    from gsm8k.datasets_prompts import hub, prompt, split
+    from gsm8k.datasets_prompts import guard, hub, prompt, split
 
     problems = hub.load_gsm8k(cfg.dataset_revision)
     train_ids = [p.id for p in problems["train"]]
@@ -77,9 +79,11 @@ def load_training_data(cfg: RunConfig) -> TrainingData:
     leaked = [i for i in chosen if i in forbidden or not i.startswith(split.TRAIN_PREFIX)]
     if leaked:
         raise ValueError(f"Training data holds dev or test problems: {leaked[:3]}")
+    train = [by_id[i] for i in chosen]
+    guard.check_training_problems(train, data_split.dev_ids)
     dev = prompt.problems_to_score("dev", data_split, problems, exemplar_ids, cfg.limit)
     return TrainingData(
-        train=[by_id[i] for i in chosen],
+        train=train,
         dev=dev,
         exemplars=[by_id[i] for i in exemplar_ids],
     )

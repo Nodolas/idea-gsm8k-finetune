@@ -15,17 +15,34 @@ DATASET_ID = "openai/gsm8k"
 DATASET_CONFIG = "main"
 DATASET_REVISION = "740312add88f781978c0658806c59bc2815b9866"
 
+# Generalisation sets, evaluation only (FR5.1; brief). Pinned to the Hub heads read on 2026-11-07.
+GSMPLUS_ID = "qintongli/GSM-Plus"
+GSMPLUS_SPLIT = "testmini"
+GSMPLUS_REVISION = "3b708db57b96a16e8e3368ed2956990c0809440e"
+GSMSYM_ID = "apple/GSM-Symbolic"
+GSMSYM_CONFIG = "p1"
+GSMSYM_SPLIT = "test"
+GSMSYM_REVISION = "93b5b3758d9d9841ffe81d6cd2ae2b030685b078"
+GENERALISATION_SPLITS = ("gsmplus-testmini", "gsmsym-p1")
+
 MODEL_REVISIONS: dict[str, str] = {
     "Qwen/Qwen3-0.6B-Base": "da87bfb608c14b7cf20ba1ce41287e8de496c0cd",
     "Qwen/Qwen3-1.7B-Base": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
 }
 
 _REVISION_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+# A plain decimal number: an optional minus sign, digits and an optional decimal part. GSM-Plus rows
+# whose answer is anything else ("None", "1/4") cannot be compared under BR3.4 and are left out.
+_PLAIN_NUMBER = re.compile(r"^-?\d+(?:\.\d+)?$")
 
 
 @dataclass(frozen=True)
 class Problem:
-    """One GSM8K problem; ``gold`` is the final answer after ``####``, as written."""
+    """One problem; ``gold`` is the final answer after ``####``, as written.
+
+    GSM8K ids are ``gsm8k-<split>-<row>``; GSM-Plus ``gsmplus-testmini-<row>``; GSM-Symbolic
+    ``gsmsym-p1-<row>``.
+    """
 
     id: str
     question: str
@@ -80,6 +97,67 @@ def load_gsm8k(revision: str = DATASET_REVISION) -> dict[str, list[Problem]]:
             for i, row in enumerate(rows)
         ]
     return out
+
+
+def _load_hub_dataset(repo_id: str, config: str | None, revision: str):
+    _check_revision(repo_id, revision)
+    import datasets
+
+    name = f"{repo_id} ({config})" if config else repo_id
+    try:
+        return datasets.load_dataset(repo_id, config, revision=revision, token=False)
+    except Exception as exc:  # network, missing revision, damaged cache
+        raise RuntimeError(f"Could not load dataset {name} at {revision}: {exc}") from exc
+
+
+def _gsmplus_problems(rows) -> tuple[list[Problem], int]:
+    problems: list[Problem] = []
+    left_out = 0
+    for i, row in enumerate(rows):
+        gold = str(row["answer"]).strip()
+        if not _PLAIN_NUMBER.match(gold):
+            left_out += 1
+            continue
+        solution = (row.get("solution") or "").strip()
+        problems.append(
+            Problem(
+                id=f"gsmplus-testmini-{i}",
+                question=row["question"],
+                answer=f"{solution}\n#### {gold}" if solution else f"#### {gold}",
+                gold=gold,
+            )
+        )
+    return problems, left_out
+
+
+def _gsmsym_problems(rows) -> tuple[list[Problem], int]:
+    return [
+        Problem(
+            id=f"gsmsym-p1-{i}",
+            question=row["question"],
+            answer=row["answer"],
+            gold=gold_of(row["answer"]),
+        )
+        for i, row in enumerate(rows)
+    ], 0
+
+
+def load_generalisation(split: str) -> tuple[list[Problem], int]:
+    """Load a generalisation set (evaluation only, FR5.1) anonymously at its pinned commit.
+
+    ``split`` is ``gsmplus-testmini`` (GSM-Plus testmini) or ``gsmsym-p1`` (GSM-Symbolic p1).
+    Returns the problems in row order and the count of rows left out: GSM-Plus rows whose answer is
+    not a plain decimal number (the critical-thinking "None" rows and fractions) cannot be scored
+    (BR3.4); GSM-Symbolic is loaded whole. A failed download raises ``RuntimeError``.
+    """
+    if split == "gsmplus-testmini":
+        ds = _load_hub_dataset(GSMPLUS_ID, None, GSMPLUS_REVISION)
+        return _gsmplus_problems(ds[GSMPLUS_SPLIT])
+    if split == "gsmsym-p1":
+        ds = _load_hub_dataset(GSMSYM_ID, GSMSYM_CONFIG, GSMSYM_REVISION)
+        return _gsmsym_problems(ds[GSMSYM_SPLIT])
+    allowed = ", ".join(GENERALISATION_SPLITS)
+    raise ValueError(f"Unknown generalisation split: {split} (expected one of {allowed})")
 
 
 def load_tokenizer(model_id: str, revision: str):

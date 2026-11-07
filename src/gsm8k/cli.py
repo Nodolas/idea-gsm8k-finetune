@@ -4,6 +4,11 @@
 nothing written), evaluates, writes the run folder and one run-log row, and ends with a status file:
 0 finished, 1 failed, 130 stopped (BR5.2).
 
+It scores GSM8K dev or test, or a generalisation set (GSM-Plus testmini, GSM-Symbolic p1) with GSM8K's
+own fixed 4-shot prompt (FR5.1). Method ``best`` scores a finalist's adapter and keeps method ``best``
+on the row (BR4.7/BR4.8 as changed 2026-11-07, contract C5); an adapter on the test split is scored
+only that way.
+
 Importing ``gsm8k`` (done first by this module's package) sets the in-folder caches before torch,
 transformers or datasets load (BR1.1). The model is reached through the ``evaluation`` module
 attribute and the default results file through ``paths.DEFAULT_RESULTS``, both read at call time.
@@ -26,6 +31,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from gsm8k import evaluation, run_config
+from gsm8k.run_control import finalists
 from gsm8k.run_records import folder, lock, log, paths
 
 EXIT_FINISHED = 0
@@ -39,7 +45,13 @@ EXIT_STOPPED = 130
 ATTEMPT_ID_PATTERN = re.compile(r"(?:q06|q17)-[a-z0-9]+-[a-z0-9]+-[0-9]+")
 
 # Flags that set configuration fields; with --config they may not be given (BR4.8: used unchanged).
-_CONFIG_FLAGS = ("split", "limit", "model", "adapter", "seed", "max_new_tokens")
+# --finalists is not one: it names the finalists file to check, not a field of the run's config.json.
+_CONFIG_FLAGS = ("split", "limit", "model", "method", "adapter", "seed", "max_new_tokens")
+
+# Methods whose runs make an adapter, so whose adapter method ``best`` may score (C5, 2026-11-07).
+ADAPTER_METHODS = ("sft", "grpo", "terse", "optuna")
+# Evaluation-only sets scored with GSM8K's protocol (FR5.1); their name is also the row's data (C1).
+GENERALISATION_SPLITS = ("gsmplus-testmini", "gsmsym-p1")
 
 # Other units' commands: each module exposes ``register(subparsers)``, which adds its subcommand
 # and sets ``func`` (a callable taking the parsed arguments and returning the exit code).
@@ -93,13 +105,30 @@ def _non_negative_int(text: str) -> int:
     return value
 
 
+def add_finalists_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--finalists",
+        type=Path,
+        help="finalists file that method best checks (default results/finalists.json)",
+    )
+
+
+def finalists_path(args: argparse.Namespace) -> Path:
+    """The finalists file to check: --finalists, else the default, read at call time (C4)."""
+    given = getattr(args, "finalists", None)
+    return Path(given) if given is not None else finalists.FINALISTS_DEFAULT
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="gsm8k", description="GSM8K fine-tuning project commands.")
     sub = parser.add_subparsers(dest="command", metavar="<command>")
     ev = sub.add_parser(
         "evaluate",
         help="evaluate a model (or a model plus an adapter) on a split and log the result",
-        description="Evaluate a model on a GSM8K split and append one row to the run log.",
+        description=(
+            "Evaluate a model (or a model plus an adapter) on a GSM8K split or a generalisation set "
+            "(GSM-Plus testmini, GSM-Symbolic p1) and append one row to the run log."
+        ),
     )
     ev.add_argument("--config", type=Path, help="config.json written by the launcher (needs --run-id)")
     ev.add_argument("--run-id", help="attempt id <base id>-<n>, e.g. q06-base-dev-1")
@@ -109,10 +138,23 @@ def build_parser() -> argparse.ArgumentParser:
         help="run log to append to (default results/runs.csv); used only with --run-id",
     )
     ev.add_argument("--started-by", choices=("worker", "terminal"), default="terminal")
-    ev.add_argument("--split", choices=("dev", "test"))
+    ev.add_argument(
+        "--split",
+        choices=run_config.SPLITS,
+        help="dev (default), test, or a generalisation set: gsmplus-testmini, gsmsym-p1",
+    )
     ev.add_argument("--limit", type=_positive_int, help="score only the first N problems")
     ev.add_argument("--model", help="model id, default Qwen/Qwen3-0.6B-Base")
-    ev.add_argument("--adapter", help="adapter folder under checkpoints/")
+    ev.add_argument(
+        "--method",
+        choices=("base", "best"),
+        help=(
+            "base (default; with --adapter the row takes the adapter run's method) or best: a finalist's "
+            "adapter (needs --adapter); an adapter on the test split needs best"
+        ),
+    )
+    ev.add_argument("--adapter", help="adapter folder under checkpoints/, e.g. checkpoints/q17-sft-dev-1")
+    add_finalists_argument(ev)
     ev.add_argument("--seed", type=_non_negative_int)
     ev.add_argument("--max-new-tokens", type=_positive_int, help="generation cap per answer (default 512)")
     for name in COMMAND_MODULES:
@@ -144,6 +186,8 @@ def _config_from_flags(args: argparse.Namespace, run_id: str) -> run_config.RunC
         fields["model"] = args.model
     if args.split is not None:
         fields["split"] = args.split
+    if args.method is not None:
+        fields["method"] = args.method
     if args.limit is not None:
         fields["limit"] = args.limit
     if args.seed is not None:
@@ -163,6 +207,56 @@ def _adapter_method(adapter: Path) -> tuple[str, str]:
     except (run_config.ConfigError, ValueError, OSError) as exc:
         raise InvalidInput(f"Adapter run unknown: {adapter_run}") from exc
     return method, adapter_run
+
+
+def resolve_adapter(
+    cfg: run_config.RunConfig, config_given: Path | None, finalists_file: Path
+) -> tuple[run_config.RunConfig, Path | None, str]:
+    """BR4.6-BR4.8 as changed 2026-11-07: check the adapter and settle the run's method.
+
+    Returns the configuration (its method possibly replaced by the adapter run's, BR4.7), the resolved
+    adapter folder (None without one) and the adapter run id ("" without one). Raises InvalidInput.
+    """
+    if cfg.adapter_path is None:
+        if cfg.method == "best":
+            raise InvalidInput(
+                "Method best scores a finalist's adapter: give --adapter checkpoints/<run_id> "
+                "(or adapter_path in the configuration)"
+            )
+        return cfg, None, ""
+    try:
+        adapter = paths.resolve_adapter(cfg.adapter_path)  # BR4.6
+    except (FileNotFoundError, ValueError) as exc:
+        raise InvalidInput(str(exc)) from exc
+    adapter_run = adapter.name
+    # An adapter's test-split score is the final number: only a finalist, as method best (C2, C5).
+    # Checked before BR4.7 could relabel the run with the adapter run's own method.
+    if cfg.split == "test" and cfg.method != "best":
+        raise InvalidInput(
+            f"{finalists.NOT_A_FINALIST}: an adapter is scored on the test split only with method best "
+            f"(--method best), got method {cfg.method!r} for adapter run {adapter_run}"
+        )
+    method, adapter_run = _adapter_method(adapter)
+    if cfg.method == "best":
+        if method not in ADAPTER_METHODS:
+            raise InvalidInput(
+                f"Method best needs the adapter of an {', '.join(ADAPTER_METHODS)} run; "
+                f"adapter run {adapter_run} is {method!r}"
+            )
+        try:
+            finalists.check_test_split_allowed(adapter_run, finalists_file)
+        except ValueError as exc:
+            if str(exc) == finalists.NOT_A_FINALIST:
+                raise InvalidInput(f"{exc}: adapter run {adapter_run} is not in {finalists_file}") from exc
+            raise InvalidInput(str(exc)) from exc
+        return cfg, adapter, adapter_run
+    if method != cfg.method:
+        if config_given is not None:  # a launcher's config is used unchanged (BR4.8)
+            raise InvalidInput(
+                f"Method in {config_given} is {cfg.method!r}, but adapter run {adapter_run} is {method!r}"
+            )
+        cfg = dataclasses.replace(cfg, method=method)
+    return cfg, adapter, adapter_run
 
 
 def _prepare(args: argparse.Namespace) -> Prepared:
@@ -199,27 +293,11 @@ def _prepare(args: argparse.Namespace) -> Prepared:
         paths.check_run_id(run_id)
     except ValueError as exc:
         raise InvalidInput(str(exc)) from exc
-    if cfg.split not in ("dev", "test"):
-        raise InvalidInput(f"split must be one of dev, test for gsm8k evaluate, got {cfg.split!r}")
     try:
         run_config.validate(cfg)
     except run_config.ConfigError as exc:
         raise InvalidInput(str(exc)) from exc
-
-    adapter: Path | None = None
-    adapter_run = ""
-    if cfg.adapter_path is not None:
-        try:
-            adapter = paths.resolve_adapter(cfg.adapter_path)
-        except (FileNotFoundError, ValueError) as exc:
-            raise InvalidInput(str(exc)) from exc
-        method, adapter_run = _adapter_method(adapter)
-        if method != cfg.method:
-            if config_given is not None:  # a launcher's config is used unchanged (BR4.8)
-                raise InvalidInput(
-                    f"Method in {config_given} is {cfg.method!r}, but adapter run {adapter_run} is {method!r}"
-                )
-            cfg = dataclasses.replace(cfg, method=method)
+    cfg, adapter, adapter_run = resolve_adapter(cfg, config_given, finalists_path(args))
 
     results: Path | None = None
     if args.run_id is not None:
@@ -317,7 +395,18 @@ def _run(prep: Prepared) -> int:
         exemplar_ids = prompt.choose_exemplars(data_split.dev_ids, cfg.split_seed)
         by_id = {p.id: p for p in problems["train"]}
         exemplars = [by_id[i] for i in exemplar_ids]
-        to_score = prompt.problems_to_score(cfg.split, data_split, problems, exemplar_ids, cfg.limit)
+        if cfg.split in GENERALISATION_SPLITS:
+            # GSM8K's own four exemplars and prompt on the generalisation set's problems (FR5.1).
+            general, left_out = hub.load_generalisation(cfg.split)
+            to_score = general[: cfg.limit] if cfg.limit is not None else general
+            print(
+                f"{cfg.split}: {len(general)} problems with a numeric answer, {left_out} left out "
+                f"(answer not a plain number); scoring {len(to_score)}"
+            )
+            data = cfg.split
+        else:
+            to_score = prompt.problems_to_score(cfg.split, data_split, problems, exemplar_ids, cfg.limit)
+            data = f"gsm8k-{cfg.split}"
 
         model, tokenizer = evaluation.load_model(cfg.model, cfg.model_revision, prep.adapter)
         import torch
@@ -355,7 +444,7 @@ def _run(prep: Prepared) -> int:
                 run_id=prep.run_id,
                 model=cfg.model,
                 method=cfg.method,
-                data=f"gsm8k-{cfg.split}",
+                data=data,
                 metric="accuracy",
                 value=result.accuracy,
                 minutes=minutes,

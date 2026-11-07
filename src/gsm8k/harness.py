@@ -1,8 +1,11 @@
-"""Evaluation: ``gsm8k harness``, the lm-evaluation-harness cross-check of a base model (US1.5, AC1.5.5).
+"""Evaluation: ``gsm8k harness``, the lm-evaluation-harness cross-check (US1.5, AC1.5.5; AC6.1.3).
 
 The harness's own ``gsm8k`` task (5-shot, flexible-extract filter, test split) runs on the model object
-loaded by the project, and the accuracy goes into one run-log row with method ``base``, data
-``gsm8k-test-harness`` and metric ``harness_flexible_accuracy`` (C1). The run follows ``gsm8k evaluate``
+loaded by the project, and the accuracy goes into one run-log row with data ``gsm8k-test-harness`` and
+metric ``harness_flexible_accuracy`` (C1). The model is the base model (method ``base``) or the base
+model plus a finalist's adapter (method ``best``, ``--adapter``, ``adapter_run`` on the row; BR4.7/BR4.8
+as changed 2026-11-07, C5): the harness scores the test split, so an adapter needs method ``best`` and a
+finalist, checked as ``gsm8k evaluate`` checks it. The run follows ``gsm8k evaluate``
 (W4, C5): checks (exit 2, nothing written), the GPU lock (exit 3, nothing written), ``config.json``,
 the harness, ``timings.json``, the row, then ``status.json`` (0 finished, 1 failed, 130 stopped).
 
@@ -88,13 +91,21 @@ def run_harness(model: Any, tokenizer: Any, *, limit: int | None, batch_size: in
 def register(subparsers: Any) -> None:
     parser = subparsers.add_parser(
         "harness",
-        help="cross-check a base model with the lm-evaluation-harness gsm8k task and log the result",
+        help="cross-check a model (or a finalist's adapter) with the lm-evaluation-harness gsm8k task",
         description=(
-            "Score a base model with the lm-evaluation-harness gsm8k task (5-shot, flexible extract, "
-            "test split) and append one row to the run log, as a cross-check only."
+            "Score a base model, or with --method best --adapter a finalist's adapter, with the "
+            "lm-evaluation-harness gsm8k task (5-shot, flexible extract, test split) and append one row "
+            "to the run log, as a cross-check only."
         ),
     )
     parser.add_argument("--model", default=DEFAULT_MODEL, help=f"model id, default {DEFAULT_MODEL}")
+    parser.add_argument(
+        "--method",
+        choices=("base", "best"),
+        help="base (default, the base model) or best: a finalist's adapter (needs --adapter)",
+    )
+    parser.add_argument("--adapter", help="finalist's adapter folder, e.g. checkpoints/q17-sft-dev-1")
+    cli.add_finalists_argument(parser)
     parser.add_argument("--run-id", help="attempt id <base id>-<n>, e.g. q17-base-harness-1")
     parser.add_argument(
         "--results",
@@ -122,14 +133,16 @@ def _prepare(args: argparse.Namespace) -> cli.Prepared:
         cfg = run_config.RunConfig(
             run_id=run_id,
             model=args.model,
-            method="base",
+            method=args.method if args.method is not None else "base",
             split="test",
+            adapter_path=args.adapter,
             limit=args.limit,
             evaluator=EVALUATOR,
         )
         run_config.validate(cfg)
     except (TypeError, run_config.ConfigError) as exc:
         raise cli.InvalidInput(str(exc)) from exc
+    cfg, adapter, adapter_run = cli.resolve_adapter(cfg, None, cli.finalists_path(args))
 
     results: Path | None = None
     if args.run_id is not None:
@@ -147,8 +160,8 @@ def _prepare(args: argparse.Namespace) -> cli.Prepared:
         run_id=run_id,
         run_dir=rdir,
         results=results,
-        adapter=None,
-        adapter_run="",
+        adapter=adapter,
+        adapter_run=adapter_run,
         config_hash=run_config.config_hash(cfg),
         config_given=None,
     )
@@ -178,7 +191,7 @@ def _run(prep: cli.Prepared) -> int:
     previous = cli._install_sigterm()
     try:
         folder.write_config(prep.run_dir, cfg)
-        model, tokenizer = load_model(cfg.model, cfg.model_revision, None)
+        model, tokenizer = load_model(cfg.model, cfg.model_revision, prep.adapter)
         import torch
 
         torch.manual_seed(cfg.seed)
@@ -213,7 +226,7 @@ def _run(prep: cli.Prepared) -> int:
                 value=accuracy,
                 minutes=minutes,
                 config_hash=prep.config_hash,
-                adapter_run="",
+                adapter_run=prep.adapter_run,
             ),
         )
         print(f"results: {results}")
