@@ -38,7 +38,7 @@ export const DIAL_INFO: Record<string, DialInfo> = {
       },
       {
         label: "Evaluate on dev",
-        text: "Never changes the model. Only the model and the random seed matter; the other settings are ignored.",
+        text: "Never changes the model. Only the model is used for the score (the seed is just recorded with the run); the other settings are ignored.",
       },
     ],
     tip: "Run Evaluate on dev once per model first: a fine-tune only means something against its own baseline.",
@@ -46,7 +46,7 @@ export const DIAL_INFO: Record<string, DialInfo> = {
   model: {
     what:
       "The pretrained model that is fine-tuned or scored. Both are Qwen3 base models: they have " +
-      "never been taught to chat or to follow instructions.",
+      "not been through instruction or chat tuning.",
     effects: [
       {
         label: "Qwen3-0.6B-Base",
@@ -57,7 +57,7 @@ export const DIAL_INFO: Record<string, DialInfo> = {
         text: "1.7 billion weights. Starts much stronger (about 79% on dev here), but each step is slower and needs more GPU memory.",
       },
     ],
-    tip: "On this 8 GB GPU use batch size 2 or less with the 1.7B model, or the run can end with GPU out of memory.",
+    tip: "On this 8 GB GPU the 1.7B model ran out of memory at batch size 4 and fit at batch size 2 (peak 5.0 GB), so start there.",
   },
   learning_rate: {
     what:
@@ -141,7 +141,7 @@ export const DIAL_INFO: Record<string, DialInfo> = {
       ),
       lower("Less memory, but more and noisier steps, so the run takes longer."),
     ],
-    tip: "The 1.7B model needs 2 or less on this 8 GB GPU. Steps in a run = examples × epochs ÷ batch size.",
+    tip: "On this 8 GB GPU the 1.7B model ran out of memory at batch size 4 and fit at 2. Steps in a run = (examples ÷ batch size, rounded up) × epochs.",
   },
   warmup_ratio: {
     what:
@@ -193,7 +193,7 @@ export const GPU_NOTES: ReadonlyArray<{ name: string; why: string }> = [
   },
   {
     name: "Fused AdamW optimiser",
-    why: "The AdamW weight update runs as one fused CUDA kernel over all weights instead of many small ones, which cuts the time of each step.",
+    why: "The AdamW update of the adapter weights runs in a few fused GPU kernels instead of many small ones, which cuts the time of each step.",
   },
   {
     name: "Gradient checkpointing",

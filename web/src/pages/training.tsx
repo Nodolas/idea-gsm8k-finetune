@@ -1,15 +1,19 @@
 /**
  * The training page (refined mockups, Screen 3; US4.5, US3.5): the hourglass band, the curves
- * panel, W4's run controls, and past runs. It opens the C7 stream once (`useLiveStream`), holds
- * the status, the queue and every line per run, and reads data only through `useApi()` (ADR-008).
+ * panel with the live numbers under it, W4's run controls with the GPU panel under them, the
+ * recent steps, and past runs. It opens the C7 stream once (`useLiveStream`), holds the status,
+ * the queue and every line per run, and reads data only through `useApi()` (ADR-008).
  */
 import { useEffect, useState, type ReactNode } from "react";
 
 import { CurvesPanel } from "@/components/curves-panel";
 import { FailurePanel } from "@/components/failure-panel";
 import { FinetuneView } from "@/components/finetune-view";
+import { GpuPanel } from "@/components/gpu-panel";
 import { HourglassBand, type BandStatus } from "@/components/hourglass-band";
+import { LiveNumbers } from "@/components/live-numbers";
 import { PastRunsList, statusWord } from "@/components/past-runs-list";
+import { RecentSteps } from "@/components/recent-steps";
 import { RunControls } from "@/components/run-controls";
 import { toApiError, type MetricsLine, type Run, type Status } from "@/lib/api";
 import { useApi } from "@/lib/api-context";
@@ -185,6 +189,8 @@ export function TrainingPage() {
     setChanges((n) => n + 1);
   };
 
+  // The lines the panels show: the opened run's, else the live run's.
+  let viewedLines: readonly MetricsLine[] = lines;
   let curves: ReactNode;
   if (viewing !== null) {
     const pastLines = viewingLive
@@ -192,6 +198,7 @@ export function TrainingPage() {
       : past.state === "ready" && past.data
         ? past.data.lines
         : NO_LINES;
+    viewedLines = pastLines;
     curves = (
       <CurvesPanel
         mode="past"
@@ -259,9 +266,24 @@ export function TrainingPage() {
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]">
-        {curves}
-        <RunControls status={status} queue={live.queue} onChanged={onChanged} />
+        <div className="flex min-w-0 flex-col gap-6">
+          {curves}
+          {viewedLines.length > 0 ? (
+            <LiveNumbers
+              lines={viewedLines}
+              asOf={
+                phase === "running" && (viewing === null || viewingLive) ? live.lastUpdate : null
+              }
+            />
+          ) : null}
+        </div>
+        <div className="flex min-w-0 flex-col gap-6">
+          <RunControls status={status} queue={live.queue} onChanged={onChanged} />
+          <GpuPanel />
+        </div>
       </div>
+
+      {viewedLines.length > 0 ? <RecentSteps lines={viewedLines} /> : null}
 
       <PastRunsList runs={runs} error={list.error} onOpen={setViewing} />
     </div>
