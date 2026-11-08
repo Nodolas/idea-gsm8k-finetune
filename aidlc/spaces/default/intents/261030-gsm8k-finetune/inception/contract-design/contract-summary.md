@@ -15,6 +15,7 @@ Nothing is exposed outside this PC: the service binds to 127.0.0.1 and there is 
 | C5 | u1-eval-skeleton (`evaluate`), u3-sft (`train`) | u4-run-service (worker) | Process launch: `gsm8k` commands, arguments and exit codes | u1-eval-skeleton |
 | C6 | u4-run-service, extended by u10-self-taught-cot (`/reasoning`) and u5-website (`/gpu`) | u5-website, u10-self-taught-cot | HTTP JSON on 127.0.0.1, `/api/v1` | u4-run-service |
 | C7 | u4-run-service | u5-website | Server-Sent Events on 127.0.0.1 | u4-run-service |
+| C8 | u11-finetune-lab | u11-finetune-lab (service routes, Lab page) | Shared files `outputs/lab/`, the `gsm8k lab` command, and the `/api/v1/lab` endpoints of the service (added 2026-11-08) | u11-finetune-lab |
 
 ## Common Rules
 
@@ -501,7 +502,7 @@ components:
       type: object
       required: [error, message]
       properties:
-        error: { type: string, enum: [invalid_dial, queue_full, not_finalist, no_active_run, not_found, run_log_unreadable, finalists_unreadable, check_expired, confirmation_required, internal] }
+        error: { type: string, enum: [invalid_dial, queue_full, not_finalist, no_active_run, not_found, run_log_unreadable, finalists_unreadable, check_expired, confirmation_required, internal, lab_busy, no_lab_run] }   # lab_busy, no_lab_run added 2026-11-08 (C8)
         message: { type: string }
         field: { type: string }
         file: { type: string }
@@ -555,6 +556,115 @@ Stream rules:
 - The server sends `retry: 3000`, so the browser reconnects after 3 seconds.
 - On reconnect the browser sends `Last-Event-ID`, and the server resends the lines after it, so nothing is lost.
 - A comment line every 15 seconds keeps the connection alive. When the browser's EventSource reports an error (the connection dropped; the browser never shows the keep-alive comments to the page) the page shows "Live updates paused, reconnecting" with the time of the last update, and clears it on reconnect or the next event (AC4.5.3; changed 2026-11-07).
+
+## C8 Fine-Tuning Lab (`outputs/lab/`, `gsm8k lab`, `/api/v1/lab`)
+
+Added 2026-11-08 (FR11, US11.1–US11.4). The lab is separate from the run records: it never writes C1, C2, C3 or C4 files, and its runs are not project results. Python package `gsm8k.lab` (lessons and configuration, the training loop, the runner); command module `gsm8k.lab_cmd`; service routes in `gsm8k.service.lab_routes`. `gsm8k/lab/__init__.py`, `lessons`, `config` and `gsm8k.lab_cmd` import no torch, transformers or peft at module level and change no environment variable on import: `gsm8k` imports every command module when it builds its parser, so GPU `train` and `evaluate` processes import `lab_cmd` too, and the service imports `lessons` and `config` (ADR-006).
+
+**Lessons (Python).** `gsm8k.lab.lessons.LESSONS: tuple[Lesson, ...]` in the order of the Lab Lessons table (stories.md). `Lesson` fields: `id` (`l01`…`l12`), `number` (1…12), `title`, `question`, `watch`, `guess_prompt`, `guess_options` (3 strings), `variants` (tuple of `Variant`: `name`, `label`, `changes: dict[str, Any]`), `why`, `big_run`, `check`. `gsm8k.lab.config.LabConfig` is a frozen dataclass with the Lab Defaults fields and defaults, plus `model = "EleutherAI/pythia-31m"` and `model_revision = "e556ace21b489575e94e9d50b6dad2fcc7419679"`; `LabConfig.validate()` raises `ValueError` whose message starts with the field name; `config_for(lesson_id, variant_name) -> LabConfig`; `estimate_minutes(lesson) -> int` (AC11.1.3); `changes_text(variant) -> str` (for example "learning rate 1e-5"; "no change (the starting point)" when empty).
+
+**Files.**
+
+```text
+outputs/lab/
+  lab.lock                      # exclusive flock held for the lab run's life (as run_records/lock.py); content {"v":1,"pid":<int>,"lesson":"l02","started_at":"<ISO>"}
+  <lesson>.log                  # the command's output (appended by the service's launch)
+  <lesson>/status.json          # see below; written atomically at start, after each variant, at the end
+  <lesson>/<variant>/metrics.jsonl
+  <lesson>/<variant>/summary.json
+```
+
+`status.json`: `{"v":1, "lesson":"l02", "state":"running|finished|failed|stopped", "variant":"lr-1e-4"|null, "variants":["lr-1e-5",…] (the variants this run runs, in order), "done":["lr-1e-5"], "pid":<int>, "started_at":"<ISO>", "ended_at":"<ISO>"|null, "message":null|"<text>"}`.
+
+`metrics.jsonl` lines (one whole line per write; `dev_loss` is the token-weighted mean over the dev problems' answer tokens, whatever `loss_on` is; dev lines at step 0 and at each distinct step of {max(1, ceil(k × total_steps / 10)) : k = 1..10}): a step line `{"v":1,"step":<int ≥1>,"total_steps":<int>,"loss":<float>,"learning_rate":<float>,"grad_norm":<float|null>,"elapsed_s":<float>,"dev_loss":null}`; a dev line `{"v":1,"step":<int ≥0>,"total_steps":<int>,"loss":null,"learning_rate":null,"grad_norm":null,"elapsed_s":<float>,"dev_loss":<float>}`. Non-finite numbers are written as null.
+
+`summary.json`: `{"v":1, "lesson", "variant", "label", "config": {every LabConfig field}, "trainable_params":<int>, "total_params":<int>, "steps":<int>, "seconds":<float>, "seconds_per_step":<float>, "tokenize_seconds":<float>, "retokenize_seconds_per_step":<float|null>, "padding_fraction":<float 0..1>, "peak_memory_mb":<float>, "train_loss_first":<float|null>, "train_loss_last":<float|null>, "dev_loss_before":<float|null>, "dev_loss_after":<float|null>, "dev_loss_best":<float|null>, "dev_loss_best_step":<int|null>, "accuracy_before":<float>, "accuracy_after":<float>, "format_rate_before":<float>, "format_rate_after":<float>, "samples":[{"question","gold","before","after"}]}`. Accuracy and format rate are fractions with 4 decimals.
+
+**Command.** `gsm8k lab list` prints one line per lesson (`l01  What a fine-tune does  (1 variant, about 4 min)`), exit 0. `gsm8k lab run <lesson> [--variant <name>]... [--outputs <dir>] [--threads <n>]`: `--outputs` defaults to `outputs/` (the lab writes under `<outputs>/lab/`); `--threads` overrides the configuration's threads. Exit codes: 0 finished, 1 failed, 2 unknown lesson or variant (nothing written), 3 the lab lock's flock is held ("A lab run is already active: <lesson>", nothing written), 130 stopped by SIGTERM; checked in that order (2, then 3) before the lesson's folder is removed. The `run` handler sets `CUDA_VISIBLE_DEVICES=""` before CUDA is first used, `torch.set_num_threads(threads)` and `os.nice(10)`. Seams for tests (read at call time): `gsm8k.lab.trainer.load_lab_model(cfg) -> (model, tokenizer)` and `gsm8k.lab.trainer.load_lab_problems(cfg) -> (train, dev)` (lists of `Problem`); the tiny model fixture and fixture problems replace them.
+
+**HTTP (on the C6 service, `/api/v1`).** Errors use the C6 `Error` shape, with two more codes, `lab_busy` and `no_lab_run`.
+
+```yaml
+paths:
+  /lab:
+    get:
+      summary: The lessons and the lab model (AC11.3.1)
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/LabList' } } } }
+  /lab/{lesson}:
+    get:
+      summary: One lesson with its status, metrics lines and summaries (AC11.3.2)
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/LabLesson' } } } }
+        '404': { description: not_found }
+  /lab/{lesson}/run:
+    post:
+      summary: Start a lesson on the CPU (AC11.3.3); no body
+      responses:
+        '202': { content: { application/json: { schema: { type: object, properties: { lesson: { type: string }, state: { const: running } } } } } }
+        '404': { description: not_found }
+        '409': { description: lab_busy, message "A lab run is already active: <lesson>" }
+  /lab/stop:
+    post:
+      summary: Stop the lab run (AC11.3.4); no body
+      responses:
+        '200': { content: { application/json: { schema: { type: object, properties: { lesson: { type: string } } } } } }
+        '409': { description: no_lab_run }
+components:
+  schemas:
+    LabModel:
+      type: object
+      properties: { name: { type: string }, weights: { type: integer }, layers: { type: integer }, device: { const: cpu } }
+    LabVariant:
+      type: object
+      properties: { name: { type: string }, label: { type: string }, changes: { type: string } }
+    LabLessonInfo:
+      type: object
+      properties:
+        id: { type: string }
+        number: { type: integer }
+        title: { type: string }
+        question: { type: string }
+        watch: { type: string }
+        guess_prompt: { type: string }
+        guess_options: { type: array, items: { type: string } }
+        variants: { type: array, items: { $ref: '#/components/schemas/LabVariant' } }
+        why: { type: string }
+        big_run: { type: string }
+        check: { type: string }
+        estimate_minutes: { type: integer }
+        state: { enum: [not-run, running, finished, failed, stopped] }
+    LabList:
+      type: object
+      properties:
+        model: { $ref: '#/components/schemas/LabModel' }
+        lessons: { type: array, items: { $ref: '#/components/schemas/LabLessonInfo' } }
+        active: { type: [string, 'null'] }
+    LabStatus:
+      type: object
+      properties:
+        state: { enum: [not-run, running, finished, failed, stopped] }
+        variant: { type: [string, 'null'] }
+        done: { type: array, items: { type: string } }
+        started_at: { type: [string, 'null'] }
+        ended_at: { type: [string, 'null'] }
+        message: { type: [string, 'null'] }
+    LabVariantResult:
+      type: object
+      properties:
+        name: { type: string }
+        label: { type: string }
+        lines: { type: array, items: { type: object } }       # the C8 metrics lines, complete lines only
+        summary: { type: [object, 'null'] }                  # the C8 summary.json, null until the variant ended
+    LabLesson:
+      type: object
+      properties:
+        lesson: { $ref: '#/components/schemas/LabLessonInfo' }
+        status: { $ref: '#/components/schemas/LabStatus' }
+        results: { type: array, items: { $ref: '#/components/schemas/LabVariantResult' } }
+```
+
+`LabModel` for the default configuration: `{"name": "EleutherAI/pythia-31m", "weights": 30494720, "layers": 6, "device": "cpu"}`. A lesson's `state` is `not-run` when it has no `status.json`. `active` is the `lesson` of `lab.lock` while its flock is held (the service tries a non-blocking shared or exclusive flock and releases it at once), else the lesson the service launched while that process has not ended (`Popen.poll()` is None; polling also reaps it), else null. While `active` is a lesson, that lesson's `status.state` is answered as `running`. The launch passes the parent environment with `CUDA_VISIBLE_DEVICES=""`.
 
 ## Contract Ownership Rules
 

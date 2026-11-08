@@ -583,6 +583,7 @@ graph TD
 | Tuning | Optuna study and proposal rule checker (could-have) | RunConfiguration, Training, Evaluation, RunRecords | RunCommands | TuningTrial, RunProposal |
 | SelfTaughtCoT | Own-solution sampling and the keep rule (could-have, added 2026-11-08) | DatasetsAndPrompts, AnswerScoring, Evaluation, RunConfiguration, RunRecords | RunCommands, Training | — |
 | ReasoningReport | Base, sft and selfcot comparison for the Reasoning page (added 2026-11-08) | RunRecords | RunService | — |
+| FinetuneLab | Lab lessons, CPU training loop of the small model and the lab files of C8 (could-have, added 2026-11-08) | DatasetsAndPrompts, AnswerScoring, Evaluation | RunService (launches `gsm8k lab run` as a process) | — |
 
 ## Entity Ownership
 

@@ -1,6 +1,6 @@
 # Unit to Story Map
 
-Every story in `inception/user-stories/stories.md` (US1.1–US10.4, including US3.7 added on 2026-10-31 and US10.1–US10.4 added on 2026-11-08) assigned to the unit that implements it. Units are defined in `unit-of-work.md`, built from the blocks in `inception/domain-design/components.md` and `inception/domain-design/decisions.md`. Requirement coverage follows from `inception/requirements-analysis/requirements.md` through the stories' traceability.
+Every story in `inception/user-stories/stories.md` (US1.1–US11.4, including US3.7 added on 2026-10-31, US10.1–US10.4 and US4.7 added on 2026-11-08, and US4.8 and US11.1–US11.4 added on 2026-11-08) assigned to the unit that implements it. Units are defined in `unit-of-work.md`, built from the blocks in `inception/domain-design/components.md` and `inception/domain-design/decisions.md`. Requirement coverage follows from `inception/requirements-analysis/requirements.md` through the stories' traceability.
 
 ## Story Assignment
 
@@ -30,6 +30,7 @@ Every story in `inception/user-stories/stories.md` (US1.1–US10.4, including US
 | US4.5 | U5 | u5-website |
 | US4.6 | U5 | u5-website |
 | US4.7 | U5 | u5-website |
+| US4.8 | U5 | u5-website |
 | US5.1 | U6 | u6-final-and-report |
 | US6.1 | U6 | u6-final-and-report |
 | US6.2 | U6 | u6-final-and-report |
@@ -42,6 +43,10 @@ Every story in `inception/user-stories/stories.md` (US1.1–US10.4, including US
 | US10.2 | U10 | u10-self-taught-cot |
 | US10.3 | U10 | u10-self-taught-cot |
 | US10.4 | U10 | u10-self-taught-cot |
+| US11.1 | U11 | u11-finetune-lab |
+| US11.2 | U11 | u11-finetune-lab |
+| US11.3 | U11 | u11-finetune-lab |
+| US11.4 | U11 | u11-finetune-lab |
 
 ## Cross-Cutting Concerns
 
@@ -63,15 +68,16 @@ Within each unit, tests for every criterion come first and must fail, then the c
 - **U2:** AC1.5.5 (harness wrapper, quick test) → the `[manual]` runs AC1.5.1–AC1.5.4 and AC1.5.6.
 - **U3:** US2.1 (dials) → US2.2 (training loop) → US2.3 (estimates) → US2.5 (pruning) → US2.4 (the `[manual]` first fine-tunes).
 - **U4:** US3.1 (run list, status) → US3.3 (lock, and a run that ended without finishing) → US3.2 (two-step start) → US3.7 (queue and worker) → US3.4 (stop) → US3.5 (failure reasons) → US3.6 (finalists, test split).
-- **U5:** US4.1 (top bar, tokens) → US4.2 (landing) → US4.3 (scores) → US4.4 (compare) → US4.5 (live view) → US4.6 (dials and dialogs) → US4.7 (fine-tuning view, added 2026-11-08).
+- **U5:** US4.1 (top bar, tokens) → US4.2 (landing) → US4.3 (scores) → US4.4 (compare) → US4.5 (live view) → US4.6 (dials and dialogs) → US4.7 (fine-tuning view, added 2026-11-08) → US4.8 (token-by-token walkthrough, added 2026-11-08).
 - **U6:** US6.1 quick test (AC6.1.1) → US5.1 quick tests (AC5.1.1, AC5.1.2) → US6.2 generator (AC6.2.1–AC6.2.3) → the `[manual]` runs and AC6.2.4 → US6.3.
 - **U7:** AC7.1.1 (rewards) → AC7.1.3, AC7.1.4 → AC7.1.2 → AC7.1.5 (`[manual]`).
 - **U8:** US8.2 rule checker → US8.1 study → AC8.1.5 (`[manual]`).
 - **U9:** AC9.1.1–AC9.1.3 (transforms) → AC9.1.4–AC9.1.6 (`[manual]`).
 - **U10:** AC10.1.2 (keep rule, pure) → AC10.1.1, AC10.1.3, AC10.1.4 (generation) → US10.2 (self-taught training) → US10.3 (comparison and endpoint) → US10.4 (Reasoning page) → AC10.1.5, AC10.2.5 (`[manual]`) → AC10.4.5.
+- **U11:** US11.1 (lessons and configuration, pure) → US11.2 (lab run) → US11.3 (service routes) → US11.4 (Lab page) → AC11.2.10 (`[manual]`).
 
 ## Coverage Check
 
-- All 36 stories are assigned: U1 has 4, U2 1, U3 5, U4 7, U5 7, U6 4, U7 1, U8 2, U9 1, U10 4 (US10.1–US10.4 added 2026-11-08).
+- All 41 stories are assigned: U1 has 4, U2 1, U3 5, U4 7, U5 8, U6 4, U7 1, U8 2, U9 1, U10 4, U11 4 (US10.1–US10.4, US4.8 and US11.1–US11.4 added 2026-11-08).
 - Every unit has at least one story.
 - No story is split across units.
