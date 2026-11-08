@@ -7,3 +7,4 @@ date,run_id,model,method,data,metric,value,minutes,config_hash,adapter_run
 2026-11-07T09:26:07Z,q17-base-harness-2,Qwen/Qwen3-1.7B-Base,base,gsm8k-test-harness,harness_flexible_accuracy,0.7089,55.1,3bf6ce6d9fd0a20e96e34ca415ba6b3c6d872419899da52b9fec8b56086e05f5,
 2026-11-07T10:10:24Z,q17-sft-dev-2,Qwen/Qwen3-1.7B-Base,sft,gsm8k-dev,accuracy,0.7863,43.8,0fccd69c921ebdca2bdb5912646e2f9a663e2e42053ec561768b4b1e64923646,
 2026-11-08T17:23:37Z,q17-cotgen-train-1,Qwen/Qwen3-1.7B-Base,cotgen,gsm8k-train,kept_fraction,0.8960,92.7,5a162b0b863ea667fdba5708cb4981facf707fd4894d3f9e48c654d566630faf,
+2026-11-08T21:20:28Z,q17-selfcot-dev-2,Qwen/Qwen3-1.7B-Base,selfcot,gsm8k-dev,accuracy,0.7621,26.7,0eee6ba48d37ead2880044bdc8ef109a885fe5dd686aae59497c52d1cfeccf01,
