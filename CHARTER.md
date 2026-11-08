@@ -5,12 +5,12 @@ Every run reads this file before doing anything. The source is `CHARTER.md` in t
 ## Rules
 1. Business value is argued first: who pays, why now, what it replaces.
 2. Every project must contain a compounding data feedback loop; no loop, no approval. A loop score of 1 is a kill; 2-3 passes with a flag.
-3. Several projects can be in active build (Construction) at the same time, as in Inception or Ready to build, each in its own folder and session. They share this PC's GPU: one GPU run at a time across all projects.
+3. Several projects can be in active build (Construction) at the same time, as in Inception or Ready to build, each in its own folder and session. They share this PC's GPU: one GPU run at a time across all projects. Build runs submit long GPU runs to the factory's GPU queue, and its orchestrator (`tools/gpu-orchestrator.py`, a service installed on this PC, not a run) starts them in submit order when the GPU is free; it reads and writes only each project's `.gpu-jobs/` folder and starts runs in the project's folder.
 4. Agents never deploy to production, never spend money, never create paid accounts. No API keys, no usage credits, no paid connectors: when a usage limit is hit, the run stops and resumes later.
 5. Claude only for any LLM use inside a project.
 6. All agent-written text in English (code excepted).
 7. Personal GitHub account, private repos by default; one repo per project, no shared dependencies. A tool is vendored per repo or installed per machine, never shared between project repos.
-8. A run never works above its own project folder. Folder means the local filesystem: reading and writing the board and reading the radar through gh is allowed. Only kickoff creates the new project folder next to the control repo.
+8. A run never works above its own project folder. Folder means the local filesystem: reading and writing the board and reading the radar through gh is allowed. Only kickoff creates the new project folder next to the control repo. The factory's GPU orchestrator (rule 3) is a service, not a run: it writes only each project's `.gpu-jobs/` folder and `idea-factory/.gpu/`, and starts queued runs in their project's folder.
 9. A first deploy must be free and exists only to test interest.
 10. Every run ends by writing its state to the board, and build runs also to the project repo, so the next run can resume.
 11. (Proposed, on by default; delete to decline.) Build from the spec: every task cites requirement IDs, every test is named by its criterion ID, and when reality differs the spec changes first, with the reason.
