@@ -24,7 +24,7 @@ Owns: `src/gsm8k/training/grpo_rewards.py` (new), `src/gsm8k/training/grpo_plan.
 Tests: `tests/test_u7_grpo_rewards.py` (AC7.1.1, AC7.1.4).
 
 - `grpo_rewards.py`: `correctness_reward(completion, gold) -> float`, `format_reward(completion) -> float`, `total_reward(...)`, plus trl-shaped reward functions `(completions, gold, **kwargs) -> list[float]` built on them; uses `gsm8k.scoring` only.
-- `grpo_plan.py`: `plan_grpo_steps(model, generations, outputs=None, budget_s=3*3600) -> (steps, estimate_s, flagged)`: from saved step times (`timings.json` of earlier runs of the model, as `src/gsm8k/estimates.py` reads them; GRPO runs' own `seconds_per_step` when present, else sampling time from evaluation runs' `seconds_per_problem` × generations + update time) size the step count so the estimate fits the budget, and `check_grpo_steps(requested, ...)` flags a count whose estimate is over the budget. Pure, no torch import.
+- `grpo_plan.py`: `plan_grpo_steps(model, generations, outputs=None, budget_s=3*3600) -> GrpoPlan` (a NamedTuple `steps, estimate_s, flagged, measured`; `measured` False when no saved timings were found and the fallback was used): from saved step times (`timings.json` of earlier runs of the model, as `src/gsm8k/estimates.py` reads them; GRPO runs' own `seconds_per_step` when present, else sampling time from evaluation runs' `seconds_per_problem` × generations + update time) size the step count so the estimate fits the budget, and `check_grpo_steps(requested, ...)` flags a count whose estimate is over the budget. Pure, no torch import.
 
 ### Part G: the GRPO trainer and `gsm8k train --method grpo` (Python), u7-grpo
 
