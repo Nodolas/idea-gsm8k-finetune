@@ -220,6 +220,10 @@ interface Geometry {
   ink: string;
   orange: string;
   colorsAt: number;
+  /** The still dots (lit share, sparks, orange front), drawn once per change and blitted. */
+  still: HTMLCanvasElement | null;
+  /** What `still` was drawn for: dot counts, dim, accent, colours and pixel ratio. */
+  stillKey: string;
 }
 
 function cssToken(el: HTMLElement, name: string, fallback: string): string {
@@ -255,49 +259,17 @@ function curvePoints(width: number, height: number): Float32Array {
   return points;
 }
 
-/**
- * Draws the band. `flowAt` is the clock (performance.now()) of a flowing frame, or null when
- * nothing flows; it places the grains.
- */
-function draw(
-  canvas: HTMLCanvasElement,
-  cache: { current: Geometry | null },
-  fraction: number,
-  dim: boolean,
+/** Draws every still dot: the lit share on both halves, the sparks and the orange front. */
+function drawStill(
+  ctx: CanvasRenderingContext2D,
+  points: Float32Array,
+  remainingDots: number,
+  doneDots: number,
+  base: number,
   accent: boolean,
-  flowAt: number | null,
+  ink: string,
+  orange: string,
 ): void {
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return; // no canvas (tests): the text over the band carries every fact
-  const width = canvas.clientWidth;
-  const height = canvas.clientHeight;
-  if (width === 0 || height === 0) return;
-  const ratio = window.devicePixelRatio || 1;
-  if (canvas.width !== Math.round(width * ratio) || canvas.height !== Math.round(height * ratio)) {
-    canvas.width = Math.round(width * ratio);
-    canvas.height = Math.round(height * ratio);
-  }
-  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  ctx.clearRect(0, 0, width, height);
-
-  const now = flowAt ?? performance.now();
-  let geom = cache.current;
-  if (!geom || geom.width !== width || geom.height !== height) {
-    geom = { width, height, points: curvePoints(width, height), ink: "", orange: "", colorsAt: -1 };
-    cache.current = geom;
-  }
-  // Colours follow the theme: read on every still frame, at most once a second while flowing.
-  if (flowAt === null || geom.colorsAt < 0 || now - geom.colorsAt > COLOR_MS) {
-    geom.ink = cssToken(canvas, "--ink", getComputedStyle(canvas).color);
-    geom.orange = cssToken(canvas, "--accent-orange", geom.ink);
-    geom.colorsAt = now;
-  }
-  const { points, ink, orange } = geom;
-
-  const remainingDots = Math.round((1 - fraction) * DOTS_PER_HALF);
-  const doneDots = Math.round(fraction * DOTS_PER_HALF);
-  const base = dim ? 0.5 : 1;
-
   for (let i = 0; i < LINES; i += 1) {
     for (let half = 0; half < 2; half += 1) {
       const top = half === 0;
@@ -315,39 +287,137 @@ function draw(
       }
     }
   }
+  ctx.globalAlpha = 1;
+}
 
-  if (flowAt !== null) {
-    // Grains: a few bright dots per line slide down the top curve to the waist, then down the
-    // bottom curve away from it. One phase per line and grain, so the flow runs through the waist.
-    ctx.fillStyle = ink;
-    const last = DOTS_PER_HALF - 1;
-    const size = 2.4;
-    for (let i = 0; i < LINES; i += 1) {
-      for (let g = 0; g < GRAINS_PER_LINE; g += 1) {
-        const cycle = flowAt / GRAIN_MS + GRAIN_OFFSETS[i] + g / GRAINS_PER_LINE;
-        // 0..2: the first unit on the top curve (edge to waist), the second on the bottom one.
-        const run = (cycle % 1) * 2;
-        for (let half = 0; half < 2; half += 1) {
-          const s = half === 0 ? run : run - 1;
-          if (s < 0 || s >= 1) continue;
-          const u = half === 0 ? (1 - s) * last : s * last; // k along the curve, 0 at the waist
-          const k0 = Math.floor(u);
-          const k1 = Math.min(last, k0 + 1);
-          const f = u - k0;
-          const row = (i * 2 + half) * DOTS_PER_HALF;
-          const a = (row + k0) * 2;
-          const b = (row + k1) * 2;
-          const x = points[a] + (points[b] - points[a]) * f;
-          const y = points[a + 1] + (points[b + 1] - points[a + 1]) * f;
-          // Fade in at the top edge and out at the bottom edge.
-          const fade = half === 0 ? Math.min(1, s * 4) : Math.min(1, (1 - s) * 4);
-          ctx.globalAlpha = base * 0.95 * fade;
-          ctx.fillRect(x - size / 2, y - size / 2, size, size);
-        }
+/**
+ * Grains: a few bright dots per line slide down the top curve to the waist, then down the
+ * bottom curve away from it. One phase per line and grain, so the flow runs through the waist.
+ */
+function drawGrains(
+  ctx: CanvasRenderingContext2D,
+  points: Float32Array,
+  flowAt: number,
+  base: number,
+  ink: string,
+): void {
+  ctx.fillStyle = ink;
+  const last = DOTS_PER_HALF - 1;
+  const size = 2.4;
+  for (let i = 0; i < LINES; i += 1) {
+    for (let g = 0; g < GRAINS_PER_LINE; g += 1) {
+      const cycle = flowAt / GRAIN_MS + GRAIN_OFFSETS[i] + g / GRAINS_PER_LINE;
+      // 0..2: the first unit on the top curve (edge to waist), the second on the bottom one.
+      const run = (cycle % 1) * 2;
+      for (let half = 0; half < 2; half += 1) {
+        const s = half === 0 ? run : run - 1;
+        if (s < 0 || s >= 1) continue;
+        const u = half === 0 ? (1 - s) * last : s * last; // k along the curve, 0 at the waist
+        const k0 = Math.floor(u);
+        const k1 = Math.min(last, k0 + 1);
+        const f = u - k0;
+        const row = (i * 2 + half) * DOTS_PER_HALF;
+        const a = (row + k0) * 2;
+        const b = (row + k1) * 2;
+        const x = points[a] + (points[b] - points[a]) * f;
+        const y = points[a + 1] + (points[b + 1] - points[a + 1]) * f;
+        // Fade in at the top edge and out at the bottom edge.
+        const fade = half === 0 ? Math.min(1, s * 4) : Math.min(1, (1 - s) * 4);
+        ctx.globalAlpha = base * 0.95 * fade;
+        ctx.fillRect(x - size / 2, y - size / 2, size, size);
       }
     }
   }
   ctx.globalAlpha = 1;
+}
+
+/**
+ * Draws the band. `flowAt` is the clock (performance.now()) of a flowing frame, or null when
+ * nothing flows; it places the grains. The still dots live on an offscreen canvas that is drawn
+ * again only when the dot counts, size, colours, dim or accent change; a flowing frame blits it
+ * and draws only the grains over it.
+ */
+function draw(
+  canvas: HTMLCanvasElement,
+  cache: { current: Geometry | null },
+  fraction: number,
+  dim: boolean,
+  accent: boolean,
+  flowAt: number | null,
+): void {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return; // no canvas (tests): the text over the band carries every fact
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  if (width === 0 || height === 0) return;
+  const ratio = window.devicePixelRatio || 1;
+  const pixelW = Math.round(width * ratio);
+  const pixelH = Math.round(height * ratio);
+  if (canvas.width !== pixelW || canvas.height !== pixelH) {
+    canvas.width = pixelW;
+    canvas.height = pixelH;
+  }
+
+  const now = flowAt ?? performance.now();
+  let geom = cache.current;
+  if (!geom || geom.width !== width || geom.height !== height) {
+    geom = {
+      width,
+      height,
+      points: curvePoints(width, height),
+      ink: "",
+      orange: "",
+      colorsAt: -1,
+      still: geom?.still ?? null,
+      stillKey: "",
+    };
+    cache.current = geom;
+  }
+  // Colours follow the theme: read on every still frame, at most once a second while flowing.
+  if (flowAt === null || geom.colorsAt < 0 || now - geom.colorsAt > COLOR_MS) {
+    geom.ink = cssToken(canvas, "--ink", getComputedStyle(canvas).color);
+    geom.orange = cssToken(canvas, "--accent-orange", geom.ink);
+    geom.colorsAt = now;
+  }
+  const { points, ink, orange } = geom;
+
+  const remainingDots = Math.round((1 - fraction) * DOTS_PER_HALF);
+  const doneDots = Math.round(fraction * DOTS_PER_HALF);
+  const base = dim ? 0.5 : 1;
+
+  // The still layer, redrawn only when what it shows changes.
+  const key = `${remainingDots}:${doneDots}:${dim ? 1 : 0}:${accent ? 1 : 0}:${ink}:${orange}:${pixelW}x${pixelH}`;
+  if (geom.stillKey !== key) {
+    const still = geom.still ?? document.createElement("canvas");
+    const stillCtx = still.getContext("2d");
+    if (stillCtx) {
+      if (still.width !== pixelW || still.height !== pixelH) {
+        still.width = pixelW;
+        still.height = pixelH;
+      }
+      stillCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      stillCtx.clearRect(0, 0, width, height);
+      drawStill(stillCtx, points, remainingDots, doneDots, base, accent, ink, orange);
+      geom.still = still;
+      geom.stillKey = key;
+    } else {
+      geom.still = null;
+      geom.stillKey = "";
+    }
+  }
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, pixelW, pixelH);
+  if (geom.still && geom.stillKey === key) {
+    ctx.globalAlpha = 1;
+    ctx.drawImage(geom.still, 0, 0);
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  } else {
+    // No offscreen context: draw the still dots straight onto the band.
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    drawStill(ctx, points, remainingDots, doneDots, base, accent, ink, orange);
+  }
+  if (flowAt !== null) drawGrains(ctx, points, flowAt, base, ink);
 }
 
 function HourglassCanvas({

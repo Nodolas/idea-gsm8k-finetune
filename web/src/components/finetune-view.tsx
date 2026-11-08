@@ -307,7 +307,7 @@ function FinetuneBody({
           ) : null}
 
           {kind === "reading" ? (
-            <p data-part="reading-note">
+            <p data-part="reading-note" className="max-w-[75ch]">
               This run does not change the model.{" "}
               <span className="text-ink-muted">
                 {READING_NOTES[resolvedMethod ?? ""] ?? READING_NOTE_DEFAULT}
@@ -316,7 +316,7 @@ function FinetuneBody({
           ) : null}
 
           {settings.state === "error" && kind !== null ? (
-            <p data-part="settings-error" className="text-sm text-danger">
+            <p data-part="settings-error" className="max-w-[75ch] text-sm text-danger">
               The run's settings could not be read ({settings.error.message}); the weight counts and
               the examples per step are left out.
             </p>
@@ -402,7 +402,7 @@ function FinetuneBody({
         ) : null}
       </div>
 
-      <p data-part="note" className="text-sm text-ink-muted">
+      <p data-part="note" className="max-w-[75ch] text-sm text-ink-muted">
         <strong className="font-medium text-ink">Measured</strong> from the run: step, loss,
         gradient norm and learning rate.{" "}
         <strong className="font-medium text-ink">Drawn for illustration</strong>: the layers, the

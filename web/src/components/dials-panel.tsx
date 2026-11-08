@@ -201,7 +201,7 @@ function Explanation({ id, info }: { id: string; info: DialInfo }) {
   return (
     <div
       id={id}
-      className="grid gap-2 rounded-sm border border-hairline bg-panel p-3 text-xs text-muted-foreground"
+      className="grid max-w-[75ch] gap-2 rounded-sm border border-hairline bg-panel p-3 text-xs text-muted-foreground"
     >
       <p>{info.what}</p>
       <ul className="grid list-none gap-1">

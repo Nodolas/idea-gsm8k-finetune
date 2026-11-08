@@ -37,7 +37,7 @@ export function GpuNotes() {
       {open && (
         <ul
           id={listId}
-          className="grid w-full list-none gap-3 rounded-sm border border-hairline bg-panel p-3 text-xs text-muted-foreground"
+          className="grid w-full max-w-[75ch] list-none gap-3 rounded-sm border border-hairline bg-panel p-3 text-xs text-muted-foreground"
         >
           {GPU_NOTES.map((note) => (
             <li key={note.name}>
