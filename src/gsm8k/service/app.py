@@ -35,6 +35,7 @@ from gsm8k.run_control import launch, runs, status, stop
 from gsm8k.run_control import queue as run_queue
 from gsm8k.run_records import paths
 from gsm8k.service import gpu as gpu_module
+from gsm8k.service import progress
 
 API_PREFIX = "/api/v1"
 CHECK_TTL_SECONDS = 600.0  # a check expires after 10 minutes (C6, check_expired)
@@ -143,16 +144,24 @@ class _MetricsTail:
 # --- payloads ----------------------------------------------------------------------------------------
 
 
-def _status_payload(st: Any) -> dict:
-    """C6 Status from a RunControl RunStatus (``last_run`` nested the same way)."""
+def _status_payload(st: Any, outputs: Path | None, *, nested: bool = False) -> dict:
+    """C6 Status from a RunControl RunStatus (``last_run`` nested the same way, with ``evaluation: null``).
+
+    ``evaluation`` is the running run's scoring progress (AC3.1.6), read from its folder under ``outputs``;
+    null when the run is not RUNNING, has no run id, or its progress cannot be told.
+    """
     last = getattr(st, "last_run", None)
+    evaluation = None
+    if not nested and outputs is not None and st.state == status.RUNNING and st.run_id:
+        evaluation = progress.evaluation_progress(outputs, st.run_id)
     return {
         "status": st.state,
         "run_id": st.run_id,
         "reason": st.reason,
         "log_tail": list(st.log_tail or []),
         "started_at": getattr(st, "started_at", None),
-        "last_run": _status_payload(last) if last is not None else None,
+        "last_run": _status_payload(last, outputs, nested=True) if last is not None else None,
+        "evaluation": evaluation,
     }
 
 
@@ -579,7 +588,7 @@ def create_app(
 
     @app.get(f"{API_PREFIX}/status")
     def get_status() -> dict:
-        return _status_payload(status.current_status(svc._outputs))
+        return _status_payload(status.current_status(svc._outputs), svc._outputs)
 
     @app.post(f"{API_PREFIX}/stop")
     def stop_run() -> dict:
@@ -595,10 +604,10 @@ def create_app(
             raise ServiceError(409, "no_active_run", NO_ACTIVE_RUN)
         if before.run_id is not None:
             try:
-                return _status_payload(status.run_status(before.run_id, svc._outputs))
+                return _status_payload(status.run_status(before.run_id, svc._outputs), svc._outputs)
             except (LookupError, ValueError):
                 pass
-        return _status_payload(status.current_status(svc._outputs))
+        return _status_payload(status.current_status(svc._outputs), svc._outputs)
 
     # --- queue ---
 
@@ -682,7 +691,7 @@ async def _events(svc: _Service, resume_at: tuple[str, int] | None) -> AsyncIter
             if not running:
                 tail = None
         if st is not None:
-            payload = _status_payload(st)
+            payload = _status_payload(st, svc.outputs)
             if payload != last_status:
                 chunks.append(_sse("status", payload))
                 last_status = payload
