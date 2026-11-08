@@ -30,7 +30,7 @@ FINALISTS_DEFAULT: Path = ROOT / "results" / "finalists.json"
 
 # Methods whose runs train an adapter of their own (saved to checkpoints/<run_id>/). A row with an
 # adapter_run scores another run's adapter (best checkpoint, generalisation) and owns no folder.
-ADAPTER_METHODS = ("sft", "grpo", "terse", "optuna")
+ADAPTER_METHODS = ("sft", "grpo", "terse", "optuna", "selfcot")
 BEST_DATA = "gsm8k-dev"
 BEST_METRIC = "accuracy"
 

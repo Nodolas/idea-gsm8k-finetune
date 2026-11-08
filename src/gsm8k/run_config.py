@@ -18,8 +18,8 @@ from gsm8k.datasets_prompts.hub import DATASET_REVISION, MODEL_REVISIONS
 SCHEMA_VERSION = 1
 DEFAULT_MODEL = "Qwen/Qwen3-0.6B-Base"
 MODELS = ("Qwen/Qwen3-0.6B-Base", "Qwen/Qwen3-1.7B-Base")
-METHODS = ("base", "sft", "grpo", "best", "terse", "vote", "calc", "optuna")
-SPLITS = ("dev", "test", "gsmplus-testmini", "gsmsym-p1")
+METHODS = ("base", "sft", "grpo", "best", "terse", "vote", "calc", "optuna", "cotgen", "selfcot")
+SPLITS = ("dev", "test", "gsmplus-testmini", "gsmsym-p1", "train")
 ANSWER_FORMATS = ("step-by-step", "terse")
 LORA_RANKS = (4, 8, 16, 32, 64)
 EVALUATORS = ("project", "lm-eval-harness")
@@ -27,8 +27,14 @@ TRAIN_SPLIT_SIZE = 6973  # 7,473 training problems minus the 500 dev problems
 MAX_SEED = 2**31 - 1
 MAX_NEW_TOKENS_CAP = 4096
 # Methods that train or tune, so never read the test split (NFR8, AC2.1.5). The terse ablation fine-tunes;
-# vote and calc are evaluation-only ablations, base and best only evaluate.
-TRAINING_METHODS = ("sft", "grpo", "optuna", "terse")
+# vote and calc are evaluation-only ablations, base and best only evaluate. selfcot fine-tunes on the
+# model's own reasoning (US10.2); cotgen only samples the training part (split train, US10.1).
+TRAINING_METHODS = ("sft", "grpo", "optuna", "terse", "selfcot")
+# The chain-of-thought generation samples the training part of the split; split train is its own (C2).
+COT_METHOD = "cotgen"
+COT_SPLIT = "train"
+COT_SAMPLES_RANGE = (1, 8)
+COT_TEMPERATURE_RANGE = (0.1, 1.5)
 TEST_SPLIT_MESSAGE = "The test split is never used for training or tuning"
 # The run id check_dials puts in its config when the caller gives none (the caller sets the real one).
 UNSET_RUN_ID = "unset"
@@ -74,6 +80,12 @@ class RunConfig:
     grpo_steps: int | None = None
     grpo_generations: int | None = None
     evaluator: str = "project"
+    # Self-taught chain of thought (US10.1, US10.2; C2, added 2026-11-08). At their defaults they stay
+    # out of the hash, so earlier hashes are unchanged.
+    cot_problems: int | str = 1500
+    cot_samples: int = 4
+    cot_temperature: float = 0.7
+    cot_data_run: str | None = None
 
     def __post_init__(self) -> None:
         if self.model_revision is None:
@@ -215,11 +227,31 @@ def validate(cfg: RunConfig) -> None:
     _optional_int_from("grpo_steps", cfg.grpo_steps, 1)
     _optional_int_from("grpo_generations", cfg.grpo_generations, 1)
     _one_of("evaluator", cfg.evaluator, EVALUATORS)
+    _validate_cot(cfg)
+
+
+def _validate_cot(cfg: RunConfig) -> None:
+    """The chain-of-thought dials (stories.md group 10) and the split train rule (C2)."""
+    if cfg.cot_problems != "all":
+        if not _is_int(cfg.cot_problems) or not 50 <= cfg.cot_problems <= TRAIN_SPLIT_SIZE:
+            raise ConfigError(
+                f"cot_problems must be 'all' or a whole number from 50 to {TRAIN_SPLIT_SIZE}, "
+                f"got {cfg.cot_problems!r}"
+            )
+    _int_in("cot_samples", cfg.cot_samples, *COT_SAMPLES_RANGE)
+    _number_in("cot_temperature", cfg.cot_temperature, *COT_TEMPERATURE_RANGE)
+    if cfg.cot_data_run is not None and (not isinstance(cfg.cot_data_run, str) or not cfg.cot_data_run):
+        raise ConfigError(f"cot_data_run must be empty or a run id, got {cfg.cot_data_run!r}")
+    if (cfg.split == COT_SPLIT) != (cfg.method == COT_METHOD):
+        raise ConfigError(
+            f"split {COT_SPLIT} is only for method {COT_METHOD}, and method {COT_METHOD} only takes split "
+            f"{COT_SPLIT}; got method {cfg.method!r} with split {cfg.split!r}"
+        )
 
 
 # --- strict parsing of user-given dials (AC2.1.4) ---
 
-_FLOAT_FIELDS = ("learning_rate", "warmup_ratio")
+_FLOAT_FIELDS = ("learning_rate", "warmup_ratio", "cot_temperature")
 _INT_FIELDS = (
     "v",
     "epochs",
@@ -231,6 +263,7 @@ _INT_FIELDS = (
     "split_seed",
     "vote_samples",
     "max_new_tokens",
+    "cot_samples",
 )
 _STR_FIELDS = (
     "run_id",
@@ -267,6 +300,14 @@ def _check_type(name: str, value: Any) -> Any:
     if name == "train_examples":
         if value != "all" and not _is_int(value):
             raise ConfigError(f"train_examples must be 'all' or a whole number, got {value!r}")
+        return value
+    if name == "cot_problems":
+        if value != "all" and not _is_int(value):
+            raise ConfigError(f"cot_problems must be 'all' or a whole number, got {value!r}")
+        return value
+    if name == "cot_data_run":
+        if value is not None and not isinstance(value, str):
+            raise ConfigError(f"cot_data_run must be empty or a run id, got {value!r}")
         return value
     if name == "adapter_path":
         if value is not None and not isinstance(value, str):

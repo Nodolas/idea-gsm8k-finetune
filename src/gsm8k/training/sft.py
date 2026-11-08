@@ -57,13 +57,14 @@ class TrainingData:
         return prompt.build_prompt(self.exemplars, problem.question)
 
 
-def load_training_data(cfg: RunConfig) -> TrainingData:
+def load_training_data(cfg: RunConfig, train: list[Problem] | None = None) -> TrainingData:
     """Load GSM8K and the fixed split; ``train_examples`` takes the first N training problems by index.
 
-    The dev problems to score are limited by ``cfg.limit``. Raises ValueError if a training problem
-    were a dev or test problem (NFR8.1), and ``guard.TrainingDataError`` (a ValueError) if it held
-    any other evaluation problem, such as GSM-Plus, GSM-Symbolic or text with the GSM-Symbolic
-    canary (AC5.1.2).
+    ``train``, when given, replaces those training problems as already chosen (the self-taught
+    solutions of a ``selfcot`` run, US10.2); it goes through the same checks. The dev problems to
+    score are limited by ``cfg.limit``. Raises ValueError if a training problem were a dev or test
+    problem (NFR8.1), and ``guard.TrainingDataError`` (a ValueError) if it held any other evaluation
+    problem, such as GSM-Plus, GSM-Symbolic or text with the GSM-Symbolic canary (AC5.1.2).
     """
     from gsm8k.datasets_prompts import guard, hub, prompt, split
 
@@ -72,14 +73,18 @@ def load_training_data(cfg: RunConfig) -> TrainingData:
     data_split = split.load_or_build_split(train_ids, split_seed=cfg.split_seed)
     by_id = {p.id: p for p in problems["train"]}
     exemplar_ids = prompt.choose_exemplars(data_split.dev_ids, cfg.split_seed)
-    chosen = split.sort_by_index(list(data_split.train_ids))
-    if cfg.train_examples != "all":
-        chosen = chosen[: int(cfg.train_examples)]
+    if train is None:
+        chosen = split.sort_by_index(list(data_split.train_ids))
+        if cfg.train_examples != "all":
+            chosen = chosen[: int(cfg.train_examples)]
+    else:
+        chosen = [p.id for p in train]
     forbidden = set(data_split.dev_ids) | {p.id for p in problems["test"]}
     leaked = [i for i in chosen if i in forbidden or not i.startswith(split.TRAIN_PREFIX)]
     if leaked:
         raise ValueError(f"Training data holds dev or test problems: {leaked[:3]}")
-    train = [by_id[i] for i in chosen]
+    if train is None:
+        train = [by_id[i] for i in chosen]
     guard.check_training_problems(train, data_split.dev_ids)
     dev = prompt.problems_to_score("dev", data_split, problems, exemplar_ids, cfg.limit)
     return TrainingData(

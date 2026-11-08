@@ -49,7 +49,7 @@ ATTEMPT_ID_PATTERN = re.compile(r"(?:q06|q17)-[a-z0-9]+-[a-z0-9]+-[0-9]+")
 _CONFIG_FLAGS = ("split", "limit", "model", "method", "adapter", "seed", "max_new_tokens")
 
 # Methods whose runs make an adapter, so whose adapter method ``best`` may score (C5, 2026-11-07).
-ADAPTER_METHODS = ("sft", "grpo", "terse", "optuna")
+ADAPTER_METHODS = ("sft", "grpo", "terse", "optuna", "selfcot")
 # Evaluation-only sets scored with GSM8K's protocol (FR5.1); their name is also the row's data (C1).
 GENERALISATION_SPLITS = ("gsmplus-testmini", "gsmsym-p1")
 
@@ -62,6 +62,7 @@ COMMAND_MODULES = (
     "gsm8k.worker_cmd",
     "gsm8k.serve_cmd",
     "gsm8k.report",
+    "gsm8k.cot_cmd",
 )
 
 

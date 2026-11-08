@@ -29,7 +29,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from gsm8k import run_config
+from gsm8k import reasoning_report, run_config
 from gsm8k.run_control import finalists as run_finalists
 from gsm8k.run_control import launch, runs, status, stop
 from gsm8k.run_control import queue as run_queue
@@ -43,6 +43,8 @@ KEEPALIVE_SECONDS = 15.0  # a comment line keeps the connection alive (C7)
 NO_ACTIVE_RUN = "No run is active"
 SECOND_CONFIRMATION_NEEDED = "A test-split evaluation needs a second confirmation"
 CHECK_EXPIRED = "This check expired; check the run again"
+# Methods the website does not start in this version (US10.3, AC10.3.4); run them with the gsm8k CLI.
+NOT_STARTED_FROM_SERVICE = ("cotgen", "selfcot")
 
 _FIELD_NAMES = tuple(f.name for f in dataclasses.fields(run_config.RunConfig))
 _DEFAULTS = {f.name: f.default for f in dataclasses.fields(run_config.RunConfig)}
@@ -441,7 +443,15 @@ def create_app(
             raise ServiceError(
                 422, "invalid_dial", "run_id is chosen by the service, not given", field="run_id"
             )
-        kind = "train" if dials.get("method") in run_config.TRAINING_METHODS else "evaluate"
+        method = dials.get("method")
+        if isinstance(method, str) and method in NOT_STARTED_FROM_SERVICE:
+            raise ServiceError(
+                422,
+                "invalid_dial",
+                f"method {method} is not started from the website; run it with the gsm8k command line",
+                field="method",
+            )
+        kind = "train" if method in run_config.TRAINING_METHODS else "evaluate"
         try:
             checked = launch.check_run(
                 dict(dials), kind=kind, results=svc.results, finalists=svc.finalists, outputs=svc._outputs
@@ -546,6 +556,17 @@ def create_app(
     @app.get(f"{API_PREFIX}/dials")
     def get_dials() -> dict:
         return {"dials": dial_specs()}
+
+    # --- reasoning (US10.3) ---
+
+    @app.get(f"{API_PREFIX}/reasoning")
+    def get_reasoning(model: str = reasoning_report.DEFAULT_MODEL) -> dict:
+        try:
+            return reasoning_report.build_reasoning(model, svc.results, svc.outputs)
+        except reasoning_report.UnknownModel as exc:
+            raise ServiceError(422, "invalid_dial", str(exc), field="model") from exc
+        except OSError as exc:
+            raise svc.run_log_error(exc) from exc
 
     # --- status and stop ---
 

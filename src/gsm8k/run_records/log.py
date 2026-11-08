@@ -25,9 +25,10 @@ COLUMNS = (
 )
 
 MODELS = ("Qwen/Qwen3-0.6B-Base", "Qwen/Qwen3-1.7B-Base")
-METHODS = ("base", "sft", "grpo", "best", "terse", "vote", "calc", "optuna")
-DATA = ("gsm8k-dev", "gsm8k-test", "gsm8k-test-harness", "gsmplus-testmini", "gsmsym-p1")
-METRICS = ("accuracy", "harness_flexible_accuracy")
+METHODS = ("base", "sft", "grpo", "best", "terse", "vote", "calc", "optuna", "cotgen", "selfcot")
+# gsm8k-train and kept_fraction belong to cotgen rows only (C1, added 2026-11-08).
+DATA = ("gsm8k-dev", "gsm8k-test", "gsm8k-test-harness", "gsmplus-testmini", "gsmsym-p1", "gsm8k-train")
+METRICS = ("accuracy", "harness_flexible_accuracy", "kept_fraction")
 
 
 @dataclass

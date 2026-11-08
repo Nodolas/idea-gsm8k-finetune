@@ -3,7 +3,13 @@
 Steps: check the configuration (exit 2, nothing written), print the estimate, take the GPU lock
 (exit 3, nothing written), write ``config.json``, train while streaming ``metrics.jsonl``, save the
 adapter to ``checkpoints/<run_id>/``, score it on dev, write ``timings.json``, append one row
-(method ``sft``, data ``gsm8k-dev``) and end with ``status.json``: 0 finished, 1 failed, 130 stopped.
+(method ``sft`` or ``selfcot``, data ``gsm8k-dev``) and end with ``status.json``: 0 finished, 1 failed,
+130 stopped.
+
+Method ``selfcot`` (US10.2) trains through the same loop on the kept solutions of a generation run
+(``cot_data_run``, ``outputs/<run id>/cot_data.jsonl``) with ``step-by-step`` targets, so the model's
+own reasoning is learned; those solutions are read and checked (missing or unreadable file, dev or
+test ids) before the lock, so a refusal exits 2 with nothing written.
 
 The base model is loaded through the module attribute ``load_base_model``, read at call time, so tests
 can hand in a tiny model.
@@ -36,7 +42,8 @@ _DIAL_FLAGS = (
     "seed",
     "answer_format",
 )
-_CONFIG_FLAGS = (*_DIAL_FLAGS, "limit", "max_new_tokens")
+_CONFIG_FLAGS = (*_DIAL_FLAGS, "limit", "max_new_tokens", "method", "cot_data_run")
+TRAIN_METHODS = ("sft", "selfcot")
 TEST_SPLIT_MESSAGE = "The test split is never used for training or tuning"
 
 
@@ -56,6 +63,7 @@ class TrainPrepared:
     config_given: Path | None
     eval_every: int | None
     max_steps: int | None
+    train_problems: list | None = None  # selfcot: the kept solutions to train on, read and checked
 
 
 def _number(text: str) -> float:
@@ -90,6 +98,14 @@ def register(subparsers: Any) -> None:
         help="run log to append to (default results/runs.csv); used only with --run-id",
     )
     tr.add_argument("--started-by", choices=("worker", "terminal"), default="terminal")
+    tr.add_argument(
+        "--method",
+        choices=TRAIN_METHODS,
+        help="sft (default): GSM8K's solutions; selfcot: the kept solutions of --cot-data-run",
+    )
+    tr.add_argument(
+        "--cot-data-run", help="selfcot: run id of the cot-generate run whose kept solutions are trained on"
+    )
     tr.add_argument("--model", help="Qwen/Qwen3-0.6B-Base (default) or Qwen/Qwen3-1.7B-Base")
     tr.add_argument("--learning-rate", type=_number, help="1e-5 to 5e-4 (default 2e-4)")
     tr.add_argument("--epochs", type=_whole, help="1 to 3 (default 1)")
@@ -111,8 +127,8 @@ def register(subparsers: Any) -> None:
 
 
 def _config_from_flags(args: argparse.Namespace, run_id: str) -> run_config.RunConfig:
-    fields: dict = {"run_id": run_id, "method": "sft", "split": "dev"}
-    for name in (*_DIAL_FLAGS, "limit", "max_new_tokens"):
+    fields: dict = {"run_id": run_id, "method": args.method or "sft", "split": "dev"}
+    for name in (*_DIAL_FLAGS, "limit", "max_new_tokens", "cot_data_run"):
         value = getattr(args, name)
         if value is not None:
             fields[name] = value
@@ -161,8 +177,21 @@ def _prepare(args: argparse.Namespace) -> TrainPrepared:
         raise cli.InvalidInput(str(exc)) from exc
     if cfg.split == "test":  # NFR8: also when validate lets it through
         raise cli.InvalidInput(TEST_SPLIT_MESSAGE)
-    if cfg.method != "sft":
-        raise cli.InvalidInput(f"method must be sft for gsm8k train, got {cfg.method!r}")
+    if cfg.method not in TRAIN_METHODS:
+        raise cli.InvalidInput(f"method must be sft or selfcot for gsm8k train, got {cfg.method!r}")
+    cot_data_run = cfg.cot_data_run
+    if cfg.method == "selfcot":
+        if not cot_data_run:
+            raise cli.InvalidInput(
+                "method selfcot needs cot_data_run (--cot-data-run <run id of a cot-generate run>)"
+            )
+        if cfg.answer_format != "step-by-step":
+            raise cli.InvalidInput(
+                "method selfcot trains on the kept reasoning; answer_format must be step-by-step, "
+                f"got {cfg.answer_format!r}"
+            )
+    elif cot_data_run is not None:
+        raise cli.InvalidInput(f"cot_data_run is only for method selfcot, got {cot_data_run!r}")
     if cfg.split != "dev":
         raise cli.InvalidInput(f"split must be dev for gsm8k train (the closing score), got {cfg.split!r}")
     if cfg.adapter_path is not None:
@@ -187,6 +216,16 @@ def _prepare(args: argparse.Namespace) -> TrainPrepared:
     if used:
         raise cli.InvalidInput(f"Run id already used: {run_id}")
 
+    train_problems = None
+    if cfg.method == "selfcot":
+        from gsm8k.datasets_prompts import split
+        from gsm8k.training import selfcot_data
+
+        try:
+            train_problems = selfcot_data.load_for_config(cfg)
+        except (selfcot_data.CotDataError, split.SplitFileError) as exc:
+            raise cli.InvalidInput(str(exc)) from exc
+
     return TrainPrepared(
         cfg=cfg,
         run_id=run_id,
@@ -197,6 +236,7 @@ def _prepare(args: argparse.Namespace) -> TrainPrepared:
         config_given=config_given,
         eval_every=args.eval_every,
         max_steps=args.max_steps,
+        train_problems=train_problems,
     )
 
 
@@ -205,7 +245,10 @@ def _print_estimate(prep: TrainPrepared) -> None:
     from gsm8k.training import sft
 
     cfg = prep.cfg
-    steps = sft.total_steps_for(sft.planned_examples(cfg), cfg.batch_size, cfg.epochs, prep.max_steps)
+    planned = len(prep.train_problems) if prep.train_problems is not None else sft.planned_examples(cfg)
+    if prep.train_problems is not None:
+        print(f"kept solutions to train on: {planned} (from {cfg.cot_data_run})")
+    steps = sft.total_steps_for(planned, cfg.batch_size, cfg.epochs, prep.max_steps)
     estimate = estimates.estimate_training(cfg.model, steps)
     print(f"training steps: {steps}")
     print(f"estimate: {estimate.text}")
@@ -253,7 +296,7 @@ def _run(prep: TrainPrepared) -> int:
         if prep.config_given is None or not (own_config.exists() and own_config.samefile(prep.config_given)):
             folder.write_config(prep.run_dir, cfg)
 
-        data = sft.load_training_data(cfg)
+        data = sft.load_training_data(cfg, train=prep.train_problems)
         model, tokenizer = load_base_model(cfg.model, cfg.model_revision)
         result = sft.train_sft(
             cfg,
@@ -302,7 +345,7 @@ def _run(prep: TrainPrepared) -> int:
                 date=cli._iso(cli._utc_now()),
                 run_id=prep.run_id,
                 model=cfg.model,
-                method="sft",
+                method=cfg.method,
                 data="gsm8k-dev",
                 metric="accuracy",
                 value=score.accuracy,
