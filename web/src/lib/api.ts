@@ -127,6 +127,15 @@ export interface Status {
   log_tail: string[];
   started_at: string | null;
   last_run: Status | null;
+  /** How far a RUNNING run's scoring has got (C6, AC3.1.6); null otherwise and in `last_run`. */
+  evaluation?: EvaluationProgress | null;
+}
+
+/** C6 `Status.evaluation`: problems scored of the problems to score in `split`. */
+export interface EvaluationProgress {
+  split: string;
+  scored: number;
+  total: number;
 }
 
 /** One dial of the Training Dials table, as `GET /dials` serves it. */

@@ -251,6 +251,7 @@ export function serviceStatus(partial: Partial<Status> = {}): Status {
     log_tail: [],
     started_at: null,
     last_run: null,
+    evaluation: null,
     ...partial,
   };
 }
