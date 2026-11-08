@@ -687,7 +687,7 @@ outputs/course/
   inspect.log           # the inspect command's output (appended by the service's launch)
 ```
 
-`architectures.json`: `{"v":1, "generated_at":"<ISO>", "sample_problem_id":"<id>", "models":[{"id","revision","licence","family","layers","width","heads","kv_heads","attention":"multi-head|grouped-query","head_size","mlp_width","vocab","context","tied_embeddings":<bool>,"position_encoding":"rotary|learned|...","activation","weights_total":<int>,"weights_by_part":{"embeddings","attention","mlp","norms","head"}:<int each>,"bf16_gb":<float 2 dp>,"int4_gb":<float 2 dp>,"problem_tokens":<int>,"prompt_tokens":<int>,"first_tokens":[<string>…20]}]}`.
+`architectures.json`: `{"v":1, "generated_at":"<ISO>", "sample_problem_id":"<id>", "models":[{"id","revision","licence","family","layers","width","heads","kv_heads","attention":"multi-head|grouped-query","head_size","mlp_width","mlp_matrices":<2|3, 3 when the MLP is gated>,"vocab","context","tied_embeddings":<bool>,"position_encoding":"rotary|learned|...","activation","weights_total":<int>,"weights_by_part":{"embeddings","attention","mlp","norms","head"}:<int each>,"bf16_gb":<float 2 dp>,"int4_gb":<float 2 dp>,"problem_tokens":<int>,"prompt_tokens":<int>,"first_tokens":[<string>…20]}]}`.
 
 `progress.json`: `{"v":1, "steps":{"<step>":{"opened_at":"<ISO>"|null, "quiz":{"attempts":[{"answers":[<int>…], "right":[<bool>…], "at":"<ISO>"}], "passed_at":"<ISO>"|null}, "own_words":{"text":"<1..4000 chars>", "saved_at":"<ISO>"}|null}}}`. Unknown step ids in the file are kept and ignored.
 
