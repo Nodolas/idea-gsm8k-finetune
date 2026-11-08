@@ -7,7 +7,7 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: none
+current_task: "batch-8: u4-run-service"
 slices: "7/7"
 test_command: "scripts/check.sh"
 pending_runs: "q17-cotgen-train-1:running:65420,q17-selfcot-dev-1:queued"
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-batch-6 (live training data and setting explanations) and batch-7 (fine-tuning view) merged. q17-cotgen-train-1 is running (about 2.7 h, started 16:50 Berlin; the lead then starts q17-selfcot-dev-1, about 45 min). The service was restarted after batch-6 and serves `/gpu`; the website needs no restart. Type /build after both end: Converge reads their rows, the lead writes the results.md section (AC10.4.5), then ready to ship. New sessions on Sonnet 5.5, Auto.
+Type /build: it goes on with batch-8 (u4-run-service, AC3.7.7: the worker waits while another project's run holds the GPU). New sessions on Sonnet 5.5, Auto.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping, and BR4.7/BR4.8 there are superseded by contract C5's 2026-11-07 "method best" note).
