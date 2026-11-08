@@ -412,6 +412,12 @@ components:
         run_id: { type: [string, 'null'] }
         reason: { type: [string, 'null'] }
         log_tail: { type: array, items: { type: string } }
+        evaluation:   # 2026-11-08 (AC3.1.6): how far a RUNNING run's scoring has got; null otherwise and in last_run
+          type: [object, 'null']
+          properties:
+            split: { type: string }
+            scored: { type: integer, minimum: 0 }   # complete lines in predictions.jsonl, at most total
+            total: { type: integer, minimum: 1 }    # split size, or the run's limit when smaller
     RunRequest:
       type: object
       description: C2 config.json fields without run_id; omitted dials take their defaults
@@ -528,7 +534,7 @@ channels:
         description: One complete metrics line of the active run (C2); SSE id = "<run_id>:<line number>"
         payload: { $ref: '#/components/schemas/MetricsLine' }
       status:
-        description: Sent whenever the run status changes (IDLE, RUNNING, STOPPED, FAILED)
+        description: Sent whenever the run status changes (IDLE, RUNNING, STOPPED, FAILED), including a new evaluation.scored (2026-11-08)
         payload: { $ref: '#/components/schemas/Status' }
       queue:
         description: Sent whenever the queue changes; the full ordered list
