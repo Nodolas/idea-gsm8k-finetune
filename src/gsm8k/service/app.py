@@ -34,6 +34,7 @@ from gsm8k.run_control import finalists as run_finalists
 from gsm8k.run_control import launch, runs, status, stop
 from gsm8k.run_control import queue as run_queue
 from gsm8k.run_records import paths
+from gsm8k.service import gpu as gpu_module
 
 API_PREFIX = "/api/v1"
 CHECK_TTL_SECONDS = 600.0  # a check expires after 10 minutes (C6, check_expired)
@@ -556,6 +557,12 @@ def create_app(
     @app.get(f"{API_PREFIX}/dials")
     def get_dials() -> dict:
         return {"dials": dial_specs()}
+
+    # --- the GPU's live figures (US4.5, AC4.5.9) ---
+
+    @app.get(f"{API_PREFIX}/gpu")
+    def get_gpu() -> dict:
+        return gpu_module.read_gpu()  # never raises: an unreadable GPU is `available: false`, still 200
 
     # --- reasoning (US10.3) ---
 
