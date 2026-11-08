@@ -56,6 +56,13 @@ export interface HalftoneWordmarkFooterProps {
   radius?: number
   /** How much of the word's cap height hangs below the bottom edge, 0–0.6. Defaults to 0.2. */
   crop?: number
+  /**
+   * Where the word sits: "bottom" (the default) stands it on the bottom edge, cropped by
+   * `crop`; "center" draws it whole with its vertical middle at the canvas middle.
+   */
+  align?: "bottom" | "center"
+  /** The most dots the field may hold; the gap widens past `dotGap` to stay under. Defaults to 16,000. */
+  maxDots?: number
   /** Print grain over everything, 0–1. Defaults to 0.5. */
   grain?: number
   /** Pointer and click response. Defaults to true. */
@@ -105,27 +112,61 @@ export function hwfRadius(coverage: number, gap: number) {
   return Math.sqrt(c) * gap * 0.56
 }
 
+/** One 60 Hz frame, in ms: the time step the spring constants were tuned for. */
+export const HWF_FRAME_MS = 1000 / 60
+
+/** The longest time one step may cover, in ms (a stalled tab never flings the dots). */
+export const HWF_MAX_STEP_MS = 50
+
 /**
  * One step of a dot's spring back to home, plus the push from a pointer at
- * (px, py) within radius r. Returns [x, y, vx, vy]. Away from the pointer a
- * displaced dot always heads home and comes to rest.
+ * (px, py) within radius r, over `dtMs` of elapsed time (default one 60 Hz
+ * frame, clamped to 50 ms). Returns [x, y, vx, vy]. Push, spring and damping
+ * scale with the elapsed time, so the motion is the same at any frame rate;
+ * at the default it is exactly the original per-frame step. Away from the
+ * pointer a displaced dot always heads home and comes to rest.
  */
 export function hwfStep(
   x: number, y: number, vx: number, vy: number,
   hx: number, hy: number, px: number, py: number, r: number,
+  dtMs: number = HWF_FRAME_MS,
 ) {
+  const dt = Number.isFinite(dtMs) ? Math.max(0, Math.min(dtMs, HWF_MAX_STEP_MS)) : HWF_FRAME_MS
+  const s = dt / HWF_FRAME_MS
+  const damp = Math.pow(0.84, s)
   const dx = x - px
   const dy = y - py
   const d2 = dx * dx + dy * dy
   if (r > 0 && d2 < r * r) {
     const d = Math.sqrt(d2) + 0.001
     const f = (1 - d / r) * 2.6
-    vx += (dx / d) * f
-    vy += (dy / d) * f
+    vx += (dx / d) * f * s
+    vy += (dy / d) * f * s
   }
-  vx = (vx + (hx - x) * 0.05) * 0.84
-  vy = (vy + (hy - y) * 0.05) * 0.84
-  return [x + vx, y + vy, vx, vy]
+  vx = (vx + (hx - x) * 0.05 * s) * damp
+  vy = (vy + (hy - y) * 0.05 * s) * damp
+  return [x + vx * s, y + vy * s, vx, vy]
+}
+
+/**
+ * The dot gap used for layout: `dotGap`, unless a `width` × `height` field at
+ * that gap would hold more than `maxDots` dots; then the smallest gap that
+ * keeps the count (ceil(width / gap) × ceil(height / gap)) at or under it.
+ */
+export function hwfGap(width: number, height: number, dotGap: number, maxDots = 16000) {
+  const count = (g: number) => Math.ceil(width / g) * Math.ceil(height / g)
+  if (!(width > 0) || !(height > 0) || !(dotGap > 0) || !(maxDots >= 1)) return dotGap
+  if (count(dotGap) <= maxDots) return dotGap
+  // The count only falls as the gap grows: search for the smallest gap that fits.
+  let lo = dotGap
+  let hi = Math.max(dotGap, width, height)
+  while (count(hi) > maxDots) hi *= 2
+  for (let i = 0; i < 60 && hi - lo > 1e-9; i++) {
+    const mid = (lo + hi) / 2
+    if (count(mid) <= maxDots) hi = mid
+    else lo = mid
+  }
+  return hi
 }
 
 /** How warm a dot is drawn: 0 at home, 1 once it is `span` px or more away. */
@@ -137,6 +178,14 @@ export function hwfWarmth(x: number, y: number, hx: number, hy: number, span: nu
 /** Font size that sets `measured` (width at 100px) to fill `width` exactly. */
 export function hwfFitSize(measured: number, width: number) {
   return measured > 0 ? (width / measured) * 100 : 0
+}
+
+/** The number of warm colour steps a displaced dot is drawn in (one path each). */
+export const HWF_WARM_STEPS = 3
+
+/** Which warm step a warmth k in (0, 1] falls in: 0 … HWF_WARM_STEPS - 1. */
+export function hwfWarmStep(k: number) {
+  return Math.max(0, Math.min(HWF_WARM_STEPS - 1, Math.ceil(k * HWF_WARM_STEPS) - 1))
 }
 // #endregion
 
@@ -190,6 +239,8 @@ export default function HalftoneWordmarkFooter({
   dotGap = 6,
   radius = 80,
   crop = 0.2,
+  align = "bottom",
+  maxDots = 16000,
   grain = 0.5,
   interactive = true,
   fontFamily = SANS_STACK,
@@ -201,9 +252,9 @@ export default function HalftoneWordmarkFooter({
   const colors = { ...(PRESETS[preset] || PRESETS.night), ...(palette || {}) }
   const rootRef = React.useRef(null as HTMLElement | null)
   const canvasRef = React.useRef(null as HTMLCanvasElement | null)
-  const opts = React.useRef({ colors, dotGap, radius, crop, grain, interactive, fontFamily, fontWeight, wordmark })
-  opts.current = { colors, dotGap, radius, crop, grain, interactive, fontFamily, fontWeight, wordmark }
-  const key = [wordmark, dotGap, crop, grain, fontFamily, fontWeight, colors.background, colors.ink, colors.warm].join("|")
+  const opts = React.useRef({ colors, dotGap, radius, crop, align, maxDots, grain, interactive, fontFamily, fontWeight, wordmark })
+  opts.current = { colors, dotGap, radius, crop, align, maxDots, grain, interactive, fontFamily, fontWeight, wordmark }
+  const key = [wordmark, dotGap, crop, align, maxDots, grain, fontFamily, fontWeight, colors.background, colors.ink, colors.warm].join("|")
 
   React.useEffect(() => {
     const root = rootRef.current
@@ -219,15 +270,31 @@ export default function HalftoneWordmarkFooter({
     let px = -1e5
     let py = -1e5
     let raf = 0
+    let last = 0
     let visible = true
     let awake = true
     let ring = { x: 0, y: 0, t: -1 }
     // Flat arrays: x, y, vx, vy, hx, hy, r per dot.
     let dots = new Float32Array(0)
     let count = 0
+    // Per-frame scratch, sized per layout: the displaced dots of each warm step.
+    let warmIdx: Int32Array[] = []
+    const warmLen = new Int32Array(HWF_WARM_STEPS)
     let grainTile = null as HTMLCanvasElement | null
+    let grainPattern = null as CanvasPattern | null
     const ink = hwfHex(opts.current.colors.ink) || [233, 228, 218]
     const warm = hwfHex(opts.current.colors.warm) || [233, 118, 43]
+    // The colour of each warm step, worked out once: step b is drawn at warmth (b + 1) / steps.
+    const warmColors: string[] = []
+    for (let b = 0; b < HWF_WARM_STEPS; b++) {
+      const k = (b + 1) / HWF_WARM_STEPS
+      warmColors.push(
+        "rgb(" +
+          Math.round(ink[0] + (warm[0] - ink[0]) * k) + "," +
+          Math.round(ink[1] + (warm[1] - ink[1]) * k) + "," +
+          Math.round(ink[2] + (warm[2] - ink[2]) * k) + ")",
+      )
+    }
 
     const layout = () => {
       const o = opts.current
@@ -238,26 +305,39 @@ export default function HalftoneWordmarkFooter({
       canvas.width = Math.round(w * dpr)
       canvas.height = Math.round(h * dpr)
 
-      // Set the word once, at a size that fills the width, on a 1x mask.
+      // Set the word once on a 1x mask, at a size that fills the width but never
+      // overflows the height: the smaller of the two fits.
       const mask = document.createElement("canvas")
       mask.width = w
       mask.height = h
       const m = mask.getContext("2d", { willReadFrequently: true })
       if (!m) return
-      const face = o.fontWeight + " 100px " + o.fontFamily
-      m.font = face
+      const centred = o.align === "center"
+      const c = centred ? 0 : Math.max(0, Math.min(0.6, o.crop))
+      m.font = o.fontWeight + " 100px " + o.fontFamily
       const word = o.wordmark || " "
-      const fit = hwfFitSize(m.measureText(word).width, w * 1.02)
+      const probe = m.measureText(word)
+      const asc100 = probe.actualBoundingBoxAscent || 72
+      const desc100 = probe.actualBoundingBoxDescent || 0
+      const fitW = hwfFitSize(probe.width, w * (centred ? 0.94 : 1.02))
+      // Centred: the whole ink box fits in 86% of the height. Bottom: the visible
+      // part of the cap height (above the crop) fits in 96% of it.
+      const fitH = centred
+        ? (h * 0.86 * 100) / Math.max(1, asc100 + desc100)
+        : (h * 0.96 * 100) / Math.max(1, asc100 * (1 - c))
+      const fit = Math.max(1, Math.min(fitW, fitH))
       m.font = o.fontWeight + " " + fit + "px " + o.fontFamily
       const box = m.measureText(word)
       const cap = box.actualBoundingBoxAscent || fit * 0.72
-      const c = Math.max(0, Math.min(0.6, o.crop))
+      const desc = box.actualBoundingBoxDescent || 0
       m.fillStyle = "#000"
       m.textBaseline = "alphabetic"
-      m.fillText(word, (w - box.width) / 2, h + cap * c)
+      // Centred: the ink box's vertical middle on the canvas middle.
+      const baseline = centred ? h / 2 + (cap - desc) / 2 : h + cap * c
+      m.fillText(word, (w - box.width) / 2, baseline)
       const img = m.getImageData(0, 0, w, h).data
 
-      const gap = Math.max(3, o.dotGap)
+      const gap = hwfGap(w, h, Math.max(3, o.dotGap), Math.max(1, o.maxDots))
       const cols = Math.ceil(w / gap)
       const rows = Math.ceil(h / gap)
       const tmp = []
@@ -281,8 +361,11 @@ export default function HalftoneWordmarkFooter({
       }
       dots = new Float32Array(tmp)
       count = tmp.length / 7
+      warmIdx = []
+      for (let b = 0; b < HWF_WARM_STEPS; b++) warmIdx.push(new Int32Array(count))
 
-      // A fixed tile of print grain, drawn once and laid over every frame.
+      // A fixed tile of print grain, drawn once per layout, and its pattern made
+      // once too, then laid over every frame.
       grainTile = document.createElement("canvas")
       grainTile.width = 256
       grainTile.height = 256
@@ -296,19 +379,24 @@ export default function HalftoneWordmarkFooter({
         }
         g.putImageData(id, 0, 0)
       }
+      grainPattern = o.grain > 0 ? ctx.createPattern(grainTile, "repeat") : null
       awake = true
     }
 
-    const draw = (now: number) => {
+    const draw = (now: number, dt: number) => {
       const o = opts.current
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.fillStyle = o.colors.background
       ctx.fillRect(0, 0, w, h)
 
       const r = o.interactive && !reduced ? Math.max(0, o.radius) : 0
+      const s = Math.max(0, Math.min(dt, HWF_MAX_STEP_MS)) / HWF_FRAME_MS
       const ringAge = ring.t < 0 ? 1e9 : now - ring.t
       const ringR = ringAge * 0.9
       let moving = false
+      warmLen.fill(0)
+      // At-rest dots go straight into one path; displaced ones are set aside by warm step.
+      ctx.beginPath()
       for (let i = 0; i < count; i++) {
         const j = i * 7
         let x = dots[j]
@@ -324,16 +412,16 @@ export default function HalftoneWordmarkFooter({
             const d = Math.sqrt(dx * dx + dy * dy) + 0.001
             const band = 1 - Math.min(1, Math.abs(d - ringR) / 26)
             if (band > 0) {
-              const f = band * 3.2 * (1 - ringAge / 900)
+              const f = band * 3.2 * (1 - ringAge / 900) * s
               vx += (dx / d) * f
               vy += (dy / d) * f
             }
           }
-          const s = hwfStep(x, y, vx, vy, hx, hy, px, py, r)
-          x = s[0]
-          y = s[1]
-          vx = s[2]
-          vy = s[3]
+          const st = hwfStep(x, y, vx, vy, hx, hy, px, py, r, dt)
+          x = st[0]
+          y = st[1]
+          vx = st[2]
+          vy = st[3]
           if (Math.abs(vx) + Math.abs(vy) > 0.02 || Math.abs(x - hx) + Math.abs(y - hy) > 0.05) moving = true
           else {
             x = hx
@@ -346,27 +434,40 @@ export default function HalftoneWordmarkFooter({
           dots[j + 2] = vx
           dots[j + 3] = vy
         }
-        const k = hwfWarmth(x, y, hx, hy, 28)
-        ctx.fillStyle =
-          k > 0.02
-            ? "rgb(" +
-              Math.round(ink[0] + (warm[0] - ink[0]) * k) + "," +
-              Math.round(ink[1] + (warm[1] - ink[1]) * k) + "," +
-              Math.round(ink[2] + (warm[2] - ink[2]) * k) + ")"
-            : o.colors.ink
+        const k = x === hx && y === hy ? 0 : hwfWarmth(x, y, hx, hy, 28)
+        if (k > 0.02) {
+          const b = hwfWarmStep(k)
+          warmIdx[b][warmLen[b]++] = i
+        } else {
+          const rad = dots[j + 6]
+          ctx.moveTo(x + rad, y)
+          ctx.arc(x, y, rad, 0, 6.2832)
+        }
+      }
+      ctx.fillStyle = o.colors.ink
+      ctx.fill()
+      for (let b = 0; b < HWF_WARM_STEPS; b++) {
+        const n = warmLen[b]
+        if (n === 0) continue
+        const list = warmIdx[b]
         ctx.beginPath()
-        ctx.arc(x, y, dots[j + 6], 0, 6.2832)
+        for (let q = 0; q < n; q++) {
+          const j = list[q] * 7
+          const x = dots[j]
+          const y = dots[j + 1]
+          const rad = dots[j + 6]
+          ctx.moveTo(x + rad, y)
+          ctx.arc(x, y, rad, 0, 6.2832)
+        }
+        ctx.fillStyle = warmColors[b]
         ctx.fill()
       }
 
-      if (grainTile && o.grain > 0) {
+      if (grainPattern && o.grain > 0) {
         ctx.globalAlpha = Math.min(1, o.grain) * 0.09
         ctx.globalCompositeOperation = "overlay"
-        const pattern = ctx.createPattern(grainTile, "repeat")
-        if (pattern) {
-          ctx.fillStyle = pattern
-          ctx.fillRect(0, 0, w, h)
-        }
+        ctx.fillStyle = grainPattern
+        ctx.fillRect(0, 0, w, h)
         ctx.globalAlpha = 1
         ctx.globalCompositeOperation = "source-over"
       }
@@ -376,9 +477,16 @@ export default function HalftoneWordmarkFooter({
 
     const loop = (now: number) => {
       raf = 0
-      if (!visible) return
-      draw(now)
+      if (!visible) {
+        last = 0
+        return
+      }
+      // The real time since the last frame (one 60 Hz frame after a sleep), clamped.
+      const dt = last > 0 ? Math.min(Math.max(0, now - last), HWF_MAX_STEP_MS) : HWF_FRAME_MS
+      last = now
+      draw(now, dt)
       if (awake) raf = requestAnimationFrame(loop)
+      else last = 0
     }
     const wake = () => {
       awake = true
@@ -410,7 +518,7 @@ export default function HalftoneWordmarkFooter({
     }
 
     layout()
-    draw(performance.now())
+    draw(performance.now(), HWF_FRAME_MS)
     wake()
 
     root.addEventListener("pointermove", onMove)
@@ -455,6 +563,7 @@ export default function HalftoneWordmarkFooter({
     <footer
       ref={rootRef}
       className={"hwf-root " + className}
+      data-align={align}
       style={
         {
           height,
