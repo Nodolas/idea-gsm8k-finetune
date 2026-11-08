@@ -7,7 +7,7 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: none
+current_task: "batch-11: u5-website"
 slices: "7/7"
 test_command: "scripts/check.sh"
 pending_runs: ""
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Batch-11 next (Nico, relayed by the self-taught course session 2026-11-08: \"place the gsm8k in the middle of the landing page not at the top and make sure that the dots move properly and smoothly\"): the landing wordmark centred vertically, smooth halftone and band dots; spec first, u5-website. Then wip/batch-9 (fine-tune lab, plan, shared setup and spec on its branch, nothing on main) rebases onto main and finishes with its own /build; the course spec (u12, wip/spec-course) follows batch-9. q17-selfcot-dev-2's row (dev 0.7621) is on main. Restart service and worker after a merge that changes src/gsm8k/service (scripts/stop-website.sh, scripts/start-website.sh). Sessions on Sonnet 5.5, Auto.
+Type /build: it goes on with batch-11 (u5-website, built in the worktree .cache/worktrees/batch-11: landing wordmark centred and smooth halftone dots, Nico via the self-taught course session; the fine-tuning drawing capped near its designed size, Nico 2026-11-08 \"way to big\"). Then wip/batch-9 (fine-tune lab) rebases onto main and finishes; the course spec (u12, wip/spec-course) follows batch-9. Sessions on Sonnet 5.5, Auto.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping, and BR4.7/BR4.8 there are superseded by contract C5's 2026-11-07 "method best" note).
