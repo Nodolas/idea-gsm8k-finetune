@@ -227,6 +227,68 @@ export function toApiError(error: unknown): ApiError {
   return new ApiError(0, "internal", message);
 }
 
+/** One role of the reasoning comparison (C6 Reasoning, added 2026-11-08). */
+export interface ReasoningRole {
+  role: "base" | "sft" | "selfcot";
+  run_id: string | null;
+  accuracy: number | null;
+  correct: number | null;
+  scored: number | null;
+  interval_low: number | null;
+  interval_high: number | null;
+  trained_on: number | null;
+  gain_pts: number | null;
+  noise: "within noise" | "outside noise" | null;
+  mean_lines: number | null;
+  mean_words: number | null;
+  error: string | null;
+}
+
+/** Problems fixed and broken by a fine-tune against the base run. */
+export interface ReasoningFlip {
+  role: "sft" | "selfcot";
+  run_id: string;
+  against: string;
+  fixed: number;
+  broken: number;
+  both_right: number;
+  both_wrong: number;
+}
+
+/** The generation run's `cot_stats.json` figures plus its run id (C2). */
+export interface ReasoningGeneration {
+  run_id: string;
+  problems: number;
+  samples_per_problem: number;
+  solved: number;
+  kept: number;
+  kept_fraction: number;
+  mean_lines_kept: number | null;
+  mean_words_kept: number | null;
+  mean_lines_reference: number | null;
+  mean_words_reference: number | null;
+}
+
+export interface ReasoningExample {
+  problem_id: string;
+  gold: string;
+  base_output: string;
+  selfcot_output: string;
+}
+
+/** `GET /reasoning`: self-taught chain of thought against base and the reference fine-tune. */
+export interface Reasoning {
+  v: number;
+  model: string;
+  available: boolean;
+  roles: ReasoningRole[];
+  flips: ReasoningFlip[];
+  generation: ReasoningGeneration | null;
+  generation_error: string | null;
+  examples: ReasoningExample[];
+  summary: string[];
+}
+
 export interface StreamHandlers {
   onMetric?(line: MetricsLine & { run_id: string }, lineNo: number): void;
   onStatus?(status: Status): void;
@@ -251,6 +313,8 @@ export interface Api {
   markFinalist(id: string): Promise<string[]>;
   /** Resolves to the new finalist list. */
   unmarkFinalist(id: string): Promise<string[]>;
+  /** The reasoning comparison for one model (default: the service's, Qwen3-1.7B-Base). */
+  getReasoning(model?: string): Promise<Reasoning>;
   /** Opens the C7 stream; the returned function closes it. */
   openStream(handlers: StreamHandlers): () => void;
 }
@@ -318,6 +382,11 @@ export function createApi(base = "/api/v1"): Api {
       request<MetricsPage>("GET", `/runs/${id(runId)}/metrics?after=${after}`),
     getStatus: () => request<Status>("GET", "/status"),
     getDials: async () => (await request<{ dials: DialSpec[] }>("GET", "/dials")).dials,
+    getReasoning: (model) =>
+      request<Reasoning>(
+        "GET",
+        model === undefined ? "/reasoning" : `/reasoning?model=${encodeURIComponent(model)}`,
+      ),
     checkRun: (req) => request<CheckedRun>("POST", "/runs/check", req),
     confirmRun: (checkId, secondConfirmation = false) =>
       request<ConfirmResult>("POST", "/runs/confirm", {

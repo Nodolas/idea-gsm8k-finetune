@@ -14,6 +14,8 @@ import {
   type DialSpec,
   type MetricsLine,
   type QueueEntry,
+  type Reasoning,
+  type ReasoningRole,
   type Run,
   type RunRequest,
   type Status,
@@ -147,6 +149,45 @@ export const DIALS: DialSpec[] = [
     help: "step-by-step or terse",
   },
 ];
+
+/** One empty role of the reasoning comparison (no run). */
+export function reasoningRole(
+  role: ReasoningRole["role"],
+  partial: Partial<ReasoningRole> = {},
+): ReasoningRole {
+  return {
+    role,
+    run_id: null,
+    accuracy: null,
+    correct: null,
+    scored: null,
+    interval_low: null,
+    interval_high: null,
+    trained_on: null,
+    gain_pts: null,
+    noise: null,
+    mean_lines: null,
+    mean_words: null,
+    error: null,
+    ...partial,
+  };
+}
+
+/** A reasoning comparison (`GET /reasoning`); defaults to the empty one (no self-taught run). */
+export function reasoning(partial: Partial<Reasoning> = {}): Reasoning {
+  return {
+    v: 1,
+    model: Q17,
+    available: false,
+    roles: [reasoningRole("base"), reasoningRole("sft"), reasoningRole("selfcot")],
+    flips: [],
+    generation: null,
+    generation_error: null,
+    examples: [],
+    summary: [],
+    ...partial,
+  };
+}
 
 /** A run-list row; defaults to a finished 0.6B SFT dev run. */
 export function run(partial: Partial<Run> = {}): Run {
@@ -323,6 +364,7 @@ export function fakeApi(overrides: Partial<Api> = {}): FakeApi {
     getMetrics: async () => ({ lines: [], next: 0 }),
     getStatus: async () => serviceStatus(),
     getDials: async () => DIALS.map((dial) => ({ ...dial })),
+    getReasoning: async (model?: string) => reasoning({ model: model ?? Q17 }),
     checkRun: async (req: RunRequest) =>
       checkedRun({
         model: req.model ?? Q06,

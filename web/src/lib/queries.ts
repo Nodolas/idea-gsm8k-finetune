@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type DependencyList } from "react";
 
-import { toApiError, type ApiError, type DialSpec, type RunList, type Status } from "@/lib/api";
+import {
+  toApiError,
+  type ApiError,
+  type DialSpec,
+  type Reasoning,
+  type RunList,
+  type Status,
+} from "@/lib/api";
 import { useApi } from "@/lib/api-context";
 
 export type AsyncState<T> =
@@ -69,6 +76,12 @@ export function useRuns(): AsyncResult<RunList> {
 export function useFinalists(): AsyncResult<string[]> {
   const api = useApi();
   return useAsync(() => api.getFinalists(), [api]);
+}
+
+/** The reasoning comparison (`GET /reasoning`) for one model, or the service's default. */
+export function useReasoning(model?: string): AsyncResult<Reasoning> {
+  const api = useApi();
+  return useAsync(() => api.getReasoning(model), [api, model]);
 }
 
 /** The Training Dials table (`GET /dials`). */
