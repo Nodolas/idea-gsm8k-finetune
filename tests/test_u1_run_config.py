@@ -53,6 +53,10 @@ C2_FIELDS = {
     "grpo_steps",
     "grpo_generations",
     "evaluator",
+    "cot_problems",
+    "cot_samples",
+    "cot_temperature",
+    "cot_data_run",
 }
 
 # One non-default value for every C2 field that enters the hash (all but run_id and v).
@@ -117,6 +121,10 @@ def test_AC1_4_5_defaults_match_documented_values():
     assert cfg.grpo_steps is None
     assert cfg.grpo_generations is None
     assert cfg.evaluator == "project"
+    assert cfg.cot_problems == 1500
+    assert cfg.cot_samples == 4
+    assert cfg.cot_temperature == pytest.approx(0.7)
+    assert cfg.cot_data_run is None
 
 
 def test_AC1_4_5_same_config_and_seed_give_same_hash():
