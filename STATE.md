@@ -10,7 +10,7 @@ spec_route: "aidlc"
 current_task: none
 slices: "9/10"
 test_command: "scripts/check.sh"
-pending_runs: "q17-grpo-dev-1:running:197111"
+pending_runs: ""
 last_check: "2026-11-09 f91f147 scripts/check.sh exit 0 (660 Python tests, 362 website tests, coverage 87.3%; run in the main folder at this commit); scripts/trace-check.sh exit 0"
 charter_commit: "7a3fadf9c62784ca89a144a0e8a7a93b0027fd54"
 ---
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Batch-13 next (u12-learning-course, the Course page; worktree, subagents on Sonnet). q17-grpo-dev-1 (AC7.1.5, about 3 h) runs detached from the main tree: do not merge a batch that changes modules it imports (training, evaluation, scoring, datasets, run_config, run_records) until it ends. Sessions on Sonnet 5.5, Auto.
+Paused by Nico 2026-11-09 (\"stop all we will resume another day\"). On resume: (1) q17-grpo-dev-1 (AC7.1.5) FAILED in its first minute: Triton could not compile its CUDA helper with gcc (`outputs/q17-grpo-dev-1/run.log`; likely the Python C headers, /usr/include/python3.12/Python.h, are missing, or a GRPO code path triggers torch.compile/Triton); make it a gap (/build 3.2 step 3), find the cause without installing anything outside the folder (system packages are Nico's), fix, rerun as q17-grpo-dev-2. (2) Then batch-13, u12-learning-course (the Course page): plan outline is six parts (course data, `gsm8k course inspect`, service course routes, queue/worker/prune for course runs, 4-bit QLoRA plus course models with bitsandbytes, Course page plus landing card); worktree, subagents on Sonnet (Nico). Sessions on Sonnet 5.5, Auto.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping, and BR4.7/BR4.8 there are superseded by contract C5's 2026-11-07 "method best" note).
