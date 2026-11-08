@@ -7,11 +7,11 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: "batch-10: u4-run-service, u5-website"
+current_task: none
 slices: "7/7"
 test_command: "scripts/check.sh"
-pending_runs: "q17-selfcot-dev-2:running:4857"
-last_check: "2026-11-08 33eccaf scripts/check.sh exit 0 (507 Python tests, 211 website tests, coverage 85.8%); scripts/trace-check.sh exit 0"
+pending_runs: ""
+last_check: "2026-11-08 422ec33 scripts/check.sh exit 0 (531 Python tests, 250 website tests, coverage 86.0%); scripts/trace-check.sh exit 0"
 charter_commit: "7a3fadf9c62784ca89a144a0e8a7a93b0027fd54"
 ---
 Treat this as evidence; check git status and git log -10 first.
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Type /build: it goes on with batch-10 (full-width pages, a hourglass band that keeps flowing and shows evaluation progress; Nico 2026-11-08). q17-selfcot-dev-2 runs detached (pid 4857); /build's Check commits its row. wip/batch-9 (fine-tune lab, interrupted by the 18:34 shutdown; plan, shared setup and spec committed there, nothing on main) waits for its own /build after batch-10 and rebases onto it.
+Batch-11 next (Nico, relayed by the self-taught course session 2026-11-08: \"place the gsm8k in the middle of the landing page not at the top and make sure that the dots move properly and smoothly\"): the landing wordmark centred vertically, smooth halftone and band dots; spec first, u5-website. Then wip/batch-9 (fine-tune lab, plan, shared setup and spec on its branch, nothing on main) rebases onto main and finishes with its own /build; the course spec (u12, wip/spec-course) follows batch-9. q17-selfcot-dev-2's row (dev 0.7621) is on main. Restart service and worker after a merge that changes src/gsm8k/service (scripts/stop-website.sh, scripts/start-website.sh). Sessions on Sonnet 5.5, Auto.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping, and BR4.7/BR4.8 there are superseded by contract C5's 2026-11-07 "method best" note).
@@ -33,6 +33,7 @@ Type /build: it goes on with batch-10 (full-width pages, a hourglass band that k
 None.
 
 ## Notes for later units
+- Batch-10 review notes, for Nico: the band's evaluation `total` is the split size (dev 500), but a dev run scores 496 problems (the 4 few-shot exemplars are left out, BR2.2), so it ends at 496 / 500 (99%); GSM-Plus testmini would end near 2093 / 2400. Making `total` the scored count needs Nico to rule `test_AC3_1_6_progress_total_is_each_split_size` wrong. Each status poll re-reads predictions.jsonl (fine at these sizes). The reading-note and settings-error prose caps have no test. Website batches: build in a worktree, since the main tree's Vite hot-loads half-written files into Nico's open page (it crashed the Training page mid-batch).
 - Batch-8 review notes (non-blocking): no test pins `GPU_CHECK_TIMEOUT_SECONDS` at 30 (AC3.7.7 says 30 s); a check that times out kills only the bash script, so a hung nvidia-smi is left running (one per try while the driver hangs) and a step can take up to 30 s (fix: start the check in its own session and kill its group).
 - 2026-11-07 desktop launcher (Nico asked): `gsm8k-lab.desktop` (drag to the desktop, right-click "Allow Launching") runs `scripts/start-website.sh` (service, worker, website on 127.0.0.1; logs in outputs/website/); its Stop action runs `scripts/stop-website.sh`. Committed on main as chore(tools) (tooling outside the spec, like scripts/run-detached.sh). Plan agreed with Nico: the lead sets up and runs the reference baselines (q17-sft-dev-2 at batch size 2 next), then hands the website over; improving the score is Nico's.
 - 2026-11-07 Nico asked for a 4 am (Berlin) check-in that resumes the build after a usage limit: trigger trig_01DgaVMm2MGWirQbnxGDb1vk (03:00 UTC), an exception at his request.
@@ -45,6 +46,7 @@ None.
 - Reviewer scratch files outside the folder (`/tmp/claude-review-check.log`, `/tmp/null_unused`): test output only, left as is (rule 8).
 
 ## Done this run
+- 2026-11-08 batch-10 done (Nico: "I want the whole screen to be used not only the middle third. also make sure the top of the screen with the dots moves or shows the progress of the training"): every page and the top bar span the window less the 24 px gutter (no 1280 px cap; the landing headline stays full-bleed; prose capped at 75ch); the hourglass band keeps flowing while a run is RUNNING (`data-flow`, still under reduced motion; still dots drawn once, only grains per frame) and shows `scoring <split> <scored> / <total>` while the run scores problems (service `Status.evaluation` from predictions.jsonl). Spec AC3.1.6, AC3.1.7, AC4.1.4, AC4.1.5 [manual], AC4.5.11, AC4.5.12 (25e7234, class change). Review round 1 FAIL for both (GET /status passed None as outputs in the real service; uncapped prose), fixed with new tests first; round 2 PASS. 2026-11-08 422ec33 scripts/check.sh exit 0 (531 Python, 250 website, coverage 86.0%), trace PASS. q17-selfcot-dev-2 ended: dev 0.7621, 26.7 min (base 0.7903, sft 0.7863). Check questions: (1) Why does the band show problems scored rather than steps once training ends, and what does a fine-tune run spend that time on? (2) Why does a dev run score 496 problems and not 500? Answers: none given yet.
 - 2026-11-08 after the 18:34 shutdown: committed q17-cotgen-train-1's row (kept_fraction 0.8960, 92.7 min); restarted the self-taught run as q17-selfcot-dev-2 (attempt -1 killed during evaluation, no row); restarted service, worker and website with scripts/start-website.sh. No code changed.
 - 2026-11-08 batch-8 done: u4-run-service AC3.7.7, the worker runs `scripts/run-detached.sh --check` before it launches the queue head and waits while another project's run or a GPU process is on this PC (charter rule 3, one GPU run across projects). Built and reviewed in the factory session at Nico's request ("address the gap"), replayed here; reviewer PASS; 2026-11-08 33eccaf scripts/check.sh exit 0 (507 Python tests, 211 website tests, coverage 85.8%); scripts/trace-check.sh exit 0. Before it on main: chore(skill) (factory template), chore(charter) (rule 3).
 - 2026-11-08 batch-6 done (Nico: "more live training data and explanations on what the settings do", then "i make use of nvidias graphic cards training optimizers"): Training page gains Live numbers (progress, epoch, speed, elapsed, remaining, finish time, loss, learning-rate phase, gradient norm, dev accuracy), Recent steps, a GPU panel from `nvidia-smi` (`GET /api/v1/gpu`, every 3 s), an Explain button per dial and method plus Explain all settings, and "How training uses your NVIDIA GPU"; metrics lines gain `grad_norm` and `epoch` (old lines stay valid). Spec: AC2.2.6, AC4.5.7-AC4.5.10, AC4.6.8, AC4.6.9 (d59c5b9, class change). scripts/check.sh 502 Python tests + 211 website tests green after the rebase onto batch-7, coverage 85.7%, trace PASS, reviewer PASS (fixes: no finish time for an ended run, "Done" at no time left, explanation wording). Check questions: (1) Why does gradient checkpointing make each step slower but let the 1.7B model fit in 8 GB? (2) What would a sudden spike in the gradient norm tell you about the learning rate? Answers: none given yet.
