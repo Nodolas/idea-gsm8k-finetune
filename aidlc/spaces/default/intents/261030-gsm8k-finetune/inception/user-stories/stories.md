@@ -263,6 +263,7 @@ As Nico, I want runs I start from the website while the GPU is busy to wait in l
 - **AC3.7.4** Given a waiting run, when Nico removes it, then it leaves the queue, never starts, and no row is written for it.
 - **AC3.7.5** Given waiting runs, when the service or the worker restarts, then the same runs are still waiting in the same order.
 - **AC3.7.6** Given a run started from the terminal holds the lock, when the worker is ready for the next waiting run, then it waits until the lock is free and starts the run then.
+- **AC3.7.7** Given no run of this project holds the lock but another long run or a GPU process is on this PC (another project's run, or other GPU use: `scripts/run-detached.sh --check` exits 3, or 4 when nvidia-smi fails; a check that times out after 30 seconds counts as 4), when the worker is ready for the next waiting run, then it starts nothing, the waiting runs keep their order, the worker log names what holds the GPU (once, until that changes), it checks again at most every 10 seconds, and it starts the run once the check exits 0. A check that cannot run at all (the script missing or broken) leaves the lock alone to decide, as before.
 
 ### US3.4 Stop a run
 
