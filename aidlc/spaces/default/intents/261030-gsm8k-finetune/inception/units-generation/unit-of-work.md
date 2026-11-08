@@ -10,11 +10,12 @@ Nine units grouping the building blocks in `inception/domain-design/components.m
 | U2 | u2-baselines | library | S | Must | US1.5 |
 | U3 | u3-sft | library | L | Must | US2.1, US2.2, US2.3, US2.4, US2.5 |
 | U4 | u4-run-service | service | L | Must | US3.1, US3.2, US3.3, US3.4, US3.5, US3.6, US3.7 |
-| U5 | u5-website | ui | L | Must | US4.1, US4.2, US4.3, US4.4, US4.5, US4.6, US4.7 |
+| U5 | u5-website | ui | L | Must | US4.1, US4.2, US4.3, US4.4, US4.5, US4.6, US4.7, US4.8 |
 | U6 | u6-final-and-report | library | M | Must | US5.1, US6.1, US6.2, US6.3 |
 | U10 | u10-self-taught-cot | library | M | Could | US10.1, US10.2, US10.3, US10.4 |
+| U11 | u11-finetune-lab | library | M | Could | US11.1, US11.2, US11.3, US11.4 |
 
-U10 was added on 2026-11-08 (Nico: self-taught chain of thought, and a page on how it moved the score; `inception/changes.md`).
+U10 was added on 2026-11-08 (Nico: self-taught chain of thought, and a page on how it moved the score; `inception/changes.md`). U11 was added on 2026-11-08 too (Nico: a way smaller model that trains in minutes and a step-by-step lab on what affects what in fine-tuning, without touching the current run; `inception/changes.md`).
 
 Deferred (Nico, 2026-11-07, `inception/changes.md`): U7 u7-grpo, U8 u8-tuning and U9 u9-ablations (Could Have) are not built in this build; their sections below and their stories stay as written. To build them later, move their three rows back into this table and their entries back into the `units:` block of `unit-of-work-dependency.md`:
 
@@ -178,3 +179,17 @@ The deployment model of every unit is local only: nothing is deployed (team-prac
   - Generation samples several sequences per problem, so it uses a smaller problem batch than evaluation to stay within 8 GB (NFR1); the batch plan fixes the numbers.
   - The website does not start generation or self-taught runs in this unit: the `/build` lead starts them detached; the run list and scores pages show their rows like other runs.
   - Tests run on the CPU with the tiny model fixture and fixture files (NFR3).
+
+## U11 u11-finetune-lab (Could, added 2026-11-08)
+
+- **Description:** A fine-tuning lab on the side: twelve short lessons, each fine-tuning the small pretrained model `EleutherAI/pythia-31m` on the CPU in a few minutes per variant and changing one dial against the same starting point, with a Lab page that walks through them (guess, run, watch, read why).
+- **Building blocks:**
+  - FinetuneLab (new): lessons and the lab configuration, a plain PyTorch training loop with LoRA or every weight, dev loss and before/after scoring, `gsm8k lab`, and the lab files of contract C8.
+  - RunService: the `/api/v1/lab` routes (C8), launching `gsm8k lab run` as a CPU process outside the GPU lock and queue.
+  - Website: the Lab page at `/lab` and its top-bar link.
+- **Owns and delivers:** `gsm8k lab list|run`; `outputs/lab/`; `GET /api/v1/lab`, `GET /api/v1/lab/{lesson}`, `POST /api/v1/lab/{lesson}/run`, `POST /api/v1/lab/stop`; the Lab page; one `[manual]` check (AC11.2.10).
+- **Deployment model:** embedded (command), local service routes and website page.
+- **Notes and constraints:**
+  - CPU only, a few threads, low priority: a GPU run keeps going while a lesson runs (Nico: "don't influence the current run"). It never writes `results/runs.csv`, `outputs/run.lock` or `outputs/queue/`.
+  - Reuses DatasetsAndPrompts (the fixed split, the training frame of BR2.3, the training-data guard), AnswerScoring and Evaluation (greedy scoring with the zero-shot frame); it does not change them, so the queued GPU runs import unchanged code.
+  - Tests run on the CPU with the tiny model fixture and fixture problems (NFR3).

@@ -27,9 +27,12 @@ units:
   - name: u10-self-taught-cot
     kind: library
     depends_on: [u3-sft, u4-run-service, u5-website]
+  - name: u11-finetune-lab
+    kind: library
+    depends_on: [u3-sft, u4-run-service, u5-website]
 ```
 
-Added 2026-11-08: u10-self-taught-cot depends on u3-sft (the supervised loop it feeds), u4-run-service (the service that serves its comparison) and u5-website (the top bar and layout its page joins).
+Added 2026-11-08: u11-finetune-lab depends on u3-sft (the training frame and data guard it reuses), u4-run-service (the service that serves its routes) and u5-website (the top bar and layout its page joins). Also added 2026-11-08: u10-self-taught-cot depends on u3-sft (the supervised loop it feeds), u4-run-service (the service that serves its comparison) and u5-website (the top bar and layout its page joins).
 
 Deferred (Nico, 2026-11-07): u7-grpo, u8-tuning and u9-ablations are out of the `units:` block above and not built in this build. Each depends on u3-sft (kind library); the graph and table below still show them for when they come back.
 
@@ -49,9 +52,12 @@ graph TD
   u10-self-taught-cot --> u3-sft
   u10-self-taught-cot --> u4-run-service
   u10-self-taught-cot --> u5-website
+  u11-finetune-lab --> u3-sft
+  u11-finetune-lab --> u4-run-service
+  u11-finetune-lab --> u5-website
 ```
 
-<!-- Text fallback: arrows point from a unit to what it depends on. u1-eval-skeleton depends on nothing. u2-baselines and u3-sft depend on u1-eval-skeleton. u4-run-service depends on u1-eval-skeleton and u3-sft. u5-website depends on u4-run-service. u6-final-and-report depends on u2-baselines, u3-sft and u4-run-service. u7-grpo, u8-tuning and u9-ablations each depend on u3-sft. u10-self-taught-cot depends on u3-sft, u4-run-service and u5-website. There are no cycles. -->
+<!-- Text fallback: arrows point from a unit to what it depends on. u1-eval-skeleton depends on nothing. u2-baselines and u3-sft depend on u1-eval-skeleton. u4-run-service depends on u1-eval-skeleton and u3-sft. u5-website depends on u4-run-service. u6-final-and-report depends on u2-baselines, u3-sft and u4-run-service. u7-grpo, u8-tuning and u9-ablations each depend on u3-sft. u10-self-taught-cot depends on u3-sft, u4-run-service and u5-website. u11-finetune-lab depends on u3-sft, u4-run-service and u5-website. There are no cycles. -->
 
 ## Edges and Why
 

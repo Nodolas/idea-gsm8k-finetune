@@ -9,7 +9,7 @@ Sources: `inception/requirements-analysis/requirements.md` (FR1–FR9, NFR1–NF
 - **Long runs:** a criterion whose run takes over about 10 minutes carries `[manual]` and `Verify: results/runs.csv row <base id>`. Base ids follow `<model>-<method>-<split>` (Q7): model `q06` (`Qwen/Qwen3-0.6B-Base`) or `q17` (`Qwen/Qwen3-1.7B-Base`); method `base`, `sft`, `grpo`, `best` (the best tuned checkpoint, whichever method made it), `cotgen` and `selfcot` (group 10, added 2026-11-08), or an ablation name; split `dev`, `test`, `harness` (lm-evaluation-harness on the test split), `gsmplus`, `gsmsym` or `train` (the chain-of-thought generation, which samples the training part only). Each attempt is started detached by the `/build` lead (`scripts/run-detached.sh`) or by Nico from the website, never typed by Nico in a terminal, with `--run-id <base id>-1`, `-2`, and so on (inception/changes.md, 2026-10-31); the row's `run_id` is the attempt id. The `q17` ids assume the 1.7B model is the final one (inception/brief.md); if the best checkpoint turns out to be 0.6B, the same criteria use `q06`.
 - **Quick tests:** tests run on the CPU in under 10 minutes; only the walking-skeleton test loads a real model (3 dev problems), others use tiny fixtures, mocks or a few training steps. Wherever a test runs a model on a few problems or steps ("a limit of 5 problems", "a few steps"), the model is a tiny model fixture: a Qwen3-architecture model with random weights and a few small layers, built by the test (with the 0.6B tokenizer), never the real 0.6B or 1.7B weights. All tests point the results file at a temporary path, never `results/runs.csv` (NFR3, team-practices.md).
 - **Run results file:** "the results file" below means `results/runs.csv` for long runs and a temporary file in tests (FR1.6).
-- **Priority:** groups 1–6 are Must Have (scope-document.md IB-1 to IB-6); groups 7–9 are Could Have, built only after everything else works (IB-7 to IB-9, Q2), and are deferred: not built in this build (Nico, 2026-11-07; units u7-u9 deferred in unit-of-work.md). Group 10 is Could Have too and is built (Nico, 2026-11-08: self-taught chain of thought and a page on how it moved the score; unit u10-self-taught-cot). No story is Should Have or Won't Have; exclusions are listed in requirements.md Out of Scope.
+- **Priority:** groups 1–6 are Must Have (scope-document.md IB-1 to IB-6); groups 7–9 are Could Have, built only after everything else works (IB-7 to IB-9, Q2), and are deferred: not built in this build (Nico, 2026-11-07; units u7-u9 deferred in unit-of-work.md). Group 10 is Could Have too and is built (Nico, 2026-11-08: self-taught chain of thought and a page on how it moved the score; unit u10-self-taught-cot). Group 11 is Could Have and is built (Nico, 2026-11-08: a small model that trains in minutes on the CPU and a step-by-step lab on what affects what; unit u11-finetune-lab). No story is Should Have or Won't Have; exclusions are listed in requirements.md Out of Scope.
 
 ## Training Dials
 
@@ -38,13 +38,14 @@ Bounds are inclusive.
 | 1. Data and evaluation (walking skeleton first) | US1.1–US1.5 | Must |
 | 2. Supervised fine-tuning | US2.1–US2.5 | Must |
 | 3. Run control service | US3.1–US3.7 | Must |
-| 4. Results website | US4.1–US4.6 | Must |
+| 4. Results website | US4.1–US4.8 | Must |
 | 5. Generalisation check | US5.1 | Must |
 | 6. Final score, write-up and learning checks | US6.1–US6.3 | Must |
 | 7. Reinforcement learning | US7.1 | Could |
 | 8. Tuning loop | US8.1–US8.2 | Could |
 | 9. Ablations | US9.1 | Could |
 | 10. Self-taught chain of thought | US10.1–US10.4 | Could |
+| 11. Fine-tuning lab | US11.1–US11.4 | Could |
 
 ---
 
@@ -422,6 +423,23 @@ As Nico, I want the training page to draw how the model is being fine-tuned, so 
 - **AC4.7.8** Given any run, when the panel renders, then the drawing is hidden from assistive technology and the same facts are text; the panel says which parts are measured (step, loss, gradient norm, learning rate) and which are drawn for illustration (the layers and the moving dots; every adapter is updated on every step and per-layer sizes are not recorded); and with the operating system's reduce-motion setting on the panel carries `data-motion="still"` and plays no passes, otherwise `data-motion="live"`.
 - **AC4.7.9** Given the next real fine-tune run on this PC, when Nico watches the panel from its first step, then he can say in his own words what stays frozen, what is trained and what one step does to the model, and he tells the lead if the picture does not show it. [manual] Verify: Nico watches the live run `q17-selfcot-dev-1` (or any fine-tune) and answers in session.
 
+### US4.8 Walk through one step, token by token
+
+As Nico, I want the training page to animate what happens inside one training step, token by token, and how a model writes an answer, so that I see how fine-tuning works mechanically and that the training text is tokenized once, not every batch.
+
+- **Priority:** Must Have
+- **Requirements:** FR4.8, NFR9
+- **Depends on:** US4.7
+- **INVEST:** one panel under "How the model is fine-tuned"; testable with component tests, fake timers and a mocked metrics stream (the drawing is decorative, so tests read its text and `data-*` markers).
+
+- **AC4.8.1** Given a run with method `sft`, `terse`, `optuna` or `selfcot`, when the training page renders, then a region named "One training step, token by token" lists eight phases in this order, each with a one-line plain-language meaning: Tokenize, Batch, Embed, Forward, Predict, Loss, Backward, Update; the phase being shown carries `aria-current="step"`, and the region carries `data-phase` with the shown phase's name in lower case.
+- **AC4.8.2** Given the walkthrough of a fine-tune, when the Tokenize phase is shown, then it says that the whole training set was tokenized once, before step 1, and that each step only pads its batch of token ids into a rectangle (no text is tokenized again); and it shows a sample training example as token chips, the question's tokens marked `data-role="prompt"` in a group labelled "no loss" and the answer's tokens marked `data-role="answer"`.
+- **AC4.8.3** Given a fine-tune run with step lines, when the phases are shown, then Batch shows the run's batch size and padding chips marked `data-role="pad"`; Predict shows, for every answer token, the next token it must guess (the text shifted by one); Loss shows the newest step line's loss and says that only answer tokens count; Backward shows the newest gradient norm ("—" when the line has none) and says the gradient stops at the frozen weights; Update shows the newest learning rate and says that only the LoRA matrices A and B change; and with no step line yet, the phases still show with "—" in place of the figures.
+- **AC4.8.4** Given either walkthrough (AC4.8.1 or AC4.8.5) with the reduce-motion setting off, when it is shown, then it carries `data-motion="live"` and moves to the next phase every 1.8 seconds, from the last phase back to the first; a button "Pause walkthrough" stops it and then reads "Play walkthrough"; buttons "Previous phase" and "Next phase" move one phase at any time; a new step line from the live stream does not move the phase. With reduce-motion on, it carries `data-motion="still"`, starts paused and never moves by itself.
+- **AC4.8.5** Given a run that does not change the model (method `cotgen`, `base` or `best`), when the training page renders, then a region named "How the model writes an answer, token by token" lists the phases Tokenize, Forward, Choose, Append and Stop, and for `cotgen` a sixth phase Check (the answer is kept only when its final number is right); Choose says the model takes the most likely token for `base` and `best`, and samples at the run's temperature for `cotgen` (the config's `cot_temperature`, 0.7 when absent); the answer's tokens grow by one at each Append up to the sample answer's length, then the walkthrough starts again at Tokenize; the region carries `data-phase` as in AC4.8.1; and it says "The weights do not change."
+- **AC4.8.6** Given any walkthrough, when it renders, then its drawing is hidden from assistive technology and the same facts are text; it says that the sample text is an illustration and that the loss, gradient norm and learning rate are the run's measured figures.
+- **AC4.8.7** Given no run has happened, or a run whose method has no walkthrough, when the training page renders, then the walkthrough region reads "Start a run to see how a step works." and shows no phases.
+
 ---
 
 ## 5. Generalisation Check
@@ -630,6 +648,120 @@ As Nico, I want a Reasoning page that shows and explains how self-taught chain o
 - **AC10.4.3** Given examples in the comparison, when the page renders, then each example shows its problem id, gold answer and the base and self-taught outputs next to each other, and every control on the page is reachable by keyboard.
 - **AC10.4.4** Given `available` false, when the page renders, then it shows "No self-taught chain-of-thought run yet" with the base and reference figures that exist; given a service error, then it shows an error state naming it; while the comparison loads, then it shows a loading state.
 - **AC10.4.5** [manual] Given the finished q17-selfcot-dev run, when Nico reads the Reasoning page and the "Self-taught chain of thought" section of `results.md`, then both say how the dev score moved, whether the change is within noise, and why (answer length and style, problems fixed and broken). Verify: Nico reads the Reasoning page and `results.md` after q17-selfcot-dev ends
+
+---
+
+## 11. Fine-Tuning Lab (Could)
+
+Nico, 2026-11-08: a way smaller model that trains in minutes, and a step-by-step learning path through what affects what in fine-tuning, without touching the current run (FR11). The lab is a side track: it runs on the CPU only, writes only under `outputs/lab/`, never touches `results/runs.csv`, the GPU lock or the queue, and its figures are not project results. Quick tests use the tiny model fixture, never the real lab model.
+
+### Lab Defaults
+
+Every variant is the default configuration below with the variant's changes. `EleutherAI/pythia-31m` (Apache-2.0, 30.5 M weights, 6 layers, width 256) at revision `e556ace21b489575e94e9d50b6dad2fcc7419679` measured about 1.4–1.7 s per step at batch size 8 on 4 CPU threads of this PC while a GPU run went on (2026-11-08).
+
+| Field | Allowed | Default |
+|---|---|---|
+| method | `lora` or `full` | `lora` |
+| lora_rank | 1 to 64 (whole number) | 8 |
+| lora_alpha | 1 to 128 (whole number) | 16 |
+| learning_rate | 1e-6 to 1e-1 | 1e-3 |
+| batch_size | 1 to 64 (whole number) | 8 |
+| train_examples | 16 to 6,973 (whole number) | 800 |
+| epochs | 1 to 20 (whole number) | 1 |
+| max_seq_len | 64 to 512 (whole number) | 256 |
+| warmup_ratio | 0 to 0.5 | 0.1 |
+| schedule | `linear` (warm-up, then linear decay to 0) or `constant` (warm-up, then flat) | `linear` |
+| loss_on | `answer` (answer tokens only) or `all` (question and answer tokens) | `answer` |
+| answer_format | `step-by-step` or `terse` (FR2.1) | `step-by-step` |
+| batching | `random` or `by-length` | `random` |
+| retokenize | `false` or `true` (tokenize each batch again at every step, to time it) | `false` |
+| seed | 0 to 2³¹−1 (whole number) | 42 |
+| dev_problems | 8 to 496 (whole number) | 64 |
+| sample_problems | 0 to 8 (whole number) | 3 |
+| max_new_tokens | 16 to 256 (whole number) | 128 |
+| threads | 1 to 8 (whole number) | 4 |
+
+### Lab Lessons
+
+| Lesson | Title | Variants (name: changes) |
+|---|---|---|
+| l01 | What a fine-tune does | `baseline`: none |
+| l02 | Learning rate | `lr-1e-5`: learning_rate 1e-5; `lr-1e-4`: 1e-4; `lr-1e-3`: 1e-3; `lr-1e-2`: 1e-2 |
+| l03 | Epochs and overfitting | `few-many`: train_examples 64, epochs 12; `many-once`: train_examples 768, epochs 1 |
+| l04 | How much data | `data-200`: train_examples 200; `data-800`: 800; `data-1600`: 1600 |
+| l05 | LoRA rank | `rank-1`: lora_rank 1, lora_alpha 2; `rank-8`: lora_rank 8, lora_alpha 16; `rank-64`: lora_rank 64, lora_alpha 128 |
+| l06 | LoRA or every weight | `lora`: none; `full`: method full, learning_rate 1e-4 |
+| l07 | Batch size | `batch-1`: batch_size 1; `batch-8`: batch_size 8; `batch-32`: batch_size 32 |
+| l08 | What the loss counts | `answer-only`: none; `whole-text`: loss_on all |
+| l09 | Answer format | `step-by-step`: none; `terse`: answer_format terse |
+| l10 | Warm-up and schedule | `warmup-decay`: none; `constant`: schedule constant, warmup_ratio 0; `hot-start`: learning_rate 3e-3, warmup_ratio 0 |
+| l11 | Seed noise | `seed-1`: seed 1; `seed-2`: seed 2; `seed-3`: seed 3 |
+| l12 | Where the time goes | `tokenize-once`: none; `by-length`: batching by-length; `retokenize`: retokenize true |
+
+### US11.1 Lessons and their configurations
+
+As Nico, I want a fixed path of lessons, each changing one thing against the same starting point, so that I learn what each dial does on its own.
+
+- **Priority:** Could Have
+- **Requirements:** FR11.1
+- **Depends on:** none
+- **INVEST:** pure data and validation; testable without a model.
+
+- **AC11.1.1** Given the lab's lessons, when they are listed, then there are exactly the twelve lessons of the Lab Lessons table, in its order, with its ids, titles and variant names in its order; each lesson has a non-empty question, what to watch, a guess prompt with exactly three options, an explanation ("why"), what it means for the big runs ("big_run", which names a Training Dials dial or method) and a check question.
+- **AC11.1.2** Given a lesson's variant, when its configuration is built, then it is the Lab Defaults with exactly the variant's changes (for example `l03` `few-many` has train_examples 64 and epochs 12 and every other field at its default); every variant of every lesson passes validation; and a configuration with a value outside the Allowed column (for example learning_rate 0.5, schedule `cosine`, or batch_size 0) is refused with a message naming the field.
+- **AC11.1.3** Given a lesson, when its time is estimated, then the estimate in whole minutes is the sum over its variants of (train_examples × epochs × 0.2 seconds, doubled for method `full`) plus 60 seconds per variant, divided by 60 and rounded up, computed in whole tenths of a second so no float rounding enters (`l01`: 4 minutes; `l02`: 15 minutes).
+
+### US11.2 Run a lesson on the CPU
+
+As Nico, I want a lesson's variants to train a small model on the CPU in minutes and record what happened, so that I can learn from many short runs while the GPU keeps working on the big run.
+
+- **Priority:** Could Have
+- **Requirements:** FR11.2, NFR3, NFR5, NFR8
+- **Depends on:** US11.1, US2.2
+- **INVEST:** one command; testable with the tiny model fixture, a few training problems and a temporary outputs folder.
+
+- **AC11.2.1** Given `gsm8k lab run <lesson>` with the tiny model fixture and a temporary outputs folder, when it ends, then for each variant in order `outputs/lab/<lesson>/<variant>/metrics.jsonl` and `summary.json` exist (contract C8), `outputs/lab/<lesson>/status.json` reads state `finished` with every variant listed as done, and the command exits 0; `--variant <name>` (repeatable) runs only those variants; an unknown lesson or variant exits 2 and writes nothing.
+- **AC11.2.2** Given a lab run, when it trains, then it uses the CPU only: the `lab run` handler (never the module import, since `gsm8k` imports every command module when it builds its parser) sets `CUDA_VISIBLE_DEVICES` to an empty string before CUDA is first used, puts the model and every tensor on the CPU even when torch already sees a GPU, sets torch's thread count to the configuration's `threads` and lowers its own priority by 10 (`os.nice(10)`); and it never reads or writes `results/runs.csv`, `outputs/run.lock` or `outputs/queue/`.
+- **AC11.2.3** Given a lab run that holds the lab lock (an exclusive `flock` on `outputs/lab/lab.lock` held for the process's life, as `run_records/lock.py` does for the GPU lock; contract C8), when a second `gsm8k lab run` starts, then it exits 3 naming the running lesson (read from the lock file) and writes nothing; a lock file left by a process that has ended holds no `flock` and is taken over.
+- **AC11.2.4** Given a lab run, when it picks its problems, then the training problems are the first `train_examples` problems of the training part of the fixed split by index, the dev problems the first `dev_problems` of the 496 scored dev problems by index (the 500 dev problems without the 4 prompt exemplars), and the sample problems the first `sample_problems` of those dev problems; the training problems `load_lab_problems` returns go through `guard.check_training_problems` with all 500 dev ids and a check against the test split's ids, and a problem that fails it ends the run `failed` (exit 1) before any training; the test split's problems are never training or dev data.
+- **AC11.2.5** Given a lab run, when it trains, then the text is tokenized once before the first step (training frame and answer as in FR2.1 and BR2.3, the end-of-text token appended, cut at `max_seq_len`; an example with no answer token left after the cut is dropped, and a run with no example left ends `failed`, exit 1, with a message; with `loss_on` `answer` the question's tokens are masked from the loss, with `all` only padding is); the examples are shuffled with the seed once per epoch, the last short batch is kept, and total_steps = epochs × ceil(kept examples / batch_size); each step pads one batch, runs one forward and backward pass, clips the gradient norm at 1.0 and takes one AdamW step (weight decay 0) under the schedule; with `retokenize` true each step tokenizes its batch's text again and times it. Method `lora` puts LoRA adapters with the configured rank and alpha on every `torch.nn.Linear` inside the decoder blocks (`model.get_decoder().layers`), never on the embeddings or the output head, and trains only them, on both the Qwen3 test fixture and a tiny random GPTNeoX (pythia) model; method `full` trains every weight.
+- **AC11.2.6** Given a lab run, when it trains, then `metrics.jsonl` gets one line per step with the step, total steps, loss, learning rate, gradient norm and elapsed seconds, and a dev line at step 0 (before training) and at each distinct step of {max(1, ceil(k × total_steps / 10)) : k = 1 to 10} (so a run of 3 steps has dev lines at steps 0, 1, 2 and 3) with the dev loss: the token-weighted mean loss over the answer tokens of the dev problems in the variant's answer format, whatever `loss_on` is (contract C8).
+- **AC11.2.7** Given a variant that has ended, when its `summary.json` is read, then it holds the C8 fields: its configuration, trainable and total weights (for `full` trainable equals total; for `lora` trainable is the adapters' weights only), steps, seconds, seconds per step, the seconds the one-time tokenization took, the re-tokenizing seconds per step (null unless `retokenize` is true), the padding fraction (padding tokens over all tokens of the run's batches), peak memory (`resource.getrusage(RUSAGE_SELF).ru_maxrss / 1024` MB), the first and last training loss (the last as the mean of the last 10 step losses), dev loss before, after and at its best with that step, and the dev accuracy and format rate (the share of answers with a `#### <number>` line) before and after training, scored under FR1.4 with the zero-shot training frame and greedy decoding up to `max_new_tokens`, plus the sample problems' answers before and after.
+- **AC11.2.8** Given `batching` `by-length`, when the batches are formed, then the training examples start from the same seeded shuffle as `random` batching, are cut into chunks of 16 batches, sorted by length inside each chunk and cut into batches, and the batch order is shuffled with the seed; the run's padding fraction is lower than or equal to the same run's with `random` batching on the same examples, and lower when the examples' lengths differ and there are at least 2 batches.
+- **AC11.2.9** Given a lab run, when it gets SIGTERM, then it ends after the current training step (or the current generation or dev-loss batch), writes state `stopped`, writes no `summary.json` for the stopped variant and leaves it out of `done`, releases the lab lock and exits 130; when a variant raises an error, then the state is `failed` with the error's message, the lab lock is released and the command exits 1; a run checks in this order: an unknown lesson or variant (exit 2), the lab lock (exit 3), then it removes that lesson's earlier folder and starts.
+- **AC11.2.10** Given the lab on this PC with a GPU run going, when Nico starts lesson `l01` from the Lab page, then it finishes within about 6 minutes on the CPU, its summary shows the dev loss falling, and the GPU run's speed and result are unaffected. [manual] Verify: `outputs/lab/l01/baseline/summary.json` exists and Nico confirms in session; the GPU run's log shows no slowdown.
+
+### US11.3 Serve and control the lab
+
+As Nico, I want the local service to list the lessons, serve their figures and start or stop a lesson, so that the website can drive the lab.
+
+- **Priority:** Could Have
+- **Requirements:** FR11.3, NFR6
+- **Depends on:** US11.2, US3.1
+- **INVEST:** four endpoints on the existing service; testable with FastAPI's test client, a temporary outputs folder and a stubbed process launcher.
+
+- **AC11.3.1** Given the service, when `GET /api/v1/lab` is called, then it answers the C6 `LabList`: the lab model, every lesson in order with its id, number, title, question, what to watch, guess prompt and options, variants (name, label, changes), why, big run, check question, estimated minutes and state (`not-run`, `running`, `finished`, `failed` or `stopped`, from its status file), and `active`, the lesson whose lab run is going (null when none): a lab run is going while the lab lock's `flock` is held, or while the process the service launched has not ended (the service reaps it with `Popen.poll()`).
+- **AC11.3.2** Given a lesson, when `GET /api/v1/lab/{lesson}` is called, then it answers the C6 `LabLesson`: the lesson as in the list, its status (state, current variant, variants done, started and ended times, message), and per variant its metrics lines and its summary (null until it has ended); while `active` is this lesson, the status's state is `running` whatever the status file says (it may not be written yet right after the launch); a status file that says `running` while no lab run is going answers state `failed` with the message "The lab run ended without a status."; an unknown lesson answers 404 `not_found`.
+- **AC11.3.3** Given no lab run going, when `POST /api/v1/lab/{lesson}/run` is called, then the service launches `[<python>, "-m", "gsm8k", "lab", "run", <lesson>]` as an argument list in its own session from the project root, with `CUDA_VISIBLE_DEVICES` set to an empty string in the child's environment and its output appended to `outputs/lab/<lesson>.log`, and answers 202 with the lesson's id and state `running`; while a lab run is going it answers 409 `lab_busy` naming the running lesson; an unknown lesson answers 404 `not_found`; the GPU lock and the queue play no part.
+- **AC11.3.4** Given a lab run going, when `POST /api/v1/lab/stop` is called, then the service sends SIGTERM to the lab run's process and answers 200 with the lesson's id; with no lab run going it answers 409 `no_lab_run`.
+
+### US11.4 Learn on the Lab page
+
+As Nico, I want a Lab page that takes me through the lessons one by one, so that I guess, run, watch and read why, and learn what affects what.
+
+- **Priority:** Could Have
+- **Requirements:** FR11.4, FR4.5, NFR9
+- **Depends on:** US11.3, US4.1
+- **INVEST:** one page; testable with component tests and the fake API.
+
+- **AC11.4.1** Given any page, when it renders, then the top bar has a "Lab" link after "Reasoning" that opens `/lab`; the Lab page lists the twelve lessons in order as "Lesson N · <title>", each with its state in words (Not run, Running, Done, Failed, Stopped), and names the lab model and that it runs on the CPU.
+- **AC11.4.2** Given the Lab page with no `lesson` in the address, when it renders, then the first lesson that is not finished is shown (the first lesson when all are); choosing a lesson in the list shows it and sets `?lesson=<id>`; the shown lesson has the heading "Lesson N: <title>", its question, what to watch, and its variants with their changes.
+- **AC11.4.3** Given a shown lesson, when it renders, then "Your guess" offers the lesson's three options as radio buttons; a chosen option is kept in this browser only (and the page works when the browser's storage is unavailable); once the lesson is finished the page reads "You guessed: <option>" (or "No guess made"); the "Why it happens" text shows once the lesson is finished, and before that only after "Show the explanation now" is pressed.
+- **AC11.4.4** Given a shown lesson with no lab run going, when "Run this lesson" is pressed, then it calls `POST /lab/{lesson}/run`, and the button's note reads "On the CPU, about N minutes. It never uses the GPU, so a GPU run keeps going."; while the lesson runs the page shows "Variant i of n: <label>, step s of t", a button "Stop the lesson" that calls `POST /lab/stop`, and refreshes the lesson every 2 seconds until its state is not `running`; while another lesson runs, "Run this lesson" is disabled and names the running lesson; a 409 `lab_busy` answer shows its message.
+- **AC11.4.5** Given a lesson with metrics lines, when it renders, then a "Training loss" chart and a "Dev loss" chart draw one line per variant, named by the variant's label in a legend, and a results table lists per variant: trainable weights (with thousands separators), steps, minutes (1 decimal), seconds per step (2 decimals), last training loss, dev loss before, after and best (with its step) (losses to 3 decimals), format rate and accuracy before and after (whole percents); for lesson `l12` it also lists the tokenize seconds, the re-tokenize seconds per step and the padding fraction as a percent.
+- **AC11.4.6** Given a finished lesson, when it renders, then a "What happened" list states, worked out from the summaries (losses to 3 decimals): the variant with the lowest dev loss after training and its value (for `l09`, whose variants' dev losses are over different answer texts, the variant with the higher accuracy after training and the format rates instead); for each variant whose last dev loss is more than 0.05 above its best, that it overfitted (its best and last dev loss and the best step); for each variant whose last training loss is above its first or is missing, that training diverged; for `l11`, the spread of the last dev loss across seeds (largest minus smallest) and that smaller differences in the other lessons are noise; for `l12`, how long the one-time tokenization took, what re-tokenizing added per step as seconds and a percent of a step, and the padding fraction with random and with length-grouped batches.
+- **AC11.4.7** Given a finished lesson, when it renders, then "Answers before and after" shows, for the variant chosen in a select (the one with the lowest dev loss first), each sample problem's question, its right answer, and the answers before and after training; "For the big runs" shows the lesson's big-run text and "Check question" its check question.
+- **AC11.4.8** Given the Lab page, when the lab list is loading, fails or a lesson has never run, then it shows "Reading the lab…", the error's message with a "Try again" button, or "Not run yet: press Run this lesson to fill the charts." respectively; the charts are hidden from assistive technology and their facts are in the results table.
 
 ---
 
