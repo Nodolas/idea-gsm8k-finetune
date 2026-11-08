@@ -52,6 +52,26 @@ def steps_for(cfg: RunConfig, max_steps: int | None = None) -> int:
     return min(steps, max_steps) if max_steps is not None else steps
 
 
+def stop_at_answer_end(model: Any, tokenizer: Any) -> None:
+    """Make the model's ``generate`` stop each sequence at the evaluation stop rule (BR3.5: the first
+    ``#### <number>`` line or a new ``Question:``). The base model rarely writes an end-of-text token,
+    and trl's ``generate`` call has no stopping hook, so the criterion is added to the call here."""
+    from transformers import StoppingCriteriaList
+
+    from gsm8k import evaluation
+
+    original = model.generate
+
+    def generate(*args: Any, **kwargs: Any) -> Any:
+        ids = kwargs.get("input_ids")
+        if ids is not None and "stopping_criteria" not in kwargs:
+            stop = evaluation._stop_criterion(tokenizer, ids.shape[1])
+            kwargs["stopping_criteria"] = StoppingCriteriaList([stop])
+        return original(*args, **kwargs)
+
+    model.generate = generate
+
+
 def train_grpo(
     cfg: RunConfig,
     run_dir: Path,
@@ -107,6 +127,7 @@ def train_grpo(
         )
         peft_model = get_peft_model(model, lora)
     peft_model.print_trainable_parameters()
+    stop_at_answer_end(peft_model, tokenizer)
 
     dataset = Dataset.from_list([{"prompt": data.prompt_for(p), "gold": str(p.gold)} for p in data.train])
 
