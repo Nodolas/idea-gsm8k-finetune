@@ -87,6 +87,10 @@ export interface MetricsLine {
   reward?: number | null;
   kl?: number | null;
   answer_length?: number | null;
+  /** The trainer's gradient norm; lines written before 2026-11-08 lack it (AC2.2.6). */
+  grad_norm?: number | null;
+  /** The fractional epoch of the step; lines written before 2026-11-08 lack it (AC2.2.6). */
+  epoch?: number | null;
   run_id?: string;
 }
 
