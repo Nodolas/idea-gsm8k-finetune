@@ -172,6 +172,32 @@ Desktop browser on this PC only (rough-mockups Q5). Numbers, run ids and dates b
 | Live updates paused | A banner across the band's top edge: "Live updates paused, reconnecting · last update 20:31:07" (AC4.5.3); the band keeps the last known fraction |
 | Reduce motion on | Dots jump to the new fraction with no fall animation |
 
+### The fine-tuning view (US4.7, added 2026-11-08)
+
+The hourglass band only tells progress. Under it, full width, sits a panel "How the model is fine-tuned" that shows what a training step does (Nico, 2026-11-08: "make sure this visualization shows me how a neural model gets fine tuned").
+
+```
++------------------------------------------------------------------------------------------+
+| HOW THE MODEL IS FINE-TUNED   sft · Qwen3-1.7B-Base        Following the live run        |
+| TRAINING TEXT        LoRA adapters: small, trained (orange)                  GUESS        |
+| [tokens]  [embed]    ▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫  [head]   right word  ████░░ 39%    |
+| 4 examples ········> ▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮▮ ·····>  other words ░░░░░░░         |
+|                      28 decoder layers: frozen (dotted)                                  |
+| 1 READ    2 GUESS      3 SCORE            4 BLAME         5 NUDGE        ┌ ONE LAYER ─────┐|
+| 4 per     answer       loss 0.94, 39%     grad norm 0.42  lr 2e-4        │ W 2048 x 2048   │|
+| step      words only   47.8% lower        ...             ...            │ + B x A  65,536 │|
+| Step 120 of 400 · 480 examples seen                                      └─────────────────┘|
+| 17,432,576 trained of 1,738,007,552 weights (1.0%)    Measured: ...  Drawn: ...          |
++------------------------------------------------------------------------------------------+
+```
+
+- **Picture** (hidden from assistive technology): the same dotted, monochrome look as the band. A page of tokens on the left feeds the model drawn as a row of 28 dotted columns (one per decoder layer, frozen) with a small orange outlined square above each (its LoRA adapter, trained), then the output head. On the right a bar shows the average chance the model gave the right next word (e to the power of minus the loss) against the other words.
+- **Each step line** replays one pass, 0.7 s: a light sweeps forward through the layers (read, guess), the right-word bar settles (score), an orange sweep runs back through the layers (blame) and every adapter square flashes (nudge). Between lines the picture rests. With reduce motion on the picture does not move and the panel carries `data-motion="still"`.
+- **Text**: the five stages as numbered cards, each with a one-line meaning and the newest figure; the step line "Step 120 of 400 · 480 examples seen"; the counts "17,432,576 trained of 1,738,007,552 weights (1.0%)"; a "One layer up close" figure with the frozen matrix and the adapter matrices A and B; a note that the figures are measured (step, loss, gradient norm, learning rate) and the picture is an illustration.
+- **Not a fine-tune** (`cotgen`, `base`, `best`): the layers stay grey, no adapter is lit, a sweep goes forward only, the five stage cards give way to "This run does not change the model" with what it does instead, and the progress line reads "90 of 1500 problems written" (or "scored").
+- **Ended run or a past run opened**: a slider "Replay step" and a "Play replay" button step through the run's step lines in about 20 seconds; the panel reads "Replaying step N of M". The live run reads "Following the live run".
+- **States**: no run ever: "Nothing to show yet: start a fine-tune to watch the model change."; a fine-tune before its first line: "Waiting for the first logged step"; an ended fine-tune with no step line: "No step lines were recorded for this run."
+
 ### Live curves (Q5, AC4.5.1, AC4.5.2)
 
 - Tabs: **Loss**, **Learning rate**, **Dev accuracy**; for reinforcement-learning runs also **Reward**, **KL**, **Answer length**. One curve per tab keeps each y-axis honest.
@@ -292,6 +318,7 @@ Score on test stays disabled until the checkbox is ticked; ticking it is the sec
 | US4.4 | Screen 2 compare panel |
 | US4.5 | Screen 3 hourglass band, live curves, past runs |
 | US4.6 | Screen 3 dials panel; Confirm Run dialog |
+| US4.7 | Screen 3 fine-tuning view |
 | US3.4 | Stop Run dialog |
 | US3.5 | Screen 3 failure panel |
 | US3.6 | Screen 2 finalist menu; Score a Finalist on Test dialog |

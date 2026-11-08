@@ -10,7 +10,7 @@ Nine units grouping the building blocks in `inception/domain-design/components.m
 | U2 | u2-baselines | library | S | Must | US1.5 |
 | U3 | u3-sft | library | L | Must | US2.1, US2.2, US2.3, US2.4, US2.5 |
 | U4 | u4-run-service | service | L | Must | US3.1, US3.2, US3.3, US3.4, US3.5, US3.6, US3.7 |
-| U5 | u5-website | ui | L | Must | US4.1, US4.2, US4.3, US4.4, US4.5, US4.6 |
+| U5 | u5-website | ui | L | Must | US4.1, US4.2, US4.3, US4.4, US4.5, US4.6, US4.7 |
 | U6 | u6-final-and-report | library | M | Must | US5.1, US6.1, US6.2, US6.3 |
 | U10 | u10-self-taught-cot | library | M | Could | US10.1, US10.2, US10.3, US10.4 |
 
@@ -110,6 +110,7 @@ The deployment model of every unit is local only: nothing is deployed (team-prac
   - Landing with the `gsm8k` halftone headline
   - Scores with ranking, filters, compare and finalist marks
   - Training with the hourglass band, curves, dials, dialogs, queued runs and past runs
+  - The fine-tuning view on the training page (US4.7, added 2026-11-08): the frozen layers, the trained LoRA adapters, the five stages of a step and a replay of a finished run
   - Vitest tests named `AC4.x.y …`
 - **Deployment model:** local Vite app, never deployed.
 - **Notes and constraints:**

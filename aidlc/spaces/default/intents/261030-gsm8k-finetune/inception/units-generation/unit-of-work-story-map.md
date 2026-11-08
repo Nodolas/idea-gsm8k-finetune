@@ -29,6 +29,7 @@ Every story in `inception/user-stories/stories.md` (US1.1–US10.4, including US
 | US4.4 | U5 | u5-website |
 | US4.5 | U5 | u5-website |
 | US4.6 | U5 | u5-website |
+| US4.7 | U5 | u5-website |
 | US5.1 | U6 | u6-final-and-report |
 | US6.1 | U6 | u6-final-and-report |
 | US6.2 | U6 | u6-final-and-report |
@@ -62,7 +63,7 @@ Within each unit, tests for every criterion come first and must fail, then the c
 - **U2:** AC1.5.5 (harness wrapper, quick test) → the `[manual]` runs AC1.5.1–AC1.5.4 and AC1.5.6.
 - **U3:** US2.1 (dials) → US2.2 (training loop) → US2.3 (estimates) → US2.5 (pruning) → US2.4 (the `[manual]` first fine-tunes).
 - **U4:** US3.1 (run list, status) → US3.3 (lock, and a run that ended without finishing) → US3.2 (two-step start) → US3.7 (queue and worker) → US3.4 (stop) → US3.5 (failure reasons) → US3.6 (finalists, test split).
-- **U5:** US4.1 (top bar, tokens) → US4.2 (landing) → US4.3 (scores) → US4.4 (compare) → US4.5 (live view) → US4.6 (dials and dialogs).
+- **U5:** US4.1 (top bar, tokens) → US4.2 (landing) → US4.3 (scores) → US4.4 (compare) → US4.5 (live view) → US4.6 (dials and dialogs) → US4.7 (fine-tuning view, added 2026-11-08).
 - **U6:** US6.1 quick test (AC6.1.1) → US5.1 quick tests (AC5.1.1, AC5.1.2) → US6.2 generator (AC6.2.1–AC6.2.3) → the `[manual]` runs and AC6.2.4 → US6.3.
 - **U7:** AC7.1.1 (rewards) → AC7.1.3, AC7.1.4 → AC7.1.2 → AC7.1.5 (`[manual]`).
 - **U8:** US8.2 rule checker → US8.1 study → AC8.1.5 (`[manual]`).
@@ -71,6 +72,6 @@ Within each unit, tests for every criterion come first and must fail, then the c
 
 ## Coverage Check
 
-- All 35 stories are assigned: U1 has 4, U2 1, U3 5, U4 7, U5 6, U6 4, U7 1, U8 2, U9 1, U10 4 (US10.1–US10.4 added 2026-11-08).
+- All 36 stories are assigned: U1 has 4, U2 1, U3 5, U4 7, U5 7, U6 4, U7 1, U8 2, U9 1, U10 4 (US10.1–US10.4 added 2026-11-08).
 - Every unit has at least one story.
 - No story is split across units.
