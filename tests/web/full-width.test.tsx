@@ -11,6 +11,8 @@ import { resolve } from "node:path";
 
 import { Q06, Q17, fakeApi, run, type FakeApi } from "@/test/fake-api";
 import { renderPage, screen, waitFor } from "@/test/utils";
+import { metricsLine, serviceStatus } from "@/test/fake-api";
+import { userEvent } from "@/test/utils";
 
 const CAPS = ["max-w-[1280px]", "max-w-[var(--content-width)]"];
 const GUTTER = "px-[var(--gutter)]";
@@ -184,5 +186,87 @@ describe("AC4.1.4 full-width pages", () => {
     expect(css).not.toMatch(/--content-width\s*:/);
     expect(css).not.toMatch(/var\(\s*--content-width\s*\)/);
     expect(css).toMatch(/--gutter\s*:\s*24px\s*;/);
+  });
+});
+
+/*
+ * Review round 1 (construction/batch-10.md): AC4.1.4's prose clause. Explanatory prose on the
+ * training page keeps a readable line length now that the page spans the window, so each
+ * explanation block carries `max-w-[75ch]` (at most 75 characters per line).
+ */
+const PROSE_CAP = "max-w-[75ch]";
+
+/** The element a disclosure button opens, found through its `aria-controls`. */
+function controlledBy(button: HTMLElement): HTMLElement {
+  const id = button.getAttribute("aria-controls");
+  expect(id).toBeTruthy();
+  const el = document.getElementById(id ?? "");
+  expect(el).not.toBeNull();
+  return el as HTMLElement;
+}
+
+describe("AC4.1.4 prose keeps its line length on the full-width training page", () => {
+  it("AC4.1.4 a dial's Explain box carries max-w-[75ch]", async () => {
+    const user = userEvent.setup();
+    renderPage("/training", { api: fakeApi() });
+    await screen.findByLabelText("Learning rate");
+    const button = screen.getByRole("button", { name: "Explain Learning rate" });
+    await user.click(button);
+    await waitFor(() => expect(button).toHaveAttribute("aria-expanded", "true"));
+    expect(classesOf(controlledBy(button))).toContain(PROSE_CAP);
+  });
+
+  it("AC4.1.4 the GPU notes list carries max-w-[75ch]", async () => {
+    const user = userEvent.setup();
+    renderPage("/training", { api: fakeApi() });
+    const button = await screen.findByRole("button", {
+      name: "How training uses your NVIDIA GPU",
+    });
+    await user.click(button);
+    await waitFor(() => expect(button).toHaveAttribute("aria-expanded", "true"));
+    expect(classesOf(controlledBy(button))).toContain(PROSE_CAP);
+  });
+
+  it("AC4.1.4 the fine-tuning view's measured note carries max-w-[75ch]", async () => {
+    const runId = "q17-sft-dev-1";
+    const api = fakeApi({
+      getStatus: async () =>
+        serviceStatus({ status: "RUNNING", run_id: runId, started_at: "2026-11-08T16:50:00Z" }),
+      listRuns: async () => ({
+        runs: [
+          run({
+            run_id: runId,
+            model: Q17,
+            method: "sft",
+            dev_accuracy: null,
+            minutes: null,
+            date: null,
+            started_at: "2026-11-08T16:50:00Z",
+            status: "running",
+          }),
+        ],
+        skipped_rows: 0,
+      }),
+      getRun: async (id: string) => ({
+        run_id: id,
+        config: { model: Q17, method: "sft", lora_rank: 16, lora_alpha: 32, batch_size: 4 },
+        status: {},
+        timings: {},
+      }),
+    });
+    renderPage("/training", { api });
+    await waitFor(() => expect(api.stream.isOpen).toBe(true));
+    api.stream.metric(
+      metricsLine({ run_id: runId, step: 40, total_steps: 400, loss: 1.8, grad_norm: 0.9 }),
+      1,
+    );
+    await screen.findByRole("region", { name: "How the model is fine-tuned" });
+    let note: Element | null = null;
+    await waitFor(() => {
+      note = document.querySelector('main [data-part="note"]');
+      expect(note).not.toBeNull();
+    });
+    expect(note).toHaveTextContent("Measured");
+    expect(classesOf(note as unknown as Element)).toContain(PROSE_CAP);
   });
 });
