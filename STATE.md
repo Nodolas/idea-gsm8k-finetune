@@ -7,7 +7,7 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: none
+current_task: "batch-9: u5-website, u11-finetune-lab"
 slices: "7/7"
 test_command: "scripts/check.sh"
 pending_runs: ""
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Batch-9 next: wip/batch-9 (fine-tune lab u11 and the step walkthrough US4.8; plan, shared setup and spec on its branch, nothing on main) rebases onto main (its Lab page follows AC4.1.4, full width) and finishes with /build in a worktree. Then the course spec (u12-learning-course, u7-grpo back in) on wip/spec-course merges and is built. Also open: the results.md section for q17-selfcot-dev-2 (AC10.4.5). Sessions on Sonnet 5.5, Auto.
+Type /build: it goes on with batch-9 (u5-website US4.8 step walkthrough, u11-finetune-lab) in the worktree .cache/worktrees/batch-9, rebased onto main 2026-11-08. Then the course spec (u12, wip/spec-course, based on the old batch-9) rebases and merges. Also open: the results.md section for q17-selfcot-dev-2 (AC10.4.5). Sessions on Sonnet 5.5, Auto.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping, and BR4.7/BR4.8 there are superseded by contract C5's 2026-11-07 "method best" note).
