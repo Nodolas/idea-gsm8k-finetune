@@ -157,6 +157,7 @@ As Nico, I want a LoRA fine-tuning command that streams its metrics as it trains
 - **AC2.2.3** Given a fine-tune that evaluates during training, when it evaluates, then a metrics line with the dev accuracy is added.
 - **AC2.2.4** Given a fine-tune that ends, when it finishes, then it scores the adapter on dev (limited in tests) and appends one row with method `sft` and its `config_hash` to the results file.
 - **AC2.2.5** Given a fine-tune run, when it ends, then the measured seconds per training step are saved in `outputs/<run_id>/` for later estimates.
+- **AC2.2.6** Given a running fine-tune, when a step is logged, then its metrics line also carries `grad_norm` (the gradient norm the trainer reports) and `epoch` (the fractional epoch the step is in); given a trainer that reports neither, then both are null; a line written before this change, without the two fields, is still a valid line.
 
 ### US2.3 Estimate how long a run will take
 
@@ -378,6 +379,10 @@ As Nico, I want the training page to show live curves and my past runs, so that 
 - **AC4.5.4** Given a run has started but no metrics line has arrived, when the page renders, then it shows "Waiting for first step..."; given no run has ever happened, then it reads "No run yet. Set the dials and press Start run." and the past runs list reads "None yet".
 - **AC4.5.5** Given past runs, when the training page renders, then they are listed with run id, status, start time, minutes and dev accuracy, and opening one shows its curves labelled with its run id.
 - **AC4.5.6** Given a real run in progress, when a new metrics line is written, then it appears on the training page within 5 seconds. [manual] Verify: Nico watches a live run and checks the step counter against `outputs/<run_id>/metrics.jsonl` at the website unit's checkpoint
+- **AC4.5.7** Given metrics lines for a run (live, or a past run opened from Past runs), when the training page renders, then a "Live numbers" panel shows progress (step, total steps, percent), epoch, speed (seconds per step and steps per minute over the last 10 steps), elapsed time, time remaining and the clock time the run should end, loss (latest, lowest, average of the last 10 steps, change since the first step), learning rate (latest, and whether it is warming up, decaying or steady), gradient norm (latest and highest), and the latest and best dev accuracy, plus reward, KL and answer length when the lines carry them; each number carries a one-line plain-language meaning, and a number no line carries reads "—". The panel updates with each stream line.
+- **AC4.5.8** Given metrics lines for a run, when the training page renders, then a "Recent steps" table lists the 10 newest step lines, newest first, with step, loss, learning rate, gradient norm and elapsed time; given a new stream line, then it appears at the top without a page reload.
+- **AC4.5.9** Given a machine with an NVIDIA GPU, when `GET /api/v1/gpu` is called, then it answers `available: true` with the GPU name, utilisation percent, memory used and total in MiB, temperature in °C, power draw and limit in W and the current and maximum shader clock in MHz, read from `nvidia-smi` (a value `nvidia-smi` reports as unavailable is null); given no `nvidia-smi`, a failing or slow one, or output that does not parse, then it answers 200 with `available: false` and a reason, never a 500.
+- **AC4.5.10** Given the training page is open, when it renders, then a "GPU" panel shows the GPU name, utilisation, memory used of total, temperature, power draw of limit and clock, each with a one-line plain-language meaning, and refreshes every 3 seconds while the page is open; given `available: false` or a failed read, then the panel reads "GPU stats unavailable" with the reason and the rest of the page keeps working.
 
 ### US4.6 Start and stop runs from the training page
 
@@ -395,6 +400,8 @@ As Nico, I want to set the dials, confirm and start a run, or stop it, from the 
 - **AC4.6.5** Given the launch fails, when Nico confirms, then the dialog stays open and shows why.
 - **AC4.6.6** Given the confirm dialog is open, when Nico uses the keyboard, then focus stays inside the dialog, Escape cancels, and focus returns to the Start button on close.
 - **AC4.6.7** Given waiting runs, when the training page renders, then a "Queued runs" list shows each one's position, attempt id, model and method with a Remove button; given no waiting runs, then the list is hidden.
+- **AC4.6.8** Given the dials panel, when it renders, then the method choice and each of the eleven dials has an "Explain <label>" button (`aria-expanded`) that shows a plain-language explanation of what the dial does, what a higher and a lower value do, and a tip for this 8 GB GPU; one "Explain all settings" button opens every explanation and then reads "Hide all explanations"; the explanations never change a value or block Start.
+- **AC4.6.9** Given the dials panel, when it renders, then a "How training uses your NVIDIA GPU" button (`aria-expanded`) opens a list of what every fine-tune on the GPU already does: bf16 mixed precision, the fused AdamW optimiser, gradient checkpointing, LoRA adapters (only they get gradients) and a linear learning-rate decay after warm-up, each with one line on why.
 
 ### US4.7 See the model being fine-tuned
 

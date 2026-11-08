@@ -13,7 +13,7 @@ Nothing is exposed outside this PC: the service binds to 127.0.0.1 and there is 
 | C3 | u1-eval-skeleton (lock), extended by u4-run-service (queue) | u2, u3, u4, u6, u8 | Shared files: `outputs/run.lock`, `outputs/queue/*.json` | u1 (lock), u4 (queue) |
 | C4 | u4-run-service | u3 (prune), u6 | Shared file: `results/finalists.json` | u4-run-service |
 | C5 | u1-eval-skeleton (`evaluate`), u3-sft (`train`) | u4-run-service (worker) | Process launch: `gsm8k` commands, arguments and exit codes | u1-eval-skeleton |
-| C6 | u4-run-service, extended by u10-self-taught-cot (`/reasoning`) | u5-website, u10-self-taught-cot | HTTP JSON on 127.0.0.1, `/api/v1` | u4-run-service |
+| C6 | u4-run-service, extended by u10-self-taught-cot (`/reasoning`) and u5-website (`/gpu`) | u5-website, u10-self-taught-cot | HTTP JSON on 127.0.0.1, `/api/v1` | u4-run-service |
 | C7 | u4-run-service | u5-website | Server-Sent Events on 127.0.0.1 | u4-run-service |
 
 ## Common Rules
@@ -113,6 +113,9 @@ files:
       reward: number|null           # GRPO only
       kl: number|null               # GRPO only
       answer_length: number|null    # GRPO only
+      grad_norm: number|null        # fine-tune lines: the trainer's gradient norm; null when not reported (added 2026-11-08)
+      epoch: number|null            # fine-tune lines: the fractional epoch of the step; null when not reported (added 2026-11-08)
+                                    # A line without grad_norm and epoch (written before 2026-11-08) is valid; readers treat a missing field as null.
   status.json:                      # written when the run ends
     v: 1
     run_id: string
@@ -293,6 +296,15 @@ paths:
     get:
       summary: The dial table with ranges and defaults (AC4.6.1)
       description: 'Added 2026-11-07: returns {"dials": [DialSpec]}, the eleven dials in stories.md Training Dials order; DialSpec = {name, label, kind: select|number|integer, options: list|null, min: number|null, max: number|null, allow_all: bool, default, help}'
+  /gpu:
+    get:
+      summary: The NVIDIA GPU's live figures for the training page (US4.5, added 2026-11-08); read-only
+      description: >
+        Runs `nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw,power.limit,clocks.sm,clocks.max.sm --format=csv,noheader,nounits`
+        for the first GPU with a 3 second timeout. Answers 200 with Gpu; `available` is false with a `reason` when nvidia-smi is missing,
+        fails, times out or prints something that does not parse. A field nvidia-smi prints as `[N/A]` or `N/A` is null. Never 500.
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/Gpu' } } } }
   /reasoning:
     get:
       summary: Self-taught chain of thought against base and the reference fine-tune for one model (US10.3, added 2026-11-08); read-only
@@ -416,6 +428,20 @@ components:
         command: { type: array, items: { type: string } }
         queue_position: { type: integer }
         needs_second_confirmation: { type: boolean }
+    Gpu:                                          # added 2026-11-08 (US4.5)
+      type: object
+      properties:
+        available: { type: boolean }
+        reason: { type: [string, 'null'] }        # why it is not available; null when available
+        name: { type: [string, 'null'] }
+        utilization_pct: { type: [number, 'null'] }
+        memory_used_mb: { type: [number, 'null'] }      # MiB, as nvidia-smi prints it
+        memory_total_mb: { type: [number, 'null'] }
+        temperature_c: { type: [number, 'null'] }
+        power_w: { type: [number, 'null'] }
+        power_limit_w: { type: [number, 'null'] }
+        sm_clock_mhz: { type: [number, 'null'] }
+        sm_clock_max_mhz: { type: [number, 'null'] }
     Reasoning:                                    # added 2026-11-08 (US10.3)
       type: object
       properties:
