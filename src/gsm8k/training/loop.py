@@ -4,7 +4,9 @@
 full line plus its newline, so a reader never sees a half line as data; ``read_metrics`` returns the
 complete lines only (a last line without its newline is still being written). Both methods (``sft``
 and, in u7, ``grpo``) stream through the same callback: its ``log_fields`` map C2 fields such as
-``reward``, ``kl`` and ``answer_length`` to the Trainer's log keys, which is GRPO's hook.
+``reward``, ``kl`` and ``answer_length`` to the Trainer's log keys, which is GRPO's hook. A step line
+also carries the Trainer's ``grad_norm`` and fractional ``epoch`` (null when not logged; a line written
+without them is still valid, so readers treat a missing field as null).
 
 Heavy libraries (transformers) are imported inside the functions.
 """
@@ -36,6 +38,8 @@ METRIC_FIELDS = (
     "reward",
     "kl",
     "answer_length",
+    "grad_norm",
+    "epoch",
 )
 
 
@@ -175,6 +179,9 @@ def make_metrics_callback(
                 "elapsed_s": round(clock.elapsed(), 3),
                 "eta_s": _rounded(clock.eta(step, total_steps)),
             }
+            for name in ("grad_norm", "epoch"):  # the trainer's own figures, null when not logged
+                if name in logs and logs[name] is not None:
+                    fields[name] = float(logs[name])
             for name, key in extra.items():
                 if key in logs:
                     fields[name] = float(logs[key])
