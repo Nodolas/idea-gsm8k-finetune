@@ -39,7 +39,7 @@ Tests: `tests/web/hourglass-flow.test.tsx` (AC4.5.11, AC4.5.12).
 ### Part W: full-width pages (website), u5-website
 
 Owns: `web/src/components/top-bar.tsx`, `web/src/pages/landing.tsx`, `web/src/pages/scores.tsx`, `web/src/pages/reasoning.tsx`, `web/src/styles/tokens.css` (`--content-width` goes; `--gutter` stays).
-Tests: `tests/web/full-width.test.tsx` (AC4.1.4): render each page and the top bar (through the router helpers in `web/src/test/utils.tsx` and `fakeApi`) and check that no element carries a `max-w-[1280px]` or `max-w-[var(--content-width)]` class, that each page's outer container and the top bar's row carry the class `px-[var(--gutter)]` (the landing, scores, reasoning and training containers swap `px-6` for it), and that `web/src/styles/tokens.css` no longer defines `--content-width`. The training page's container is part B's: this test checks it too.
+Tests: `tests/web/full-width.test.tsx` (AC4.1.4): render each page and the top bar (through the router helpers in `web/src/test/utils.tsx` and `fakeApi`) and check that no element carries a `max-w-[1280px]` or `max-w-[var(--content-width)]` class, that each page's outer container and the top bar's row carry the class `px-[var(--gutter)]` (the scores, reasoning and training containers swap `px-6` for it). Landing is the exception: its halftone headline stays full-bleed, so its outer container has no padding and no max-width cap, and its text block under the headline carries `px-[var(--gutter)]` (lead, 2026-11-08), and that `web/src/styles/tokens.css` no longer defines `--content-width`. The training page's container is part B's: this test checks it too.
 
 - Prose blocks keep their line length (`max-w-[70ch]`, `max-w-[75ch]`, `max-w-xl` stay). Tables and charts stretch with the page.
 
