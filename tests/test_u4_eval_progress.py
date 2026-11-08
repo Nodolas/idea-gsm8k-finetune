@@ -411,3 +411,63 @@ def test_AC3_1_7_stream_sends_new_scored_when_predictions_grow(tmp_project_dirs,
     assert second["evaluation"] == {"split": "dev", "scored": 7, "total": 500}
     assert second["evaluation"]["scored"] > first["evaluation"]["scored"]
     assert waited < 5.0
+
+
+# --- AC3.1.6 with the app built the way `gsm8k serve` builds it (no `outputs` argument) ---------------
+
+
+def _default_client(dirs):
+    """The app as the real service builds it: no `outputs`, so the outputs root comes from
+    `gsm8k.run_records.paths.outputs_root()`, which `tmp_project_dirs` points at the temp folder
+    through GSM8K_OUTPUTS_DIR."""
+    from fastapi.testclient import TestClient
+
+    from gsm8k.run_records import paths
+    from gsm8k.service.app import create_app
+
+    assert paths.outputs_root() == dirs.outputs
+    return TestClient(create_app(results=dirs.results, finalists=dirs.results.parent / "finalists.json"))
+
+
+def test_AC3_1_6_status_carries_evaluation_with_default_outputs(tmp_project_dirs, monkeypatch):
+    folder = _run_folder(tmp_project_dirs.outputs)
+    _write_predictions(folder, 42, partial='{"problem_id": "dev-42"')
+    _running(monkeypatch)
+    with _default_client(tmp_project_dirs) as client:
+        response = client.get(f"{API}/status")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "RUNNING" and body["run_id"] == EVAL_RUN
+    assert body["evaluation"] == {"split": "dev", "scored": 42, "total": 500}
+
+
+def test_AC3_1_6_status_evaluation_uses_limit_with_default_outputs(tmp_project_dirs, monkeypatch):
+    folder = _run_folder(tmp_project_dirs.outputs, limit=8)
+    _write_predictions(folder, 9)
+    _running(monkeypatch)
+    with _default_client(tmp_project_dirs) as client:
+        body = client.get(f"{API}/status").json()
+    assert body["evaluation"] == {"split": "dev", "scored": 8, "total": 8}
+
+
+def test_AC3_1_6_stream_status_event_carries_evaluation_with_default_outputs(tmp_project_dirs, monkeypatch):
+    from gsm8k.service import app as app_module
+
+    monkeypatch.setattr(app_module, "STREAM_POLL_SECONDS", 0.02)
+    folder = _run_folder(tmp_project_dirs.outputs)
+    _write_predictions(folder, 11)
+    _running(monkeypatch)
+
+    async def scenario() -> dict:
+        svc = app_module._Service(
+            tmp_project_dirs.results, tmp_project_dirs.results.parent / "finalists.json", None
+        )
+        gen = app_module._events(svc, None)
+        try:
+            return await _next_status(gen, time.monotonic() + 3.0)
+        finally:
+            await gen.aclose()
+
+    payload = asyncio.run(scenario())
+    assert payload["status"] == "RUNNING" and payload["run_id"] == EVAL_RUN
+    assert payload["evaluation"] == {"split": "dev", "scored": 11, "total": 500}
