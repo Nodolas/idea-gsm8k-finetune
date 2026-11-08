@@ -12,6 +12,7 @@ import {
   type CheckedRun,
   type ConfirmResult,
   type DialSpec,
+  type Gpu,
   type MetricsLine,
   type QueueEntry,
   type Reasoning,
@@ -223,6 +224,24 @@ export function metricsLine(partial: Partial<MetricsLine> = {}): MetricsLine {
   };
 }
 
+/** A C6 Gpu; defaults to an RTX 3060 Ti at 97% with 5.9 of 8 GiB used. */
+export function gpu(partial: Partial<Gpu> = {}): Gpu {
+  return {
+    available: true,
+    reason: null,
+    name: "NVIDIA GeForce RTX 3060 Ti",
+    utilization_pct: 97,
+    memory_used_mb: 6048,
+    memory_total_mb: 8192,
+    temperature_c: 59,
+    power_w: 161.7,
+    power_limit_w: 200,
+    sm_clock_mhz: 1920,
+    sm_clock_max_mhz: 2100,
+    ...partial,
+  };
+}
+
 /** A C6 Status; defaults to IDLE with no run. */
 export function serviceStatus(partial: Partial<Status> = {}): Status {
   return {
@@ -364,6 +383,20 @@ export function fakeApi(overrides: Partial<Api> = {}): FakeApi {
     getMetrics: async () => ({ lines: [], next: 0 }),
     getStatus: async () => serviceStatus(),
     getDials: async () => DIALS.map((dial) => ({ ...dial })),
+    getGpu: async () =>
+      gpu({
+        available: false,
+        reason: "No NVIDIA GPU in the tests",
+        name: null,
+        utilization_pct: null,
+        memory_used_mb: null,
+        memory_total_mb: null,
+        temperature_c: null,
+        power_w: null,
+        power_limit_w: null,
+        sm_clock_mhz: null,
+        sm_clock_max_mhz: null,
+      }),
     getReasoning: async (model?: string) => reasoning({ model: model ?? Q17 }),
     checkRun: async (req: RunRequest) =>
       checkedRun({

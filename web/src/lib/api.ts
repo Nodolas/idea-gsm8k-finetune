@@ -94,6 +94,23 @@ export interface MetricsLine {
   run_id?: string;
 }
 
+/** C6 Gpu: the NVIDIA GPU's live figures from `GET /gpu`; every figure is null when unknown. */
+export interface Gpu {
+  available: boolean;
+  /** Why it is not available; null when available. */
+  reason: string | null;
+  name: string | null;
+  utilization_pct: number | null;
+  /** MiB, as nvidia-smi prints it. */
+  memory_used_mb: number | null;
+  memory_total_mb: number | null;
+  temperature_c: number | null;
+  power_w: number | null;
+  power_limit_w: number | null;
+  sm_clock_mhz: number | null;
+  sm_clock_max_mhz: number | null;
+}
+
 export interface MetricsPage {
   lines: MetricsLine[];
   /** The number of complete lines read; pass it as `after` to read only newer lines. */
@@ -307,6 +324,8 @@ export interface Api {
   getMetrics(id: string, after?: number): Promise<MetricsPage>;
   getStatus(): Promise<Status>;
   getDials(): Promise<DialSpec[]>;
+  /** The NVIDIA GPU's live figures (AC4.5.9); `available: false` with a reason, never an error. */
+  getGpu(): Promise<Gpu>;
   checkRun(req: RunRequest): Promise<CheckedRun>;
   confirmRun(checkId: string, secondConfirmation?: boolean): Promise<ConfirmResult>;
   getQueue(): Promise<QueueEntry[]>;
@@ -385,6 +404,7 @@ export function createApi(base = "/api/v1"): Api {
     getMetrics: (runId, after = 0) =>
       request<MetricsPage>("GET", `/runs/${id(runId)}/metrics?after=${after}`),
     getStatus: () => request<Status>("GET", "/status"),
+    getGpu: () => request<Gpu>("GET", "/gpu"),
     getDials: async () => (await request<{ dials: DialSpec[] }>("GET", "/dials")).dials,
     getReasoning: (model) =>
       request<Reasoning>(
