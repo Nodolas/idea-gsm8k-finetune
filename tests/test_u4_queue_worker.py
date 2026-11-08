@@ -891,3 +891,135 @@ def test_AC3_7_6_launch_that_exits_3_goes_back_to_head_and_waits(stub_runs, tmp_
     stub_runs.drive(lambda: stub_runs.held(attempt), "the run to start once the lock is free")
     assert _queue_ids() == [second.attempt_id]
     stub_runs.finish(attempt)
+
+
+BUSY = "busy: 4242 .venv/bin/python -m other train --run-id q-other-1"
+
+
+def _gpu_stub(monkeypatch, answer: tuple[int, str]) -> list[int]:
+    """Point the worker's GPU check at a stub with a fixed answer; returns a list counting its calls."""
+    from gsm8k.run_control import worker
+
+    calls: list[int] = []
+
+    def stub() -> tuple[int, str]:
+        calls.append(1)
+        return answer
+
+    monkeypatch.setattr(worker, "gpu_check", stub)
+    return calls
+
+
+def test_AC3_7_7_worker_starts_nothing_while_another_run_holds_the_gpu(
+    stub_runs, tmp_project_dirs, finalists_path, monkeypatch, capsys
+):
+    first, _ = _check_and_confirm(EVAL_DIALS, tmp_project_dirs, finalists_path)
+    second, _ = _check_and_confirm(EVAL_DIALS, tmp_project_dirs, finalists_path)
+    _gpu_stub(monkeypatch, (3, BUSY))
+    stub_runs.step()
+    stub_runs.step()
+    assert not stub_runs.launched(first.attempt_id)
+    assert _queue_ids() == [first.attempt_id, second.attempt_id]  # order kept
+    assert _lock_holder() is None
+    assert "q-other-1" in capsys.readouterr().err  # the log names what holds the GPU
+
+    _gpu_stub(monkeypatch, (0, ""))
+    stub_runs.drive(lambda: stub_runs.held(first.attempt_id), "the run to start once the GPU is free")
+    assert _queue_ids() == [second.attempt_id]
+    stub_runs.finish(first.attempt_id)
+
+
+def test_AC3_7_7_worker_waits_when_nvidia_smi_fails(
+    stub_runs, tmp_project_dirs, finalists_path, monkeypatch, capsys
+):
+    checked, _ = _check_and_confirm(EVAL_DIALS, tmp_project_dirs, finalists_path)
+    _gpu_stub(
+        monkeypatch, (4, "run-detached: nvidia-smi failed: could not communicate with the NVIDIA driver")
+    )
+    stub_runs.step()
+    assert not stub_runs.launched(checked.attempt_id)
+    assert _queue_ids() == [checked.attempt_id]
+    assert "nvidia-smi failed" in capsys.readouterr().err
+
+
+def test_AC3_7_7_check_that_cannot_run_leaves_the_lock_to_decide(
+    stub_runs, tmp_project_dirs, finalists_path, monkeypatch
+):
+    checked, _ = _check_and_confirm(EVAL_DIALS, tmp_project_dirs, finalists_path)
+    calls = _gpu_stub(monkeypatch, (-1, "GPU check could not run: [Errno 2] No such file or directory"))
+    stub_runs.drive(lambda: stub_runs.held(checked.attempt_id), "the run to start as before")
+    assert calls  # the worker asked the check, then let the lock decide
+    stub_runs.finish(checked.attempt_id)
+
+
+def test_AC3_7_7_logs_the_holder_once_and_checks_again_at_most_every_10_seconds(
+    tmp_project_dirs, finalists_path, monkeypatch, capsys
+):
+    from types import SimpleNamespace
+
+    from gsm8k.run_control import worker
+
+    checked, _ = _check_and_confirm(EVAL_DIALS, tmp_project_dirs, finalists_path)
+    calls = _gpu_stub(monkeypatch, (3, BUSY))
+    assert worker.GPU_RECHECK_SECONDS == 10.0
+    now = [1000.0]  # the worker's own clock only; the rest of the process keeps real time
+    monkeypatch.setattr(worker, "time", SimpleNamespace(monotonic=lambda: now[0], sleep=time.sleep))
+
+    def no_launch(self, entry):
+        pytest.fail("the worker launched a run while the GPU was busy")
+
+    monkeypatch.setattr(worker.Worker, "_launch", no_launch)
+    w = worker.Worker(outputs=tmp_project_dirs.outputs, results=tmp_project_dirs.results)
+    w.step()
+    w.step()  # within 10 s: no second check
+    assert len(calls) == 1
+    now[0] += 10.5
+    w.step()
+    assert len(calls) == 2
+    assert _queue_ids() == [checked.attempt_id]
+    assert capsys.readouterr().err.count("q-other-1") == 1  # the same holder is logged once
+
+    _gpu_stub(monkeypatch, (3, "busy: 5151 .venv/bin/python -m third train --run-id q-third-2"))
+    now[0] += 10.5
+    w.step()
+    assert capsys.readouterr().err.count("q-third-2") == 1  # a new holder is logged again
+    assert _queue_ids() == [checked.attempt_id]
+
+
+def test_AC3_7_7_gpu_check_runs_the_project_script(tmp_path, monkeypatch):
+    from gsm8k.run_control import worker
+
+    assert worker.GPU_CHECK == ROOT / "scripts" / "run-detached.sh"
+    shims = tmp_path / "shims"
+    shims.mkdir()
+    for name, body in (("pgrep", "exit 1"), ("nvidia-smi", "exit 0")):
+        (shims / name).write_text(f"#!/bin/sh\n{body}\n")
+        (shims / name).chmod(0o755)
+    monkeypatch.setenv("PATH", f"{shims}{os.pathsep}{os.environ['PATH']}")
+    assert worker.run_gpu_check() == (0, "")  # no other run, no GPU process
+
+    holder = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    try:
+        (shims / "nvidia-smi").write_text(f"#!/bin/sh\necho {holder.pid}\n")
+        code, text = worker.run_gpu_check()
+        assert code == 3
+        assert f"busy: {holder.pid}" in text
+    finally:
+        holder.kill()
+        holder.wait()
+
+    (shims / "nvidia-smi").write_text("#!/bin/sh\necho 'NVIDIA-SMI has failed'\nexit 9\n")
+    code, text = worker.run_gpu_check()
+    assert code == 4
+    assert "nvidia-smi failed" in text
+
+    (shims / "nvidia-smi").write_text("#!/bin/sh\nsleep 3\n")
+    monkeypatch.setattr(worker, "GPU_CHECK_TIMEOUT_SECONDS", 0.5)
+    code, text = worker.run_gpu_check()
+    assert code == 4  # a hung check waits, like a failing nvidia-smi
+    assert "timed out" in text
+
+    monkeypatch.setattr(worker, "GPU_CHECK", tmp_path / "missing.sh")
+    code, text = worker.run_gpu_check()
+    assert code not in (0, 3, 4)
+    assert "could not run" in text

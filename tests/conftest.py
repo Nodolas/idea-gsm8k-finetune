@@ -56,3 +56,14 @@ def tiny_model():
     torch.manual_seed(0)
     model = Qwen3ForCausalLM(config).eval()
     return model, tokenizer
+
+
+@pytest.fixture(autouse=True)
+def gpu_free_for_the_worker(monkeypatch):
+    """The worker's GPU check (AC3.7.7) reads this PC's processes and nvidia-smi; every test starts from a
+    free GPU, and the AC3.7.7 tests point `worker.gpu_check` at their own stub."""
+    try:
+        from gsm8k.run_control import worker
+    except ImportError:
+        return
+    monkeypatch.setattr(worker, "gpu_check", lambda: (0, ""), raising=False)
