@@ -51,3 +51,8 @@ Tests: `tests/web/full-width.test.tsx` (AC4.1.4): render each page and the top b
 ## Rules
 
 Tests named by criterion ID; no existing test line changed or deleted; tests committed before the code; CPU only; Ruff clean (line length 110); website lint, Prettier and strict type check clean. Builders write only their owned files and use read-only git (status, diff, log).
+
+## Review round 1 (2026-11-08)
+
+- u4-run-service FAIL: `GET /status` passed `svc._outputs` (None in the real service), so `evaluation` was always null there. New tests `test_AC3_1_6_*_with_default_outputs`; fix in part P's files (`svc.outputs`; `limit` only when at least 1). Non-blocking, left for Nico: dev runs score 496 problems (500 minus the 4 few-shot exemplars), so the band ends at 496 / 500; making `total` the scored count would rule `test_AC3_1_6_progress_total_is_each_split_size` wrong (his call).
+- u5-website FAIL: AC4.1.4's prose clause. Uncapped explanatory prose grows with the window. Part B now also owns `web/src/components/dials-panel.tsx` (the `Explanation` box), `web/src/components/gpu-notes.tsx` (the notes list) and `web/src/components/finetune-view.tsx` (the measured note, reading-note and settings-error paragraphs): each gets `max-w-[75ch]`. New tests in `tests/web/full-width.test.tsx` (part W's writer, appended). Part B also draws the still dots to an offscreen canvas once per fraction or size and only the grains each frame (non-blocking finding).
