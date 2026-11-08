@@ -10,7 +10,7 @@ spec_route: "aidlc"
 current_task: none
 slices: "7/7"
 test_command: "scripts/check.sh"
-pending_runs: ""
+pending_runs: "q17-cotgen-train-1:running:65420,q17-selfcot-dev-1:queued"
 last_check: "2026-11-08 9a21996 scripts/check.sh exit 0; scripts/trace-check.sh exit 0"
 charter_commit: "dfd42777d9a3dc69bab8ea1892e5378aca915211"
 ---
