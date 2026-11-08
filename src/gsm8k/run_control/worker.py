@@ -10,6 +10,12 @@ seen held also removes the entry, so a broken run never blocks the queue; when t
 ``status.json``, the worker writes one (failed, or stopped for SIGTERM or SIGINT) naming the exit code.
 After a run ends, the next waiting run starts (AC3.7.2).
 
+This PC's GPU is shared with other projects (charter rule 3: one GPU run at a time across projects).
+Before it launches the head, the worker runs ``scripts/run-detached.sh --check``: while another long run
+or a GPU process is on this PC (exit 3), or nvidia-smi fails (exit 4), it launches nothing, logs what holds
+the GPU once and checks again at most every ``GPU_RECHECK_SECONDS`` (AC3.7.7). A check that cannot run
+leaves the lock to decide.
+
 The worker never imports training or evaluation code; runs are separate ``gsm8k`` processes (ADR-006).
 """
 
@@ -39,6 +45,39 @@ LAUNCH_TIMEOUT_SECONDS = 900.0
 # After a launch holds the lock (and its entry is gone), the step watches it this long before it returns,
 # so a run that dies at once is not reported as started.
 SETTLE_SECONDS = 0.2
+# scripts/run-detached.sh --check (AC3.7.7): 3 = another long run or GPU process is on this PC,
+# 4 = nvidia-smi failed (a check that times out counts as 4).
+GPU_CHECK = ROOT / "scripts" / "run-detached.sh"
+EXIT_GPU_BUSY = 3
+EXIT_GPU_CHECK_FAILED = 4
+GPU_CHECK_TIMEOUT_SECONDS = 30.0
+# While the GPU is busy the check (pgrep and nvidia-smi) runs at most this often.
+GPU_RECHECK_SECONDS = 10.0
+
+
+def run_gpu_check() -> tuple[int, str]:
+    """``scripts/run-detached.sh --check`` (AC3.7.7): ``(0, "")`` when no other long run or GPU process is on
+    this PC, ``(3, <its busy lines>)`` when one is, ``(4, <message>)`` when nvidia-smi failed or the check
+    timed out (a hung nvidia-smi), and ``(-1, <why>)`` when the check cannot run at all."""
+    try:
+        done = subprocess.run(
+            [str(GPU_CHECK), "--check"],
+            cwd=str(ROOT),
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=GPU_CHECK_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return EXIT_GPU_CHECK_FAILED, f"GPU check timed out after {GPU_CHECK_TIMEOUT_SECONDS:g} s"
+    except OSError as exc:
+        return -1, f"GPU check could not run: {exc}"
+    return done.returncode, done.stderr.strip() or done.stdout.strip()
+
+
+# Read as a module attribute at call time, so tests can point it at a stub (like launch.build_argv).
+gpu_check = run_gpu_check
 
 
 @dataclass
@@ -58,6 +97,8 @@ class Worker:
         self.pending: _Launch | None = None
         self.children: list[subprocess.Popen] = []
         self.stopping = threading.Event()
+        self.gpu_recheck_at = 0.0  # time.monotonic() before which a busy GPU is not checked again
+        self.gpu_note: str | None = None  # the last GPU message logged, so the same one is logged once
 
     @property
     def lock_file(self) -> Path:
@@ -108,6 +149,25 @@ class Worker:
         self.children.append(process)
         print(f"Launched {attempt_id} (pid {process.pid}): {kind}", file=sys.stderr)
         return _Launch(attempt_id=attempt_id, process=process, run_dir=run_dir)
+
+    def _gpu_free(self) -> bool:
+        """AC3.7.7: no other long run or GPU process is on this PC, so the head may start."""
+        now = time.monotonic()
+        if now < self.gpu_recheck_at:
+            return False
+        code, text = gpu_check()
+        if code in (EXIT_GPU_BUSY, EXIT_GPU_CHECK_FAILED):
+            self.gpu_recheck_at = now + GPU_RECHECK_SECONDS
+            if text != self.gpu_note:
+                print(f"The GPU is not free; the next run waits at the head: {text}", file=sys.stderr)
+            self.gpu_note = text
+            return False
+        self.gpu_recheck_at = 0.0
+        note = None if code == 0 else f"GPU check failed (exit {code}); the lock alone decides: {text}"
+        if note is not None and note != self.gpu_note:
+            print(note, file=sys.stderr)
+        self.gpu_note = note
+        return True
 
     def _remove_entry(self, attempt_id: str) -> None:
         try:
@@ -165,13 +225,15 @@ class Worker:
             time.sleep(HOLD_POLL_SECONDS)
 
     def step(self, timeout: float = LAUNCH_TIMEOUT_SECONDS) -> None:
-        """One step: settle a pending launch, or launch the queue head when the lock is free."""
+        """One step: settle a pending launch, or launch the queue head when the lock and the GPU are free."""
         self._reap()
         if self.pending is None:
             if not is_free(self.lock_file):
                 return
             head = run_queue.peek_head(self.outputs)
             if head is None:
+                return
+            if not self._gpu_free():  # AC3.7.7: another project's run, or other GPU use
                 return
             self.pending = self._launch(head)
         self._wait_pending(timeout)
@@ -184,7 +246,8 @@ def run_worker(
     poll_seconds: float = 1.0,
     once: bool = False,
 ) -> int:
-    """Start queued runs one at a time while the GPU lock is free; ``once`` does a single step (tests).
+    """Start queued runs one at a time while the GPU lock is free and no other long run or GPU process is
+    on this PC (AC3.7.7); ``once`` does a single step (tests).
 
     Returns 0 when stopped by SIGTERM or SIGINT (the runs it launched keep going).
     """
