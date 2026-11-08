@@ -42,8 +42,17 @@ _DIAL_FLAGS = (
     "seed",
     "answer_format",
 )
-_CONFIG_FLAGS = (*_DIAL_FLAGS, "limit", "max_new_tokens", "method", "cot_data_run")
-TRAIN_METHODS = ("sft", "selfcot")
+_CONFIG_FLAGS = (
+    *_DIAL_FLAGS,
+    "limit",
+    "max_new_tokens",
+    "method",
+    "cot_data_run",
+    "grpo_steps",
+    "grpo_generations",
+    "adapter",
+)
+TRAIN_METHODS = ("sft", "selfcot", "grpo")
 TEST_SPLIT_MESSAGE = "The test split is never used for training or tuning"
 
 
@@ -101,8 +110,14 @@ def register(subparsers: Any) -> None:
     tr.add_argument(
         "--method",
         choices=TRAIN_METHODS,
-        help="sft (default): GSM8K's solutions; selfcot: the kept solutions of --cot-data-run",
+        help="sft (default): GSM8K's solutions; selfcot: the kept solutions of --cot-data-run; "
+        "grpo: reinforcement learning with answer rewards",
     )
+    tr.add_argument("--grpo-steps", type=cli._positive_int, help="grpo: steps (default from the step plan)")
+    tr.add_argument(
+        "--grpo-generations", type=cli._positive_int, help="grpo: answers sampled per problem (default 4)"
+    )
+    tr.add_argument("--adapter", type=Path, help="grpo: supervised adapter folder to start from")
     tr.add_argument(
         "--cot-data-run", help="selfcot: run id of the cot-generate run whose kept solutions are trained on"
     )
@@ -128,10 +143,12 @@ def register(subparsers: Any) -> None:
 
 def _config_from_flags(args: argparse.Namespace, run_id: str) -> run_config.RunConfig:
     fields: dict = {"run_id": run_id, "method": args.method or "sft", "split": "dev"}
-    for name in (*_DIAL_FLAGS, "limit", "max_new_tokens", "cot_data_run"):
+    for name in (*_DIAL_FLAGS, "limit", "max_new_tokens", "cot_data_run", "grpo_steps", "grpo_generations"):
         value = getattr(args, name)
         if value is not None:
             fields[name] = value
+    if args.adapter is not None:
+        fields["adapter_path"] = str(args.adapter)
     return run_config.RunConfig(**fields)
 
 
@@ -178,7 +195,7 @@ def _prepare(args: argparse.Namespace) -> TrainPrepared:
     if cfg.split == "test":  # NFR8: also when validate lets it through
         raise cli.InvalidInput(TEST_SPLIT_MESSAGE)
     if cfg.method not in TRAIN_METHODS:
-        raise cli.InvalidInput(f"method must be sft or selfcot for gsm8k train, got {cfg.method!r}")
+        raise cli.InvalidInput(f"method must be sft, selfcot or grpo for gsm8k train, got {cfg.method!r}")
     cot_data_run = cfg.cot_data_run
     if cfg.method == "selfcot":
         if not cot_data_run:
@@ -194,7 +211,10 @@ def _prepare(args: argparse.Namespace) -> TrainPrepared:
         raise cli.InvalidInput(f"cot_data_run is only for method selfcot, got {cot_data_run!r}")
     if cfg.split != "dev":
         raise cli.InvalidInput(f"split must be dev for gsm8k train (the closing score), got {cfg.split!r}")
-    if cfg.adapter_path is not None:
+    if cfg.method == "grpo":
+        if cfg.adapter_path is not None and not Path(cfg.adapter_path).is_dir():
+            raise cli.InvalidInput(f"Adapter to start from not found: {cfg.adapter_path}")
+    elif cfg.adapter_path is not None:
         raise cli.InvalidInput(
             f"gsm8k train starts from the base model; adapter_path must be empty, got {cfg.adapter_path!r}"
         )
@@ -248,6 +268,16 @@ def _print_estimate(prep: TrainPrepared) -> None:
     planned = len(prep.train_problems) if prep.train_problems is not None else sft.planned_examples(cfg)
     if prep.train_problems is not None:
         print(f"kept solutions to train on: {planned} (from {cfg.cot_data_run})")
+    if cfg.method == "grpo":
+        from gsm8k.training import grpo
+
+        steps = grpo.steps_for(cfg, prep.max_steps)
+        print(f"grpo steps: {steps}, generations per problem: {grpo.generations_for(cfg)}")
+        estimate = estimates.estimate_training(cfg.model, steps)
+        print(f"estimate: {estimate.text}")
+        if estimate.over_cap:
+            print(estimates.OVER_CAP, file=sys.stderr)
+        return
     steps = sft.total_steps_for(planned, cfg.batch_size, cfg.epochs, prep.max_steps)
     estimate = estimates.estimate_training(cfg.model, steps)
     print(f"training steps: {steps}")
@@ -298,7 +328,12 @@ def _run(prep: TrainPrepared) -> int:
 
         data = sft.load_training_data(cfg, train=prep.train_problems)
         model, tokenizer = load_base_model(cfg.model, cfg.model_revision)
-        result = sft.train_sft(
+        trainer_fn = sft.train_sft
+        if cfg.method == "grpo":
+            from gsm8k.training import grpo
+
+            trainer_fn = grpo.train_grpo
+        result = trainer_fn(
             cfg,
             prep.run_dir,
             prep.adapter_dir,
