@@ -24,7 +24,6 @@
   --font-mono-stack: ui-monospace, SFMono-Regular, Menlo, monospace;
   --radius: 6px;
   --radius-field: 4px;
-  --content-width: 1280px;
   --gutter: 24px;
 
   /* shadcn/ui variables mapped onto the site tokens. */

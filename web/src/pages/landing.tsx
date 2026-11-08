@@ -21,7 +21,7 @@ export function LandingPage() {
     list !== null && !list.some((r) => r.dev_accuracy !== null && Number.isFinite(r.dev_accuracy));
 
   return (
-    <div className="mx-auto w-full max-w-[var(--content-width)]">
+    <div className="w-full">
       <HalftoneHeadline />
       <div className="flex flex-col gap-4 border-t-[0.5px] border-hairline px-[var(--gutter)] py-8">
         <p className="label-caps text-ink-muted">A personal fine-tuning lab on this PC</p>

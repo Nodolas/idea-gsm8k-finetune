@@ -15,7 +15,13 @@ import { LiveNumbers } from "@/components/live-numbers";
 import { PastRunsList, statusWord } from "@/components/past-runs-list";
 import { RecentSteps } from "@/components/recent-steps";
 import { RunControls } from "@/components/run-controls";
-import { toApiError, type MetricsLine, type Run, type Status } from "@/lib/api";
+import {
+  toApiError,
+  type EvaluationProgress,
+  type MetricsLine,
+  type Run,
+  type Status,
+} from "@/lib/api";
 import { useApi } from "@/lib/api-context";
 import { formatPct, modelName } from "@/lib/format";
 import { useLiveStream } from "@/lib/live-stream";
@@ -90,6 +96,7 @@ interface BandView {
   fraction?: number;
   message?: ReactNode;
   action?: ReactNode;
+  evaluation?: EvaluationProgress | null;
 }
 
 export function TrainingPage() {
@@ -125,10 +132,19 @@ export function TrainingPage() {
       message: live.statusError ? live.statusError.message : "Reading the run status…",
     };
   } else if (phase === "running") {
+    // While the run scores problems (C6 `evaluation`), the band shows that progress (AC4.5.12).
+    const evaluation = current?.evaluation ?? null;
     band = {
       status: "RUNNING",
       runId: currentId,
-      message: last ? null : "Waiting for first step...",
+      evaluation,
+      message: evaluation
+        ? last
+          ? `Training done, scoring the ${evaluation.split} split`
+          : `Scoring the ${evaluation.split} split`
+        : last
+          ? null
+          : "Waiting for first step...",
     };
   } else if (phase === "finished") {
     const dev = currentRun?.dev_accuracy;
@@ -237,7 +253,7 @@ export function TrainingPage() {
   const shownLive = viewing === null ? phase === "running" : viewingLive;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-6 py-6">
+    <div className="flex w-full flex-col gap-6 px-[var(--gutter)] py-6">
       <h1>Training</h1>
 
       <HourglassBand
@@ -254,6 +270,7 @@ export function TrainingPage() {
         fraction={band.fraction}
         message={band.message}
         action={band.action}
+        evaluation={band.evaluation}
       />
 
       <FinetuneView

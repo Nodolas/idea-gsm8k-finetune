@@ -233,7 +233,7 @@ export function ScoresPage() {
   const methods = distinct(scored.map((r) => r.method));
 
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-6 py-8">
+    <div className="flex w-full flex-col gap-6 px-[var(--gutter)] py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-[28px] font-semibold">Highest scores</h1>

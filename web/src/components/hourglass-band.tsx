@@ -4,11 +4,15 @@
  * Gateway Flow look (inputs/design, recreated from scratch). The top half holds the steps still to
  * come, the bottom half the steps done: the share of lit dots below the waist is `step / total`.
  * The canvas is decorative (`aria-hidden`); the same facts are text over the band, with a
- * progressbar named "Run progress". Under reduced motion the dots jump with no fall.
+ * progressbar named "Run progress". While a run is RUNNING one frame loop keeps grains flowing
+ * down through the waist (`data-flow="on"`, AC4.5.11); under reduced motion the dots jump with no
+ * fall and nothing flows. While a run scores problems the band shows that progress in place of
+ * the step counter (AC4.5.12).
  */
 import { useEffect, useRef, type ReactNode } from "react";
 import { WifiOff } from "lucide-react";
 
+import type { EvaluationProgress } from "@/lib/api";
 import { formatClock } from "@/lib/format";
 import { usePrefersReducedMotion } from "@/lib/reduced-motion";
 
@@ -38,6 +42,8 @@ export interface HourglassBandProps {
   message?: ReactNode;
   /** A control beside the message, e.g. Show log for a failed run. */
   action?: ReactNode;
+  /** While the run scores problems (C6 `Status.evaluation`): shown in place of the step counter. */
+  evaluation?: EvaluationProgress | null;
 }
 
 const LINES = 48;
@@ -72,11 +78,17 @@ export function HourglassBand({
   fraction,
   message,
   action,
+  evaluation,
 }: HourglassBandProps) {
-  const known = totalSteps > 0;
-  const shareDone = clamp01(fraction ?? (known ? step / totalSteps : 0));
+  const reduced = usePrefersReducedMotion();
+  const scoring = evaluation ?? null;
+  const done = scoring ? scoring.scored : step;
+  const total = scoring ? scoring.total : totalSteps;
+  const known = total > 0;
+  const shareDone = clamp01(fraction ?? (known ? done / total : 0));
   const percent = Math.round(shareDone * 100);
   const dim = status === "STOPPED" || status === "FAILED";
+  const flow = status === "RUNNING" && !reduced;
   const detail = [method, model].filter((part): part is string => Boolean(part)).join(" · ");
 
   return (
@@ -84,9 +96,16 @@ export function HourglassBand({
       aria-label="Run progress band"
       data-fraction={String(shareDone)}
       data-status={status ?? "LOADING"}
+      data-flow={flow ? "on" : "off"}
       className="relative h-[280px] w-full overflow-hidden rounded-lg border border-hairline bg-bg"
     >
-      <HourglassCanvas fraction={shareDone} dim={dim} accent={status === "RUNNING"} />
+      <HourglassCanvas
+        fraction={shareDone}
+        dim={dim}
+        accent={status === "RUNNING"}
+        flow={flow}
+        reduced={reduced}
+      />
 
       {paused ? (
         <p className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 border-b border-hairline bg-panel px-4 py-1.5 text-sm">
@@ -122,17 +141,21 @@ export function HourglassBand({
               role="progressbar"
               aria-label="Run progress"
               aria-valuemin={0}
-              aria-valuemax={totalSteps}
-              aria-valuenow={step}
-              aria-valuetext={`step ${step} of ${totalSteps}`}
+              aria-valuemax={total}
+              aria-valuenow={done}
+              aria-valuetext={
+                scoring ? `scored ${done} of ${total} problems` : `step ${done} of ${total}`
+              }
               className="num text-[20px]"
             >
               <span>
-                step {step} / {totalSteps}
+                {scoring
+                  ? `scoring ${scoring.split} ${done} / ${total}`
+                  : `step ${done} / ${total}`}
               </span>{" "}
               <span className="ml-4">{percent}%</span>
             </div>
-            {status === "RUNNING" ? (
+            {status === "RUNNING" && !scoring ? (
               <p className="num text-sm text-ink-muted">
                 {elapsedS !== null ? <span>elapsed {clockSpan(elapsedS)} </span> : null}
                 <span className="ml-4">
@@ -147,50 +170,103 @@ export function HourglassBand({
   );
 }
 
-interface Dot {
-  x: number;
-  y: number;
-}
+/** Point pairs per line: the top curve's dots, then the bottom curve's. */
+const POINTS_PER_LINE = 2 * DOTS_PER_HALF;
 
-/** Points along a quadratic curve from the waist (t = 0) to an edge (t = 1). */
-function curveDots(waist: Dot, control: Dot, edge: Dot): Dot[] {
-  const dots: Dot[] = [];
-  for (let k = 0; k < DOTS_PER_HALF; k += 1) {
-    // Denser near the waist, as the lines bunch there.
-    const t = ((k + 0.5) / DOTS_PER_HALF) ** 1.15;
-    const a = (1 - t) * (1 - t);
-    const b = 2 * (1 - t) * t;
-    const c = t * t;
-    dots.push({
-      x: a * waist.x + b * control.x + c * edge.x,
-      y: a * waist.y + b * control.y + c * edge.y,
-    });
-  }
-  return dots;
-}
-
-/** Stable pseudo-random numbers, so the bright "spark" dots stay put between frames. */
-function sparkPicks(): Array<{ line: number; dot: number; top: boolean }> {
+/** Stable pseudo-random numbers, so sparks and grain offsets stay put between frames. */
+function seeded(): () => number {
   let seed = 7;
-  const next = () => {
+  return () => {
     seed = (seed * 16807) % 2147483647;
     return seed / 2147483647;
   };
-  return Array.from({ length: SPARKS }, () => ({
-    line: Math.floor(next() * LINES),
-    dot: Math.floor(next() * DOTS_PER_HALF),
-    top: next() < 0.5,
-  }));
 }
 
-const SPARK_PICKS = sparkPicks();
+/** The bright "spark" dots: 1 at index `(line * 2 + half) * DOTS_PER_HALF + dot`, else 0. */
+const SPARK_MASK: Uint8Array = (() => {
+  const next = seeded();
+  const mask = new Uint8Array(LINES * POINTS_PER_LINE);
+  for (let s = 0; s < SPARKS; s += 1) {
+    const line = Math.floor(next() * LINES);
+    const dot = Math.floor(next() * DOTS_PER_HALF);
+    const half = next() < 0.5 ? 0 : 1;
+    mask[(line * 2 + half) * DOTS_PER_HALF + dot] = 1;
+  }
+  return mask;
+})();
+
+/** Each line's grain offset (0..1), so the grains do not march in step. */
+const GRAIN_OFFSETS: Float32Array = (() => {
+  const next = seeded();
+  next(); // a different stream than the sparks
+  const offsets = new Float32Array(LINES);
+  for (let i = 0; i < LINES; i += 1) offsets[i] = next();
+  return offsets;
+})();
+
+/** Grains per line; each runs down the top curve, through the waist, and down the bottom one. */
+const GRAINS_PER_LINE = 2;
+/** How long one grain takes from the top edge, through the waist, to the bottom edge. */
+const GRAIN_MS = 5200;
+/** How often the theme colours are read again while the band flows. */
+const COLOR_MS = 1000;
+
+/** What the canvas keeps between frames: the curve points for its size and the theme colours. */
+interface Geometry {
+  width: number;
+  height: number;
+  /** x, y of every dot: `((line * 2 + half) * DOTS_PER_HALF + k) * 2`, k = 0 at the waist. */
+  points: Float32Array;
+  ink: string;
+  orange: string;
+  colorsAt: number;
+}
 
 function cssToken(el: HTMLElement, name: string, fallback: string): string {
   const value = getComputedStyle(el).getPropertyValue(name).trim();
   return value || fallback;
 }
 
-function draw(canvas: HTMLCanvasElement, fraction: number, dim: boolean, accent: boolean): void {
+/** Points along each line's two quadratic curves, waist (k = 0) to edge, for one canvas size. */
+function curvePoints(width: number, height: number): Float32Array {
+  const points = new Float32Array(LINES * POINTS_PER_LINE * 2);
+  const cx = width / 2;
+  const cy = height / 2;
+  const waistHalf = Math.max(4, width * 0.006);
+  for (let i = 0; i < LINES; i += 1) {
+    const share = (i + 0.5) / LINES;
+    const edgeX = share * width;
+    const waistX = cx + (share - 0.5) * 2 * waistHalf;
+    for (let half = 0; half < 2; half += 1) {
+      const edgeY = half === 0 ? 0 : height;
+      const controlY = half === 0 ? cy * 0.55 : height - cy * 0.55;
+      for (let k = 0; k < DOTS_PER_HALF; k += 1) {
+        // Denser near the waist, as the lines bunch there.
+        const t = ((k + 0.5) / DOTS_PER_HALF) ** 1.15;
+        const a = (1 - t) * (1 - t);
+        const b = 2 * (1 - t) * t;
+        const c = t * t;
+        const at = ((i * 2 + half) * DOTS_PER_HALF + k) * 2;
+        points[at] = a * waistX + b * edgeX + c * edgeX;
+        points[at + 1] = a * cy + b * controlY + c * edgeY;
+      }
+    }
+  }
+  return points;
+}
+
+/**
+ * Draws the band. `flowAt` is the clock (performance.now()) of a flowing frame, or null when
+ * nothing flows; it places the grains.
+ */
+function draw(
+  canvas: HTMLCanvasElement,
+  cache: { current: Geometry | null },
+  fraction: number,
+  dim: boolean,
+  accent: boolean,
+  flowAt: number | null,
+): void {
   const ctx = canvas.getContext("2d");
   if (!ctx) return; // no canvas (tests): the text over the band carries every fact
   const width = canvas.clientWidth;
@@ -204,40 +280,71 @@ function draw(canvas: HTMLCanvasElement, fraction: number, dim: boolean, accent:
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   ctx.clearRect(0, 0, width, height);
 
-  const ink = cssToken(canvas, "--ink", getComputedStyle(canvas).color);
-  const orange = cssToken(canvas, "--accent-orange", ink);
-  const cx = width / 2;
-  const cy = height / 2;
-  const waistHalf = Math.max(4, width * 0.006);
+  const now = flowAt ?? performance.now();
+  let geom = cache.current;
+  if (!geom || geom.width !== width || geom.height !== height) {
+    geom = { width, height, points: curvePoints(width, height), ink: "", orange: "", colorsAt: -1 };
+    cache.current = geom;
+  }
+  // Colours follow the theme: read on every still frame, at most once a second while flowing.
+  if (flowAt === null || geom.colorsAt < 0 || now - geom.colorsAt > COLOR_MS) {
+    geom.ink = cssToken(canvas, "--ink", getComputedStyle(canvas).color);
+    geom.orange = cssToken(canvas, "--accent-orange", geom.ink);
+    geom.colorsAt = now;
+  }
+  const { points, ink, orange } = geom;
+
   const remainingDots = Math.round((1 - fraction) * DOTS_PER_HALF);
   const doneDots = Math.round(fraction * DOTS_PER_HALF);
-
-  ctx.globalAlpha = 1;
   const base = dim ? 0.5 : 1;
-  const sparkSet = new Set(SPARK_PICKS.map((s) => `${s.line}:${s.dot}:${s.top ? 1 : 0}`));
 
   for (let i = 0; i < LINES; i += 1) {
-    const share = (i + 0.5) / LINES;
-    const edgeX = share * width;
-    const waistX = cx + (share - 0.5) * 2 * waistHalf;
-    for (const top of [true, false]) {
-      const edgeY = top ? 0 : height;
-      const controlY = top ? cy * 0.55 : height - cy * 0.55;
-      const dots = curveDots(
-        { x: waistX, y: cy },
-        { x: edgeX, y: controlY },
-        { x: edgeX, y: edgeY },
-      );
-      dots.forEach((dot, k) => {
+    for (let half = 0; half < 2; half += 1) {
+      const top = half === 0;
+      const row = (i * 2 + half) * DOTS_PER_HALF;
+      for (let k = 0; k < DOTS_PER_HALF; k += 1) {
         // Top: the sand left sits nearest the waist; bottom: the sand done piles from the edge.
         const lit = top ? k < remainingDots : k >= DOTS_PER_HALF - doneDots;
         const front = !top && accent && doneDots > 0 && k === DOTS_PER_HALF - doneDots;
-        const spark = sparkSet.has(`${i}:${k}:${top ? 1 : 0}`);
+        const spark = SPARK_MASK[row + k] === 1;
         const size = spark ? 2.2 : 1.3;
         ctx.fillStyle = front ? orange : ink;
         ctx.globalAlpha = base * (lit ? (spark ? 1 : 0.78) : spark ? 0.3 : 0.13);
-        ctx.fillRect(dot.x - size / 2, dot.y - size / 2, size, size);
-      });
+        const at = (row + k) * 2;
+        ctx.fillRect(points[at] - size / 2, points[at + 1] - size / 2, size, size);
+      }
+    }
+  }
+
+  if (flowAt !== null) {
+    // Grains: a few bright dots per line slide down the top curve to the waist, then down the
+    // bottom curve away from it. One phase per line and grain, so the flow runs through the waist.
+    ctx.fillStyle = ink;
+    const last = DOTS_PER_HALF - 1;
+    const size = 2.4;
+    for (let i = 0; i < LINES; i += 1) {
+      for (let g = 0; g < GRAINS_PER_LINE; g += 1) {
+        const cycle = flowAt / GRAIN_MS + GRAIN_OFFSETS[i] + g / GRAINS_PER_LINE;
+        // 0..2: the first unit on the top curve (edge to waist), the second on the bottom one.
+        const run = (cycle % 1) * 2;
+        for (let half = 0; half < 2; half += 1) {
+          const s = half === 0 ? run : run - 1;
+          if (s < 0 || s >= 1) continue;
+          const u = half === 0 ? (1 - s) * last : s * last; // k along the curve, 0 at the waist
+          const k0 = Math.floor(u);
+          const k1 = Math.min(last, k0 + 1);
+          const f = u - k0;
+          const row = (i * 2 + half) * DOTS_PER_HALF;
+          const a = (row + k0) * 2;
+          const b = (row + k1) * 2;
+          const x = points[a] + (points[b] - points[a]) * f;
+          const y = points[a + 1] + (points[b + 1] - points[a + 1]) * f;
+          // Fade in at the top edge and out at the bottom edge.
+          const fade = half === 0 ? Math.min(1, s * 4) : Math.min(1, (1 - s) * 4);
+          ctx.globalAlpha = base * 0.95 * fade;
+          ctx.fillRect(x - size / 2, y - size / 2, size, size);
+        }
+      }
     }
   }
   ctx.globalAlpha = 1;
@@ -247,46 +354,57 @@ function HourglassCanvas({
   fraction,
   dim,
   accent,
+  flow,
+  reduced,
 }: {
   fraction: number;
   dim: boolean;
   accent: boolean;
+  /** RUNNING with reduced motion off: one frame loop keeps the grains moving. */
+  flow: boolean;
+  reduced: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shown = useRef(fraction);
-  const reduced = usePrefersReducedMotion();
+  const flowAt = useRef<number | null>(null);
+  const geometry = useRef<Geometry | null>(null);
 
-  // A short eased fall from the drawn fraction to the new one; none under reduced motion.
+  // At most one frame loop: while flowing it never stops; otherwise a short eased fall from the
+  // drawn fraction to the new one that settles (none under reduced motion). The cleanup cancels
+  // the outstanding frame on every change and on unmount.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const target = fraction;
     const from = shown.current;
-    if (reduced || from === fraction || typeof requestAnimationFrame !== "function") {
-      shown.current = fraction;
-      draw(canvas, fraction, dim, accent);
+    const canLoop = typeof requestAnimationFrame === "function";
+    if (!canLoop || (!flow && (reduced || from === target))) {
+      shown.current = target;
+      flowAt.current = null;
+      draw(canvas, geometry, target, dim, accent, null);
       return;
     }
     let frame = 0;
     const start = performance.now();
-    const tick = (now: number) => {
+    const tick = () => {
+      const now = performance.now();
       const t = Math.min(1, (now - start) / FALL_MS);
-      const eased = 1 - (1 - t) ** 3;
-      shown.current = from + (fraction - from) * eased;
-      draw(canvas, shown.current, dim, accent);
-      if (t < 1) frame = requestAnimationFrame(tick);
+      shown.current = from + (target - from) * (1 - (1 - t) ** 3);
+      flowAt.current = flow ? now : null;
+      draw(canvas, geometry, shown.current, dim, accent, flowAt.current);
+      if (flow || t < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(frame);
-      shown.current = fraction;
-    };
-  }, [fraction, dim, accent, reduced]);
+    return () => cancelAnimationFrame(frame);
+  }, [fraction, dim, accent, flow, reduced]);
 
   // Redraw at the new size when the band is resized.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || typeof ResizeObserver !== "function") return;
-    const observer = new ResizeObserver(() => draw(canvas, shown.current, dim, accent));
+    const observer = new ResizeObserver(() =>
+      draw(canvas, geometry, shown.current, dim, accent, flowAt.current),
+    );
     observer.observe(canvas);
     return () => observer.disconnect();
   }, [dim, accent]);

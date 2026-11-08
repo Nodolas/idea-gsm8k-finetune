@@ -21,10 +21,7 @@ const pageLink = ({ isActive }: { isActive: boolean }) =>
 export function TopBar({ activeRunId = null }: TopBarProps) {
   return (
     <header className="sticky top-0 z-20 border-b-[0.5px] border-hairline bg-background">
-      <nav
-        aria-label="Main"
-        className="mx-auto flex h-14 max-w-[var(--content-width)] items-center gap-6 px-[var(--gutter)]"
-      >
+      <nav aria-label="Main" className="flex h-14 items-center gap-6 px-[var(--gutter)]">
         <Link
           to="/"
           aria-label="gsm8k home"
