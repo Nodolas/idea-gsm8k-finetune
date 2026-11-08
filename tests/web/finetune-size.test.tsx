@@ -1,6 +1,6 @@
 /**
  * Batch-11 (u5-website), part F: the size of the fine-tuning drawing, AC4.7.10. The main drawing
- * (`svg.ft-drawing`, a 1000-unit viewBox) is at most 1,100 px wide (`max-w-[1100px]`) and centred
+ * (`svg.ft-drawing`, a 1000-unit viewBox) is at most two-thirds of the window wide (`max-w-[66vw]`) and centred
  * in its column (`mx-auto`); it keeps `min-w-[860px]`, so narrow windows still scroll sideways.
  * The "One layer up close" figure stays at most 280 px wide (`max-w-[280px]`). jsdom does no
  * layout, so the tests read the Tailwind classes that set these sizes.
@@ -80,10 +80,10 @@ async function renderPanel(): Promise<void> {
 }
 
 describe("fine-tuning drawing at its designed size (AC4.7.10)", () => {
-  it("AC4.7.10 the main drawing of a 1.7B fine-tune is at most 1100 px wide and centred", async () => {
+  it("AC4.7.10 the main drawing of a 1.7B fine-tune is at most two-thirds of the window wide and centred", async () => {
     await renderPanel();
     const drawing = mainDrawing();
-    expect(drawing).toHaveClass("max-w-[1100px]");
+    expect(drawing).toHaveClass("max-w-[66vw]");
     expect(drawing).toHaveClass("mx-auto");
   });
 
@@ -96,10 +96,10 @@ describe("fine-tuning drawing at its designed size (AC4.7.10)", () => {
     await renderPanel();
     const svg = await closeUpDrawing();
     expect(svg).toHaveClass("max-w-[280px]");
-    expect(svg).not.toHaveClass("max-w-[1100px]");
+    expect(svg).not.toHaveClass("max-w-[66vw]");
   });
 
-  it("AC4.7.10 on the training page the panel's main drawing is capped at 1100 px, centred, and keeps its minimum width", async () => {
+  it("AC4.7.10 on the training page the panel's main drawing is capped at two-thirds of the window, centred, and keeps its minimum width", async () => {
     const api = liveApi();
     renderPage("/training", { api });
     await waitFor(() => expect(api.stream.isOpen).toBe(true));
@@ -107,7 +107,7 @@ describe("fine-tuning drawing at its designed size (AC4.7.10)", () => {
     const region = await screen.findByRole("region", { name: "How the model is fine-tuned" });
     await waitFor(() => expect(region.querySelector("svg.ft-drawing")).not.toBeNull());
     const drawing = mainDrawing(region);
-    expect(drawing).toHaveClass("max-w-[1100px]");
+    expect(drawing).toHaveClass("max-w-[66vw]");
     expect(drawing).toHaveClass("mx-auto");
     expect(drawing).toHaveClass("min-w-[860px]");
     const closeUp = within(region).getByRole("figure", { name: "One layer up close" });
