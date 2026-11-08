@@ -4,6 +4,8 @@ node_modules/
 web/dist/
 .wrangler/
 .dev.vars*
+# The factory's GPU queue: job files and the orchestrator's queue view (docs/gpu-queue.md in the factory repo).
+.gpu-jobs/
 .env*
 !.env.example
 __pycache__/
