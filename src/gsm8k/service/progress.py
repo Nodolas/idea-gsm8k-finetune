@@ -38,7 +38,7 @@ def evaluation_progress(outputs: Path, run_id: str) -> dict | None:
             return None
         total = SPLIT_SIZES[split]
         limit = config.get("limit")
-        if isinstance(limit, int) and not isinstance(limit, bool) and 0 <= limit < total:
+        if isinstance(limit, int) and not isinstance(limit, bool) and 1 <= limit < total:
             total = limit
         scored = _complete_lines(predictions)
     except (OSError, ValueError, UnicodeError):

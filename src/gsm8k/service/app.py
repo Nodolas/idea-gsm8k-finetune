@@ -588,7 +588,7 @@ def create_app(
 
     @app.get(f"{API_PREFIX}/status")
     def get_status() -> dict:
-        return _status_payload(status.current_status(svc._outputs), svc._outputs)
+        return _status_payload(status.current_status(svc._outputs), svc.outputs)
 
     @app.post(f"{API_PREFIX}/stop")
     def stop_run() -> dict:
@@ -604,10 +604,10 @@ def create_app(
             raise ServiceError(409, "no_active_run", NO_ACTIVE_RUN)
         if before.run_id is not None:
             try:
-                return _status_payload(status.run_status(before.run_id, svc._outputs), svc._outputs)
+                return _status_payload(status.run_status(before.run_id, svc._outputs), svc.outputs)
             except (LookupError, ValueError):
                 pass
-        return _status_payload(status.current_status(svc._outputs), svc._outputs)
+        return _status_payload(status.current_status(svc._outputs), svc.outputs)
 
     # --- queue ---
 
