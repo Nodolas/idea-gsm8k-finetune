@@ -24,7 +24,12 @@ units:
   - name: u6-final-and-report
     kind: library
     depends_on: [u2-baselines, u3-sft, u4-run-service]
+  - name: u10-self-taught-cot
+    kind: library
+    depends_on: [u3-sft, u4-run-service, u5-website]
 ```
+
+Added 2026-11-08: u10-self-taught-cot depends on u3-sft (the supervised loop it feeds), u4-run-service (the service that serves its comparison) and u5-website (the top bar and layout its page joins).
 
 Deferred (Nico, 2026-11-07): u7-grpo, u8-tuning and u9-ablations are out of the `units:` block above and not built in this build. Each depends on u3-sft (kind library); the graph and table below still show them for when they come back.
 
@@ -41,9 +46,12 @@ graph TD
   u7-grpo --> u3-sft
   u8-tuning --> u3-sft
   u9-ablations --> u3-sft
+  u10-self-taught-cot --> u3-sft
+  u10-self-taught-cot --> u4-run-service
+  u10-self-taught-cot --> u5-website
 ```
 
-<!-- Text fallback: arrows point from a unit to what it depends on. u1-eval-skeleton depends on nothing. u2-baselines and u3-sft depend on u1-eval-skeleton. u4-run-service depends on u1-eval-skeleton and u3-sft. u5-website depends on u4-run-service. u6-final-and-report depends on u2-baselines, u3-sft and u4-run-service. u7-grpo, u8-tuning and u9-ablations each depend on u3-sft. There are no cycles. -->
+<!-- Text fallback: arrows point from a unit to what it depends on. u1-eval-skeleton depends on nothing. u2-baselines and u3-sft depend on u1-eval-skeleton. u4-run-service depends on u1-eval-skeleton and u3-sft. u5-website depends on u4-run-service. u6-final-and-report depends on u2-baselines, u3-sft and u4-run-service. u7-grpo, u8-tuning and u9-ablations each depend on u3-sft. u10-self-taught-cot depends on u3-sft, u4-run-service and u5-website. There are no cycles. -->
 
 ## Edges and Why
 
@@ -60,6 +68,9 @@ graph TD
 | u7-grpo | u3-sft | GRPO is a second method of u3's training loop and can start from a supervised adapter |
 | u8-tuning | u3-sft | Trials train and score through u3's training loop and dial table |
 | u9-ablations | u3-sft | The terse-format ablation is a fine-tune; vote and calculator compare against u3's runs |
+| u10-self-taught-cot | u3-sft | Self-taught training is the supervised loop fed with the kept solutions |
+| u10-self-taught-cot | u4-run-service | The comparison is served by the run service (ADR-008: the website reads no files) |
+| u10-self-taught-cot | u5-website | The Reasoning page joins the website's layout and top bar |
 
 ## Integration Points
 

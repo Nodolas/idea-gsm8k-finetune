@@ -12,6 +12,9 @@ Nine units grouping the building blocks in `inception/domain-design/components.m
 | U4 | u4-run-service | service | L | Must | US3.1, US3.2, US3.3, US3.4, US3.5, US3.6, US3.7 |
 | U5 | u5-website | ui | L | Must | US4.1, US4.2, US4.3, US4.4, US4.5, US4.6 |
 | U6 | u6-final-and-report | library | M | Must | US5.1, US6.1, US6.2, US6.3 |
+| U10 | u10-self-taught-cot | library | M | Could | US10.1, US10.2, US10.3, US10.4 |
+
+U10 was added on 2026-11-08 (Nico: self-taught chain of thought, and a page on how it moved the score; `inception/changes.md`).
 
 Deferred (Nico, 2026-11-07, `inception/changes.md`): U7 u7-grpo, U8 u8-tuning and U9 u9-ablations (Could Have) are not built in this build; their sections below and their stories stay as written. To build them later, move their three rows back into this table and their entries back into the `units:` block of `unit-of-work-dependency.md`:
 
@@ -154,3 +157,23 @@ The deployment model of every unit is local only: nothing is deployed (team-prac
 - **Owns and delivers:** the three transforms and three `[manual]` runs: `q17-terse-dev`, `q17-vote-dev`, `q17-calc-dev`.
 - **Deployment model:** embedded.
 - **Notes and constraints:** the calculator evaluates arithmetic only (AC9.1.3).
+
+## U10 u10-self-taught-cot (Could, added 2026-11-08)
+
+- **Description:** Self-taught chain of thought: the base model writes several step-by-step solutions per training problem, the correct ones are kept, a LoRA fine-tune learns from them, and a Reasoning page shows and explains how that moved the dev score against the base model and the reference fine-tune.
+- **Building blocks:**
+  - SelfTaughtCoT (new): sampling, the keep rule, `cot_data.jsonl` and `cot_stats.json`; `gsm8k cot-generate`.
+  - Training: method `selfcot`, the supervised loop fed from `cot_data.jsonl`.
+  - RunConfiguration and RunRecords: the C1 values and C2 fields of contract-summary.md (added 2026-11-08).
+  - ReasoningReport (new): the comparison behind `GET /api/v1/reasoning`, served by RunService.
+  - Website: the Reasoning page and its top-bar link.
+- **Owns and delivers:**
+  - `gsm8k cot-generate` and `gsm8k train --method selfcot --cot-data-run <run id>`
+  - `GET /api/v1/reasoning` and the Reasoning page at `/reasoning`
+  - two `[manual]` long runs, started detached by the `/build` lead: `q17-cotgen-train` (under 3 h at the default 1,500 problems), then `q17-selfcot-dev` (about 30-45 min)
+  - after they end, a "Self-taught chain of thought" section in `results.md` (AC10.4.5)
+- **Deployment model:** embedded (commands), local service route and website page.
+- **Notes and constraints:**
+  - Generation samples several sequences per problem, so it uses a smaller problem batch than evaluation to stay within 8 GB (NFR1); the batch plan fixes the numbers.
+  - The website does not start generation or self-taught runs in this unit: the `/build` lead starts them detached; the run list and scores pages show their rows like other runs.
+  - Tests run on the CPU with the tiny model fixture and fixture files (NFR3).

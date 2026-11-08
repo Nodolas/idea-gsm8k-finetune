@@ -6,10 +6,10 @@ Sources: `inception/requirements-analysis/requirements.md` (FR1–FR9, NFR1–NF
 
 - **Format:** "As Nico, I want …, so that …". Each story has a stable `US{group}.{seq}` ID, and each acceptance criterion an `AC{group}.{seq}.{k}` ID written on one line in Given/When/Then form.
 - **Tests:** every criterion is checked by at least one test named by its ID (Python `test_AC1_4_1_...` with pytest; website `AC4.2.1 ...` with Vitest and React Testing Library), or carries `[manual]` on its own line with how to verify it (Q6).
-- **Long runs:** a criterion whose run takes over about 10 minutes carries `[manual]` and `Verify: results/runs.csv row <base id>`. Base ids follow `<model>-<method>-<split>` (Q7): model `q06` (`Qwen/Qwen3-0.6B-Base`) or `q17` (`Qwen/Qwen3-1.7B-Base`); method `base`, `sft`, `grpo`, `best` (the best tuned checkpoint, whichever method made it), or an ablation name; split `dev`, `test`, `harness` (lm-evaluation-harness on the test split), `gsmplus` or `gsmsym`. Each attempt is started detached by the `/build` lead (`scripts/run-detached.sh`) or by Nico from the website, never typed by Nico in a terminal, with `--run-id <base id>-1`, `-2`, and so on (inception/changes.md, 2026-10-31); the row's `run_id` is the attempt id. The `q17` ids assume the 1.7B model is the final one (inception/brief.md); if the best checkpoint turns out to be 0.6B, the same criteria use `q06`.
+- **Long runs:** a criterion whose run takes over about 10 minutes carries `[manual]` and `Verify: results/runs.csv row <base id>`. Base ids follow `<model>-<method>-<split>` (Q7): model `q06` (`Qwen/Qwen3-0.6B-Base`) or `q17` (`Qwen/Qwen3-1.7B-Base`); method `base`, `sft`, `grpo`, `best` (the best tuned checkpoint, whichever method made it), `cotgen` and `selfcot` (group 10, added 2026-11-08), or an ablation name; split `dev`, `test`, `harness` (lm-evaluation-harness on the test split), `gsmplus`, `gsmsym` or `train` (the chain-of-thought generation, which samples the training part only). Each attempt is started detached by the `/build` lead (`scripts/run-detached.sh`) or by Nico from the website, never typed by Nico in a terminal, with `--run-id <base id>-1`, `-2`, and so on (inception/changes.md, 2026-10-31); the row's `run_id` is the attempt id. The `q17` ids assume the 1.7B model is the final one (inception/brief.md); if the best checkpoint turns out to be 0.6B, the same criteria use `q06`.
 - **Quick tests:** tests run on the CPU in under 10 minutes; only the walking-skeleton test loads a real model (3 dev problems), others use tiny fixtures, mocks or a few training steps. Wherever a test runs a model on a few problems or steps ("a limit of 5 problems", "a few steps"), the model is a tiny model fixture: a Qwen3-architecture model with random weights and a few small layers, built by the test (with the 0.6B tokenizer), never the real 0.6B or 1.7B weights. All tests point the results file at a temporary path, never `results/runs.csv` (NFR3, team-practices.md).
 - **Run results file:** "the results file" below means `results/runs.csv` for long runs and a temporary file in tests (FR1.6).
-- **Priority:** groups 1–6 are Must Have (scope-document.md IB-1 to IB-6); groups 7–9 are Could Have, built only after everything else works (IB-7 to IB-9, Q2), and are deferred: not built in this build (Nico, 2026-11-07; units u7-u9 deferred in unit-of-work.md). No story is Should Have or Won't Have; exclusions are listed in requirements.md Out of Scope.
+- **Priority:** groups 1–6 are Must Have (scope-document.md IB-1 to IB-6); groups 7–9 are Could Have, built only after everything else works (IB-7 to IB-9, Q2), and are deferred: not built in this build (Nico, 2026-11-07; units u7-u9 deferred in unit-of-work.md). Group 10 is Could Have too and is built (Nico, 2026-11-08: self-taught chain of thought and a page on how it moved the score; unit u10-self-taught-cot). No story is Should Have or Won't Have; exclusions are listed in requirements.md Out of Scope.
 
 ## Training Dials
 
@@ -44,6 +44,7 @@ Bounds are inclusive.
 | 7. Reinforcement learning | US7.1 | Could |
 | 8. Tuning loop | US8.1–US8.2 | Could |
 | 9. Ablations | US9.1 | Could |
+| 10. Self-taught chain of thought | US10.1–US10.4 | Could |
 
 ---
 
@@ -531,13 +532,88 @@ As Nico, I want answer format, samples per problem and a calculator tool each co
 
 ---
 
+## 10. Self-Taught Chain of Thought (Could)
+
+Added 2026-11-08 (Nico: "train a model with focus on chain of thought"; he picked self-taught chain of thought; "Make a page and explain how it affected the score"). The reference fine-tune copies GSM8K's terse written solutions and did not raise the dev score (`results.md`). Here the base model writes its own step-by-step solutions to training problems, only the correct ones are kept, and the model is fine-tuned on them (rejection-sampling fine-tuning, as in STaR without rationalisation). The training dials stay as in Training Dials; the training data differs from the reference fine-tune in its source (the model's own solutions) and its size (only the kept problems, against all 6,973), and the comparison states both. Generation never samples or keeps a dev problem; the four unscored dev exemplars appear only as the prompt, as in every evaluation.
+
+Chain-of-thought dials (bounds inclusive; fields of `config.json`, contract C2):
+
+| Dial | Allowed | Default |
+|---|---|---|
+| cot problems | 50 to the size of the training split (6,973), or `all` | 1500 (sized so 4 samples per problem at 1.7B stay under 3 hours even at the measured 1.6 s per answer without any batching gain) |
+| cot samples | 1 to 8 (whole number) | 4 |
+| cot temperature | 0.1 to 1.5 | 0.7 |
+
+A sample's reasoning lines are its non-empty lines before its first `#### <number>` line; its words are the whitespace-separated words of those lines.
+
+### US10.1 Generate the model's own reasoning
+
+As Nico, I want the base model to write several step-by-step solutions to each training problem and keep only the correct ones, so that I can fine-tune on reasoning in the model's own words instead of GSM8K's terse notes.
+
+- **Priority:** Could Have
+- **Requirements:** FR10.1, NFR1, NFR2, NFR8
+- **Depends on:** US1.4, US2.1
+- **INVEST:** one command; sampling and the keep rule are testable on the tiny model fixture and on fixed strings.
+
+- **AC10.1.1** Given a few training problems and the tiny model fixture, when `gsm8k cot-generate` runs with `cot_samples` 3, then each problem is prompted with the fixed 4-shot prompt and sampled 3 times at `cot_temperature` with the run's seed, each sample is cut by the stop rule (BR3.5) and scored against its gold answer, and the run folder holds `config.json`, `cot_data.jsonl`, `cot_stats.json`, `timings.json`, `status.json` and metrics lines with the problems done, the problems to do and the estimated seconds left.
+- **AC10.1.2** Given the scored samples of one problem, when the keep rule runs, then a sample is kept only if its final number is correct and at least one reasoning line comes before its `#### <number>` line, at most one sample is kept per problem (the first such sample in sample order), and a problem with no such sample is left out of `cot_data.jsonl` and counted.
+- **AC10.1.3** Given a finished generation, when it ends, then the results file gets one row with method `cotgen`, data `gsm8k-train` and metric `kept_fraction` (kept problems divided by problems tried), and `cot_stats.json` holds the problems tried, samples per problem, problems solved (at least one correct sample), problems kept, and the mean reasoning lines and words of the kept solutions and of GSM8K's reference solutions for the same kept problems (null when nothing was kept, with a kept fraction of 0).
+- **AC10.1.4** Given any configuration, when generation picks its problems, then they are the first `cot_problems` problems of the training part of the split by index and never a dev, test, GSM-Plus or GSM-Symbolic problem; given a split other than `train`, or a `cot_problems`, `cot_samples` or `cot_temperature` outside its range, then it stops with exit code 2 and a message naming the dial and its allowed range, and writes no row.
+- **AC10.1.5** [manual] Given `Qwen/Qwen3-1.7B-Base` and the default chain-of-thought dials, when the generation runs, then it finishes within 3 hours and records its kept fraction. Verify: results/runs.csv row q17-cotgen-train
+
+### US10.2 Fine-tune on its own reasoning
+
+As Nico, I want to fine-tune on the kept solutions with the same dials as the reference fine-tune, so that I can see what training on the model's own chain of thought does that copying GSM8K's solutions did not.
+
+- **Priority:** Could Have
+- **Requirements:** FR10.2, FR2.1, FR2.4, NFR1, NFR2, NFR8
+- **Depends on:** US10.1, US2.2
+- **INVEST:** reuses the supervised loop with a different data source; testable on the tiny model fixture with a small `cot_data.jsonl`.
+
+- **AC10.2.1** Given a generation run folder with a `cot_data.jsonl` and the tiny model fixture, when `gsm8k train --method selfcot --cot-data-run <generation run id>` runs a few steps, then each training target is a kept solution in the zero-shot `Question: <q>` newline `Answer:` frame (BR2.3), the adapter is saved under `checkpoints/<run_id>/`, the dev split is scored, and the results file gets one row with method `selfcot` and data `gsm8k-dev`; a `selfcot` adapter counts as an adapter for finalists, method `best` and pruning like an `sft` adapter (C4, C5).
+- **AC10.2.2** Given `train_examples` N, when self-taught training builds its data, then it takes the first N kept solutions in problem index order, and `all`, or an N larger than the number kept, takes every kept solution.
+- **AC10.2.3** Given method `selfcot` without `cot_data_run`, or a `cot_data_run` whose folder has no readable `cot_data.jsonl`, when training starts, then it stops with exit code 2 and a message naming the missing field, run or file, and writes no row.
+- **AC10.2.4** Given a `cot_data.jsonl` that holds a dev or test problem id, when training starts, then it stops before training with exit code 2 and a message naming the leaked problem ids, and writes no row (NFR8).
+- **AC10.2.5** [manual] Given the kept solutions of q17-cotgen-train, batch size 2 and the other dials at their defaults, when the self-taught fine-tune runs, then it records its dev accuracy for comparison with q17-base-dev and q17-sft-dev. Verify: results/runs.csv row q17-selfcot-dev
+
+### US10.3 Compare the reasoning runs
+
+As Nico, I want the service to compare the self-taught run with the base model and the reference fine-tune problem by problem, so that the page can show how chain of thought moved the score and why.
+
+- **Priority:** Could Have
+- **Requirements:** FR10.3, NFR6
+- **Depends on:** US3.1, US10.2
+- **INVEST:** a pure comparison over the run log and run folders plus one read-only endpoint; testable with fixture files.
+
+- **AC10.3.1** Given a results file with base, `sft` and `selfcot` dev accuracy rows of one model, when `GET /api/v1/reasoning?model=<model>` is called, then for each role (base, sft, selfcot) it returns the latest such row's run id, accuracy, correct and scored counts and 95% interval (normal approximation, clipped to 0–1), and for sft and selfcot the number of training problems the fine-tune learned from and the gain over base in points with the label "within noise" when its size is under 4 points and "outside noise" from 4 points.
+- **AC10.3.2** Given those runs' `predictions.jsonl` files, when the comparison is built, then for sft and selfcot it counts the problems fixed (base wrong, run right), broken (base right, run wrong), both right and both wrong over the problems both scored, and for each role it gives the mean reasoning lines and words of its outputs.
+- **AC10.3.3** Given a `selfcot` run whose `config.json` names its generation run, when the comparison is built, then it carries that run's `cot_stats.json` figures, up to 3 fixed problems in dev order as examples (problem id, gold answer, base output, self-taught output), and summary sentences that name the self-taught dev accuracy, the base accuracy, the gain with its noise label, the reference fine-tune's gain, the training problems each learned from, and the fixed and broken counts.
+- **AC10.3.4** Given no `selfcot` dev row for the model, when the endpoint is called, then it answers 200 with `available` false and whatever base and sft figures exist; given an unreadable predictions or stats file, then only that part is null with an error naming the file; given a model outside the two allowed, then it answers 422 with error `invalid_dial`; and `POST /api/v1/runs/check` refuses methods `cotgen` and `selfcot` with 422 `invalid_dial` (field `method`), since the website does not start them in this unit.
+
+### US10.4 See how chain of thought moved the score
+
+As Nico, I want a Reasoning page that shows and explains how self-taught chain of thought changed the score, so that I can read the effect without opening files.
+
+- **Priority:** Could Have
+- **Requirements:** FR10.4, FR4.1, FR4.5, FR4.6, NFR9
+- **Depends on:** US4.1, US10.3
+- **INVEST:** one page reading one endpoint; testable with a fake API.
+
+- **AC10.4.1** Given any page, when it renders, then the top bar shows a "Reasoning" link after "Training" that opens `/reasoning` and is marked as the current page there like the other links.
+- **AC10.4.2** Given a comparison with all three runs, when the Reasoning page renders, then it shows a short explanation of self-taught chain of thought, a table of the base, reference fine-tune and self-taught dev accuracy with interval, gain and noise label in words (never by colour alone), the fixed and broken counts, the mean reasoning lines and words per run, the generation figures, and the summary sentences under the heading "How it affected the score".
+- **AC10.4.3** Given examples in the comparison, when the page renders, then each example shows its problem id, gold answer and the base and self-taught outputs next to each other, and every control on the page is reachable by keyboard.
+- **AC10.4.4** Given `available` false, when the page renders, then it shows "No self-taught chain-of-thought run yet" with the base and reference figures that exist; given a service error, then it shows an error state naming it; while the comparison loads, then it shows a loading state.
+- **AC10.4.5** [manual] Given the finished q17-selfcot-dev run, when Nico reads the Reasoning page and the "Self-taught chain of thought" section of `results.md`, then both say how the dev score moved, whether the change is within noise, and why (answer length and style, problems fixed and broken). Verify: Nico reads the Reasoning page and `results.md` after q17-selfcot-dev ends
+
+---
+
 ## Dependencies and Critical Path
 
 The critical path follows the learning path, with the walking skeleton first (team-practices.md, Walking Skeleton):
 
 US1.1 → US1.2 → US1.3 → **US1.4 (walking skeleton)** → US1.5 → US2.1 → US2.2 → US2.3 → US2.4 → US3.1 → US3.2 → US3.3 → US4.1 → US4.5 → US4.6 → US3.6 → US6.1 → US5.1 → US6.2.
 
-Stories off the critical path: US2.5, US3.4, US3.5, US3.7, US4.2, US4.3, US4.4 (after their dependencies) and US6.3 (every unit). The could-haves US7.1, US8.1, US8.2 and US9.1 come only after US6.2 is written.
+Stories off the critical path: US2.5, US3.4, US3.5, US3.7, US4.2, US4.3, US4.4 (after their dependencies) and US6.3 (every unit). The could-haves US7.1, US8.1, US8.2 and US9.1 come only after US6.2 is written; group 10 (US10.1 → US10.2 → US10.3 → US10.4) comes after it too (2026-11-08).
 
 ## Assumptions
 

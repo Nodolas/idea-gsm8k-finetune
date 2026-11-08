@@ -54,7 +54,7 @@ Priorities follow `scope-document.md`: FR1–FR6 are Must, FR7–FR9 are Could. 
 
 ### FR4 Results Website (IB-3, IB-4)
 
-- **FR4.1** Every page shall carry a top bar with the wordmark (linking to the landing page), "Scores" and "Training" (rough-mockups Q2).
+- **FR4.1** Every page shall carry a top bar with the wordmark (linking to the landing page), "Scores" and "Training" (and "Reasoning" after them, added 2026-11-08, FR10.4) (rough-mockups Q2).
 - **FR4.2** The landing page shall show the halftone wordmark headline adapted from Nico's pasted 21st.dev component (cleared by Nico, Q6), a one-line description, and a "best so far" line (model, method, dev accuracy, gain over baseline). It also has buttons to the training and scores pages. The headline's animation stops when the operating system's reduce-motion setting is on.
 - **FR4.3** The highest-scores page shall list runs ranked by dev accuracy with model, method, dev accuracy, test accuracy where scored, gain over the same model's baseline, minutes and date. The baseline row is always shown and marked. The page can filter by model and method, and compare two picked runs: settings side by side, accuracy difference, and both training curves overlaid (rough-mockups Q4).
 - **FR4.4** The training page shall show live curves (loss, learning rate, dev accuracy; reward, KL and answer length for reinforcement-learning runs) that update within 5 seconds of a new metrics line. It also shows the run status with Start and Stop, the dials panel (FR2.1), the confirm-run dialog (FR3.2), and the list of past runs (rough-mockups Q3).
@@ -90,6 +90,15 @@ Priorities follow `scope-document.md`: FR1–FR6 are Must, FR7–FR9 are Could. 
 ### FR9 Ablations, Could (IB-9)
 
 - **FR9.1** Selected ablations (answer format step-by-step versus terse; samples per problem; a Python calculator tool) shall each be compared on the dev split against the same baseline (scope-document.md).
+
+### FR10 Self-Taught Chain of Thought, Could (added 2026-11-08)
+
+Nico, 2026-11-08: "train a model with focus on chain of thought" (he picked self-taught chain of thought over GRPO) and "Make a page and explain how it affected the score". The reference fine-tune copies GSM8K's terse written solutions and did not raise the dev score (`results.md`); this group trains on the model's own correct step-by-step reasoning instead (rejection-sampling fine-tuning, as in STaR without rationalisation).
+
+- **FR10.1** The system shall generate self-taught chain-of-thought training data: the base model samples several step-by-step solutions to each of the first N problems of the training part of the split with the fixed 4-shot prompt (FR1.3), with the number of problems, samples per problem and temperature as dials; each sample is cut by the stop rule and scored under FR1.4; per problem, the first correct sample with at least one reasoning line before its `#### <number>` line is kept. It never samples or keeps a dev, test, GSM-Plus or GSM-Symbolic problem (NFR8, FR5.2); the four unscored dev exemplars appear only as the prompt, as in every evaluation. The run appends one row (FR1.6) with the kept fraction and records its figures in the run folder.
+- **FR10.2** The system shall fine-tune with LoRA on the kept solutions exactly as FR2.1–FR2.4 do (same dials, same zero-shot training frame, adapter, closing dev evaluation and row) under method `selfcot`. The training data differs from the reference fine-tune in two ways, its source (the model's own solutions) and its size (only the kept problems, against all 6,973), and the comparison states both.
+- **FR10.3** The local service shall compare the latest base, reference fine-tune (`sft`) and self-taught (`selfcot`) dev runs of a model: dev accuracy with its 95% interval, the number of training problems each fine-tune learned from, the gain over base with a noise label, the problems fixed and broken against base, the answer length in reasoning lines and words, the generation figures, a few fixed examples and summary sentences (NFR6).
+- **FR10.4** The website shall have a Reasoning page that shows that comparison and explains how self-taught chain of thought affected the score; `results.md` gains a section on it once its long runs have ended.
 
 ## Non-Functional Requirements
 

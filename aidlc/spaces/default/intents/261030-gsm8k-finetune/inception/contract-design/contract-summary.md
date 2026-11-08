@@ -8,12 +8,12 @@ Nothing is exposed outside this PC: the service binds to 127.0.0.1 and there is 
 
 | # | Provider Unit | Consumer | Mechanism | Owner |
 |---|---|---|---|---|
-| C1 | u1-eval-skeleton (RunRecords) | u2, u3, u4, u6, u7, u8, u9 | Shared file: `results/runs.csv` | u1-eval-skeleton |
-| C2 | u1-eval-skeleton (RunRecords), extended by u3-sft | u3, u4, u6, u7, u8, u9 | Shared files: `outputs/<run_id>/` (`config.json`, `metrics.jsonl`, `status.json`, `predictions.jsonl`, `timings.json`, `run.log`) | u1-eval-skeleton |
+| C1 | u1-eval-skeleton (RunRecords) | u2, u3, u4, u6, u7, u8, u9, u10 | Shared file: `results/runs.csv` | u1-eval-skeleton |
+| C2 | u1-eval-skeleton (RunRecords), extended by u3-sft and u10-self-taught-cot | u3, u4, u6, u7, u8, u9, u10 | Shared files: `outputs/<run_id>/` (`config.json`, `metrics.jsonl`, `status.json`, `predictions.jsonl`, `timings.json`, `run.log`) | u1-eval-skeleton |
 | C3 | u1-eval-skeleton (lock), extended by u4-run-service (queue) | u2, u3, u4, u6, u8 | Shared files: `outputs/run.lock`, `outputs/queue/*.json` | u1 (lock), u4 (queue) |
 | C4 | u4-run-service | u3 (prune), u6 | Shared file: `results/finalists.json` | u4-run-service |
 | C5 | u1-eval-skeleton (`evaluate`), u3-sft (`train`) | u4-run-service (worker) | Process launch: `gsm8k` commands, arguments and exit codes | u1-eval-skeleton |
-| C6 | u4-run-service | u5-website | HTTP JSON on 127.0.0.1, `/api/v1` | u4-run-service |
+| C6 | u4-run-service, extended by u10-self-taught-cot (`/reasoning`) | u5-website, u10-self-taught-cot | HTTP JSON on 127.0.0.1, `/api/v1` | u4-run-service |
 | C7 | u4-run-service | u5-website | Server-Sent Events on 127.0.0.1 | u4-run-service |
 
 ## Common Rules
@@ -41,13 +41,13 @@ columns:                          # order fixed; new columns only at the end
     enum: [Qwen/Qwen3-0.6B-Base, Qwen/Qwen3-1.7B-Base]
   - name: method
     type: string
-    enum: [base, sft, grpo, best, terse, vote, calc, optuna]
+    enum: [base, sft, grpo, best, terse, vote, calc, optuna, cotgen, selfcot]   # cotgen, selfcot added 2026-11-08 (US10.1, US10.2)
   - name: data
     type: string
-    enum: [gsm8k-dev, gsm8k-test, gsm8k-test-harness, gsmplus-testmini, gsmsym-p1]
+    enum: [gsm8k-dev, gsm8k-test, gsm8k-test-harness, gsmplus-testmini, gsmsym-p1, gsm8k-train]   # gsm8k-train added 2026-11-08: cotgen rows only
   - name: metric
     type: string
-    enum: [accuracy, harness_flexible_accuracy]
+    enum: [accuracy, harness_flexible_accuracy, kept_fraction]   # kept_fraction added 2026-11-08: cotgen rows only (kept problems / problems tried)
   - name: value
     type: number                  # 0..1, 4 decimals
   - name: minutes
@@ -74,7 +74,7 @@ files:
     run_id: string
     model: string                   # C1 enum
     method: string                  # C1 enum
-    split: string                   # dev | test | gsmplus-testmini | gsmsym-p1; test only through the finalist flow (method best) or an explicit command such as the base-model baselines (NFR8, AC1.5.2, AC1.5.4) (changed 2026-11-06)
+    split: string                   # dev | test | gsmplus-testmini | gsmsym-p1 | train (train: cotgen only, added 2026-11-08); test only through the finalist flow (method best) or an explicit command such as the base-model baselines (NFR8, AC1.5.2, AC1.5.4) (changed 2026-11-06)
     adapter_path: string|null       # checkpoints/<run_id>/ of the adapter evaluated or continued
     learning_rate: number           # the eleven dials, ranges in stories.md Training Dials
     epochs: integer
@@ -96,6 +96,10 @@ files:
     evaluator: string               # project | lm-eval-harness; default project; the harness cross-check uses its own prompt and token cap (AC1.5.5) (added 2026-11-06)
     grpo_steps: integer|null        # GRPO only (US7.1)
     grpo_generations: integer|null  # GRPO samples per problem (US7.1)
+    cot_problems: integer|"all"     # cotgen: first N training problems by index; 50..6973 or "all"; default 1500 (added 2026-11-08)
+    cot_samples: integer            # cotgen: samples per problem, 1..8; default 4 (added 2026-11-08)
+    cot_temperature: number         # cotgen: sampling temperature, 0.1..1.5; default 0.7 (added 2026-11-08)
+    cot_data_run: string|null       # selfcot: run id of the cotgen run whose cot_data.jsonl is trained on; required for selfcot, null otherwise; default null (added 2026-11-08)
   metrics.jsonl:                    # one JSON object per line, appended as the run goes (FR2.3)
     line:
       v: 1
@@ -122,12 +126,36 @@ files:
     seconds_per_problem: number|null
     peak_gpu_memory_gb: number
   predictions.jsonl:                # evaluations only: problem_id, output, predicted, gold, correct
+  cot_data.jsonl:                   # cotgen only (added 2026-11-08): one line per kept problem, problem index order
+    line:
+      v: 1
+      problem_id: string            # a training-part id, never dev or test
+      question: string
+      gold: string
+      solution: string              # the kept sample as generated (cut by BR3.5), ending with its "#### <number>" line
+      correct_samples: integer      # how many of the problem's samples were correct
+      samples: integer              # samples drawn for the problem (cot_samples)
+  cot_stats.json:                   # cotgen only (added 2026-11-08), written when generation ends
+    v: 1
+    run_id: string
+    problems: integer               # problems tried
+    samples_per_problem: integer
+    solved: integer                 # problems with at least one correct sample
+    kept: integer                   # problems with a kept sample (= lines of cot_data.jsonl)
+    kept_fraction: number           # kept / problems, the row's value
+    mean_lines_kept: number|null    # mean reasoning lines of the kept solutions; null when kept = 0
+    mean_words_kept: number|null    # mean reasoning words of the kept solutions; null when kept = 0
+    mean_lines_reference: number|null   # the same for GSM8K's reference solutions of the kept problems, without <<...>> notes; null when kept = 0
+    mean_words_reference: number|null
   run.log:                          # plain text log; the last 20 lines are shown on failure (FR3.7)
 rules:
   - config_hash = sha256 of the canonical JSON of {model, method} plus every other field whose value differs from its documented
     default, keys sorted, without run_id and v; every option that changes results changes the hash, and a field added later in v1
     with a default leaves earlier hashes unchanged (changed 2026-10-31)
   - a missing metrics.jsonl reads as no lines, never an error (AC4.4.3)
+  - reasoning lines of a text are its non-empty lines before the first "#### <number>" line; its words are the whitespace-separated words of those lines (US10.1, US10.3; added 2026-11-08)
+  - split "train" exists only for method cotgen, and cotgen only takes split "train"; selfcot is a training method (dev split, never test) like sft (added 2026-11-08)
+  - a cotgen run's timings.json leaves seconds_per_problem null (several samples per problem would skew evaluation estimates, as the harness note says) and adds seconds_per_generated_problem (added 2026-11-08)
 ```
 
 ## C3 Lock and Queue (`outputs/run.lock`, `outputs/queue/`)
@@ -198,7 +226,9 @@ commands:
     - the worker always passes --config (written by the service before launch) and --started-by worker
     - a terminal run may omit --config and give options as flags; the command then writes config.json itself
     - --started-by defaults to terminal and is recorded only in the lock content
-    - method best (added 2026-11-07): evaluate and harness take --method base|best and --finalists <path>; best needs --adapter (or adapter_path) of a finalist run whose method makes an adapter (sft, grpo, terse, optuna); the row keeps method best with adapter_run = the adapter run id; a worker config.json with method best is used unchanged; a test-split evaluation with an adapter must be method best
+    - cot-generate (added 2026-11-08): `gsm8k cot-generate` takes the same --config, --run-id, --results and --started-by arguments as evaluate, plus terminal flags --model, --cot-problems, --cot-samples, --cot-temperature, --seed and --max-new-tokens; method cotgen, split train; it holds the lock like every GPU run and uses the same exit codes
+    - selfcot (added 2026-11-08): `gsm8k train` takes --method sft|selfcot (default sft) and --cot-data-run <run id>; selfcot needs cot_data_run, else exit 2
+    - method best (added 2026-11-07): evaluate and harness take --method base|best and --finalists <path>; best needs --adapter (or adapter_path) of a finalist run whose method makes an adapter (sft, grpo, terse, optuna, selfcot; selfcot added 2026-11-08); the row keeps method best with adapter_run = the adapter run id; a worker config.json with method best is used unchanged; a test-split evaluation with an adapter must be method best
 environment: the six cache variables set to absolute project paths before any other import (NFR5)
 exit_codes:
   0: finished, row written
@@ -263,6 +293,24 @@ paths:
     get:
       summary: The dial table with ranges and defaults (AC4.6.1)
       description: 'Added 2026-11-07: returns {"dials": [DialSpec]}, the eleven dials in stories.md Training Dials order; DialSpec = {name, label, kind: select|number|integer, options: list|null, min: number|null, max: number|null, allow_all: bool, default, help}'
+  /reasoning:
+    get:
+      summary: Self-taught chain of thought against base and the reference fine-tune for one model (US10.3, added 2026-11-08); read-only
+      parameters:
+        - { name: model, in: query, schema: { type: string, default: Qwen/Qwen3-1.7B-Base } }
+      description: >
+        Roles: base = the model's latest base gsm8k-dev accuracy row; sft = its latest sft gsm8k-dev accuracy row;
+        selfcot = its latest selfcot gsm8k-dev accuracy row ("latest" = last in file order). Interval = accuracy
+        ± 1.96·sqrt(p(1−p)/scored), clipped to 0..1; scored and correct come from the run's predictions.jsonl
+        (scored null when it cannot be read). gain_pts = (accuracy − base accuracy)·100, 1 decimal; noise =
+        "within noise" when |gain_pts| < 4, else "outside noise". /runs/check refuses methods cotgen and selfcot
+        with 422 invalid_dial (field method): the website does not start them in this version. Flips are over problem ids in both runs'
+        predictions. Examples: up to 3 problems fixed by selfcot, in base predictions order. Summary: plain
+        English sentences built from these numbers.
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/Reasoning' } } } }
+        '422': { $ref: '#/components/responses/Error' }   # invalid_dial: model outside the two allowed
+        '500': { $ref: '#/components/responses/Error' }   # run_log_unreadable
   /runs/check:
     post:
       summary: Step one of a start; checks and summarises, launches nothing (AC3.2.1)
@@ -368,6 +416,55 @@ components:
         command: { type: array, items: { type: string } }
         queue_position: { type: integer }
         needs_second_confirmation: { type: boolean }
+    Reasoning:                                    # added 2026-11-08 (US10.3)
+      type: object
+      properties:
+        v: { type: integer }                      # 1
+        model: { type: string }
+        available: { type: boolean }              # false when the model has no selfcot gsm8k-dev accuracy row
+        roles:                                    # always base, sft, selfcot in this order; a role without a row has run_id null and null figures
+          type: array
+          items:
+            type: object
+            properties:
+              role: { type: string, enum: [base, sft, selfcot] }
+              run_id: { type: [string, 'null'] }
+              accuracy: { type: [number, 'null'] }
+              correct: { type: [integer, 'null'] }
+              scored: { type: [integer, 'null'] }
+              interval_low: { type: [number, 'null'] }
+              interval_high: { type: [number, 'null'] }
+              trained_on: { type: [integer, 'null'] }     # training problems the fine-tune learned from: train_examples of its config.json ("all" = 6973 for sft, = kept for selfcot), capped at what was available; null for base
+              gain_pts: { type: [number, 'null'] }        # null for base
+              noise: { type: [string, 'null'], enum: [within noise, outside noise, null] }
+              mean_lines: { type: [number, 'null'] }      # mean reasoning lines of its outputs (C2 rule)
+              mean_words: { type: [number, 'null'] }
+              error: { type: [string, 'null'] }           # e.g. "Predictions could not be read: outputs/<run_id>/predictions.jsonl"
+        flips:                                    # one per sft and selfcot role that has a run and readable predictions on both sides
+          type: array
+          items:
+            type: object
+            properties:
+              role: { type: string, enum: [sft, selfcot] }
+              run_id: { type: string }
+              against: { type: string }           # the base run id
+              fixed: { type: integer }            # base wrong, run right
+              broken: { type: integer }           # base right, run wrong
+              both_right: { type: integer }
+              both_wrong: { type: integer }
+        generation:                               # the selfcot run's cot_data_run figures (C2 cot_stats.json plus run_id); null without them
+          type: [object, 'null']
+        generation_error: { type: [string, 'null'] }   # names the unreadable config.json or cot_stats.json
+        examples:                                 # up to 3
+          type: array
+          items:
+            type: object
+            properties:
+              problem_id: { type: string }
+              gold: { type: string }
+              base_output: { type: string }
+              selfcot_output: { type: string }
+        summary: { type: array, items: { type: string } }
     Error:
       type: object
       required: [error, message]

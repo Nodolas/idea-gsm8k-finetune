@@ -1,6 +1,6 @@
 # Unit to Story Map
 
-Every story in `inception/user-stories/stories.md` (US1.1–US9.1, including US3.7 added on 2026-10-31) assigned to the unit that implements it. Units are defined in `unit-of-work.md`, built from the blocks in `inception/domain-design/components.md` and `inception/domain-design/decisions.md`. Requirement coverage follows from `inception/requirements-analysis/requirements.md` through the stories' traceability.
+Every story in `inception/user-stories/stories.md` (US1.1–US10.4, including US3.7 added on 2026-10-31 and US10.1–US10.4 added on 2026-11-08) assigned to the unit that implements it. Units are defined in `unit-of-work.md`, built from the blocks in `inception/domain-design/components.md` and `inception/domain-design/decisions.md`. Requirement coverage follows from `inception/requirements-analysis/requirements.md` through the stories' traceability.
 
 ## Story Assignment
 
@@ -37,6 +37,10 @@ Every story in `inception/user-stories/stories.md` (US1.1–US9.1, including US3
 | US8.1 | U8 | u8-tuning |
 | US8.2 | U8 | u8-tuning |
 | US9.1 | U9 | u9-ablations |
+| US10.1 | U10 | u10-self-taught-cot |
+| US10.2 | U10 | u10-self-taught-cot |
+| US10.3 | U10 | u10-self-taught-cot |
+| US10.4 | U10 | u10-self-taught-cot |
 
 ## Cross-Cutting Concerns
 
@@ -63,9 +67,10 @@ Within each unit, tests for every criterion come first and must fail, then the c
 - **U7:** AC7.1.1 (rewards) → AC7.1.3, AC7.1.4 → AC7.1.2 → AC7.1.5 (`[manual]`).
 - **U8:** US8.2 rule checker → US8.1 study → AC8.1.5 (`[manual]`).
 - **U9:** AC9.1.1–AC9.1.3 (transforms) → AC9.1.4–AC9.1.6 (`[manual]`).
+- **U10:** AC10.1.2 (keep rule, pure) → AC10.1.1, AC10.1.3, AC10.1.4 (generation) → US10.2 (self-taught training) → US10.3 (comparison and endpoint) → US10.4 (Reasoning page) → AC10.1.5, AC10.2.5 (`[manual]`) → AC10.4.5.
 
 ## Coverage Check
 
-- All 31 stories are assigned: U1 has 4, U2 1, U3 5, U4 7, U5 6, U6 4, U7 1, U8 2, U9 1.
+- All 35 stories are assigned: U1 has 4, U2 1, U3 5, U4 7, U5 6, U6 4, U7 1, U8 2, U9 1, U10 4 (US10.1–US10.4 added 2026-11-08).
 - Every unit has at least one story.
 - No story is split across units.

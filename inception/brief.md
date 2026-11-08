@@ -190,6 +190,10 @@ whether a run takes over about 10 minutes (then it is a detached long run, never
 6. **Final runs, ablations and write-up.** The best config at 1.7B on test, the generalisation sets, and ablations. Then `results.md`.
    - Number: the done-when. [manual].
 
+7. **Self-taught chain of thought (added 2026-11-08).** Nico, 2026-11-08: "train a model with focus on chain of thought" (picked self-taught chain of thought over GRPO) and "Make a page and explain how it affected the score". The base model samples several step-by-step solutions per training problem, only correct ones with reasoning are kept, and a LoRA fine-tune learns from them with the reference fine-tune's dials; a Reasoning page on the website compares it with the base model and the reference fine-tune problem by problem.
+   - Teaches: rejection-sampling fine-tuning (STaR-style self-training) against copying human-written solutions.
+   - Number: dev accuracy of q17-selfcot-dev against q17-base-dev 79.0% and q17-sft-dev 78.6%. Two [manual] runs: generation under 3 h (1,500 problems, 4 samples each), fine-tune about 30-45 min. The self-taught fine-tune learns from fewer problems (only the kept ones) than the reference fine-tune (6,973); the Reasoning page states both counts.
+
 ## Risks
 <!-- Learning. Each tagged [assumption], riskiest first; start with the ticket record's riskiest_assumption.
 Also: data contamination of the base model, VRAM, run time, licences. -->

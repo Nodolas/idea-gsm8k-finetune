@@ -480,6 +480,54 @@ components:
           - entity: RunConfig
             owned_by: RunConfiguration
             relationship: each proposal names one configuration
+  - name: SelfTaughtCoT                     # added 2026-11-08 (US10.1)
+    summary: Samples the base model's own step-by-step solutions to training problems and keeps the correct ones.
+    behaviour: >
+      For the first cot_problems problems of the training part (never dev, test, GSM-Plus or GSM-Symbolic),
+      builds the fixed 4-shot prompt, samples cot_samples solutions at cot_temperature with the run's seed in
+      problem batches small enough for 8 GB, cuts each at the BR3.5 stop point and scores it with AnswerScoring.
+      Keeps, per problem, the first correct sample with at least one reasoning line; writes cot_data.jsonl and
+      cot_stats.json (C2), metrics progress lines, and one cotgen row (C1). Self-taught training (method selfcot)
+      is the Training block's supervised loop reading cot_data.jsonl instead of GSM8K's reference solutions.
+    responsibilities:
+      - Sampling several solutions per training problem
+      - The keep rule and the generation figures
+    depends_on:
+      - component: DatasetsAndPrompts
+        interaction: training problems, the split guard and the 4-shot prompt
+        style: sync
+      - component: AnswerScoring
+        interaction: scores each sample
+        style: sync
+      - component: Evaluation
+        interaction: model loading and the stop rule
+        style: sync
+      - component: RunConfiguration
+        interaction: checks the chain-of-thought dials, hashes the configuration
+        style: sync
+      - component: RunRecords
+        interaction: run folder files, the lock and the row
+        style: sync
+    dependents:
+      - component: RunCommands
+        interaction: gsm8k cot-generate runs it under the lock
+      - component: Training
+        interaction: selfcot reads its cot_data.jsonl
+  - name: ReasoningReport                   # added 2026-11-08 (US10.3)
+    summary: Compares the latest base, sft and selfcot dev runs of a model for the Reasoning page.
+    behaviour: >
+      Reads the run log, the three runs' predictions.jsonl and the selfcot run's generation figures through
+      RunRecords, and returns accuracy with interval, gain with noise label, flips against base, answer length,
+      examples and summary sentences (C6 Reasoning). An unreadable file nulls only its part and names the file.
+    responsibilities:
+      - The reasoning comparison behind GET /api/v1/reasoning
+    depends_on:
+      - component: RunRecords
+        interaction: run log rows and run folder files
+        style: sync
+    dependents:
+      - component: RunService
+        interaction: serves the comparison at /api/v1/reasoning
 ```
 
 ## Component Diagram
@@ -533,6 +581,8 @@ graph TD
 | Website | Three pages and dialogs | RunService | — | — |
 | ResultsReport | Generated parts of results.md | RunRecords | — | — |
 | Tuning | Optuna study and proposal rule checker (could-have) | RunConfiguration, Training, Evaluation, RunRecords | RunCommands | TuningTrial, RunProposal |
+| SelfTaughtCoT | Own-solution sampling and the keep rule (could-have, added 2026-11-08) | DatasetsAndPrompts, AnswerScoring, Evaluation, RunConfiguration, RunRecords | RunCommands, Training | — |
+| ReasoningReport | Base, sft and selfcot comparison for the Reasoning page (added 2026-11-08) | RunRecords | RunService | — |
 
 ## Entity Ownership
 
