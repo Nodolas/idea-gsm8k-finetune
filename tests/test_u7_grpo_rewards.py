@@ -210,3 +210,49 @@ def test_AC7_1_4_grpo_plan_imports_no_torch():
     )
     done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
     assert done.returncode == 0, done.stderr
+
+
+# ---- AC7.1.4: step times of non-GRPO runs are not GRPO step times ----
+
+
+def _make_method_run(
+    outputs: Path, name: str, method: str, timings: dict, mtime: float | None = None
+) -> None:
+    import os
+
+    _make_run(outputs, name, MODEL, timings)
+    config_path = outputs / name / "config.json"
+    config_path.write_text(json.dumps({"model": MODEL, "method": method}), encoding="utf-8")
+    if mtime is not None:
+        os.utime(outputs / name / "timings.json", (mtime, mtime))
+
+
+def test_AC7_1_4_sft_step_time_is_ignored_for_the_plan(tmp_path):
+    p = _plan_mod()
+    generations = 4
+    _make_method_run(tmp_path, "sft1", "sft", {"seconds_per_step": 0.45})
+    _make_method_run(tmp_path, "eval1", "eval", {"seconds_per_problem": 2.0})
+    res = p.plan_grpo_steps(MODEL, generations, outputs=tmp_path)
+    assert _get(res, "steps", 0) >= 1
+    assert _get(res, "steps", 0) <= BUDGET / (2.0 * generations * 2 + 10)
+    assert _get(res, "estimate_s", 1) <= BUDGET
+    assert getattr(res, "measured", None) is True
+
+
+def test_AC7_1_4_grpo_step_time_wins_even_when_a_sft_run_is_newer(tmp_path):
+    p = _plan_mod()
+    # Ordering: modification time of timings.json; the SFT run is the newer one.
+    _make_method_run(tmp_path, "grpo1", "grpo", {"seconds_per_step": 30.0}, mtime=1_000_000_000)
+    _make_method_run(tmp_path, "sft1", "sft", {"seconds_per_step": 0.45}, mtime=1_100_000_000)
+    res = p.plan_grpo_steps(MODEL, 4, outputs=tmp_path)
+    assert _get(res, "steps", 0) == 360
+    assert _get(res, "estimate_s", 1) == pytest.approx(10800.0)
+    assert getattr(res, "measured", None) is True
+
+
+def test_AC7_1_4_check_flags_huge_count_when_only_sft_step_times_exist(tmp_path):
+    p = _plan_mod()
+    _make_method_run(tmp_path, "sft1", "sft", {"seconds_per_step": 0.45})
+    _make_method_run(tmp_path, "eval1", "eval", {"seconds_per_problem": 2.0})
+    res = p.check_grpo_steps(20000, MODEL, 4, outputs=tmp_path)
+    assert _get(res, "flagged", -1) is True
