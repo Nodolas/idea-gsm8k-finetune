@@ -13,6 +13,10 @@ import {
   type ConfirmResult,
   type DialSpec,
   type Gpu,
+  type LabLesson,
+  type LabLessonInfo,
+  type LabList,
+  type LabSummary,
   type MetricsLine,
   type QueueEntry,
   type Reasoning,
@@ -333,6 +337,195 @@ export interface FakeStream {
   readonly isOpen: boolean;
 }
 
+/** The twelve lab lessons of the Lab Lessons table (stories.md group 11, C8), all `not-run`. */
+const LAB_TABLE: Array<[string, string, Array<[string, string, string]>]> = [
+  ["l01", "What a fine-tune does", [["baseline", "Baseline", "no change (the starting point)"]]],
+  [
+    "l02",
+    "Learning rate",
+    [
+      ["lr-1e-5", "Learning rate 1e-5", "learning rate 1e-5"],
+      ["lr-1e-4", "Learning rate 1e-4", "learning rate 1e-4"],
+      ["lr-1e-3", "Learning rate 1e-3", "learning rate 1e-3"],
+      ["lr-1e-2", "Learning rate 1e-2", "learning rate 1e-2"],
+    ],
+  ],
+  [
+    "l03",
+    "Epochs and overfitting",
+    [
+      ["few-many", "64 problems, 12 epochs", "training examples 64, epochs 12"],
+      ["many-once", "768 problems, 1 epoch", "training examples 768, epochs 1"],
+    ],
+  ],
+  [
+    "l04",
+    "How much data",
+    [
+      ["data-200", "200 problems", "training examples 200"],
+      ["data-800", "800 problems", "training examples 800"],
+      ["data-1600", "1,600 problems", "training examples 1600"],
+    ],
+  ],
+  [
+    "l05",
+    "LoRA rank",
+    [
+      ["rank-1", "Rank 1", "LoRA rank 1, LoRA alpha 2"],
+      ["rank-8", "Rank 8", "LoRA rank 8, LoRA alpha 16"],
+      ["rank-64", "Rank 64", "LoRA rank 64, LoRA alpha 128"],
+    ],
+  ],
+  [
+    "l06",
+    "LoRA or every weight",
+    [
+      ["lora", "LoRA adapters", "no change (the starting point)"],
+      ["full", "Every weight", "method full, learning rate 1e-4"],
+    ],
+  ],
+  [
+    "l07",
+    "Batch size",
+    [
+      ["batch-1", "Batch size 1", "batch size 1"],
+      ["batch-8", "Batch size 8", "batch size 8"],
+      ["batch-32", "Batch size 32", "batch size 32"],
+    ],
+  ],
+  [
+    "l08",
+    "What the loss counts",
+    [
+      ["answer-only", "Answer tokens only", "no change (the starting point)"],
+      ["whole-text", "Question and answer", "loss on all"],
+    ],
+  ],
+  [
+    "l09",
+    "Answer format",
+    [
+      ["step-by-step", "Step by step", "no change (the starting point)"],
+      ["terse", "Final number only", "answer format terse"],
+    ],
+  ],
+  [
+    "l10",
+    "Warm-up and schedule",
+    [
+      ["warmup-decay", "Warm-up, then decay", "no change (the starting point)"],
+      ["constant", "Constant", "schedule constant, warmup ratio 0"],
+      ["hot-start", "Hot start", "learning rate 3e-3, warmup ratio 0"],
+    ],
+  ],
+  [
+    "l11",
+    "Seed noise",
+    [
+      ["seed-1", "Seed 1", "seed 1"],
+      ["seed-2", "Seed 2", "seed 2"],
+      ["seed-3", "Seed 3", "seed 3"],
+    ],
+  ],
+  [
+    "l12",
+    "Where the time goes",
+    [
+      ["tokenize-once", "Tokenize once", "no change (the starting point)"],
+      ["by-length", "Length-grouped batches", "batching by-length"],
+      ["retokenize", "Tokenize every step", "retokenize true"],
+    ],
+  ],
+];
+
+export const LAB_LESSONS: LabLessonInfo[] = LAB_TABLE.map(([id, title, variants], i) => ({
+  id,
+  number: i + 1,
+  title,
+  question: `Question of ${title}?`,
+  watch: `What to watch in ${title}.`,
+  guess_prompt: `What do you expect in ${title}?`,
+  guess_options: [`${title} option A`, `${title} option B`, `${title} option C`],
+  variants: variants.map(([name, label, changes]) => ({ name, label, changes })),
+  why: `Why ${title} behaves this way.`,
+  big_run: `For the big runs: the learning rate dial (${title}).`,
+  check: `Check question of ${title}?`,
+  estimate_minutes: 4 * variants.length,
+  state: "not-run",
+}));
+
+/** `GET /lab` with every lesson `not-run` and no active lesson, with overrides. */
+export function labList(overrides: Partial<LabList> = {}): LabList {
+  return {
+    model: { name: "EleutherAI/pythia-31m", weights: 30494720, layers: 6, device: "cpu" },
+    lessons: LAB_LESSONS.map((lesson) => ({ ...lesson, variants: [...lesson.variants] })),
+    active: null,
+    ...overrides,
+  };
+}
+
+/** A C8 summary for a variant, with overrides. */
+export function labSummary(overrides: Partial<LabSummary> = {}): LabSummary {
+  return {
+    v: 1,
+    lesson: "l01",
+    variant: "baseline",
+    label: "Baseline",
+    config: { learning_rate: 1e-3, batch_size: 8, method: "lora" },
+    trainable_params: 196608,
+    total_params: 30691328,
+    steps: 100,
+    seconds: 180,
+    seconds_per_step: 1.5,
+    tokenize_seconds: 0.8,
+    retokenize_seconds_per_step: null,
+    padding_fraction: 0.31,
+    peak_memory_mb: 900,
+    train_loss_first: 2.9,
+    train_loss_last: 1.4,
+    dev_loss_before: 2.8,
+    dev_loss_after: 1.5,
+    dev_loss_best: 1.5,
+    dev_loss_best_step: 100,
+    accuracy_before: 0,
+    accuracy_after: 0.0156,
+    format_rate_before: 0,
+    format_rate_after: 0.875,
+    samples: [
+      {
+        question: "Tom has 3 apples and buys 2 more. How many?",
+        gold: "5",
+        before: "Tom Tom Tom",
+        after: "3 + 2 = 5\n#### 5",
+      },
+    ],
+    ...overrides,
+  };
+}
+
+/** `GET /lab/{lesson}` for a lesson that has never run (no lines, no summaries), with overrides. */
+export function labLesson(lessonId = "l01", overrides: Partial<LabLesson> = {}): LabLesson {
+  const lesson = LAB_LESSONS.find((l) => l.id === lessonId) ?? LAB_LESSONS[0];
+  return {
+    lesson: { ...lesson },
+    status: {
+      state: "not-run",
+      variant: null,
+      done: [],
+      started_at: null,
+      ended_at: null,
+      message: null,
+    },
+    results: lesson.variants.map((variant) => ({
+      name: variant.name,
+      label: variant.label,
+      lines: [],
+      summary: null,
+    })),
+    ...overrides,
+  };
+}
+
 export type FakeApi = { [K in keyof Api]: Mock<Api[K]> } & { stream: FakeStream };
 
 function createStream(): { stream: FakeStream; openStream: Api["openStream"] } {
@@ -398,6 +591,10 @@ export function fakeApi(overrides: Partial<Api> = {}): FakeApi {
         sm_clock_max_mhz: null,
       }),
     getReasoning: async (model?: string) => reasoning({ model: model ?? Q17 }),
+    getLab: async () => labList(),
+    getLabLesson: async (lessonId: string) => labLesson(lessonId),
+    runLabLesson: async (lessonId: string) => ({ lesson: lessonId, state: "running" as const }),
+    stopLab: async () => ({ lesson: "l01" }),
     checkRun: async (req: RunRequest) =>
       checkedRun({
         model: req.model ?? Q06,

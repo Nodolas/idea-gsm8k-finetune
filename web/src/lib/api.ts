@@ -219,6 +219,8 @@ export type ApiErrorCode =
   | "check_expired"
   | "confirmation_required"
   | "internal"
+  | "lab_busy"
+  | "no_lab_run"
   | "unreachable";
 
 export const UNREACHABLE_MESSAGE =
@@ -310,6 +312,119 @@ export interface Reasoning {
   summary: string[];
 }
 
+/** C8: the lab model of `GET /lab`. */
+export interface LabModel {
+  name: string;
+  weights: number;
+  layers: number;
+  device: "cpu";
+}
+
+export interface LabVariant {
+  name: string;
+  label: string;
+  /** In words, e.g. "learning rate 1e-5"; "no change (the starting point)" when empty. */
+  changes: string;
+}
+
+export type LabState = "not-run" | "running" | "finished" | "failed" | "stopped";
+
+/** C8 `LabLessonInfo`: one lesson as `GET /lab` lists it. */
+export interface LabLessonInfo {
+  id: string;
+  number: number;
+  title: string;
+  question: string;
+  watch: string;
+  guess_prompt: string;
+  guess_options: string[];
+  variants: LabVariant[];
+  why: string;
+  big_run: string;
+  check: string;
+  estimate_minutes: number;
+  state: LabState;
+}
+
+/** `GET /lab`. */
+export interface LabList {
+  model: LabModel;
+  lessons: LabLessonInfo[];
+  /** The lesson whose lab run is going, or null. */
+  active: string | null;
+}
+
+export interface LabStatus {
+  state: LabState;
+  variant: string | null;
+  done: string[];
+  started_at: string | null;
+  ended_at: string | null;
+  message: string | null;
+}
+
+/** A C8 metrics line: a step line (loss set, dev_loss null) or a dev line (dev_loss set, loss null). */
+export interface LabMetricsLine {
+  v: number;
+  step: number;
+  total_steps: number;
+  loss: number | null;
+  learning_rate: number | null;
+  grad_norm: number | null;
+  elapsed_s: number;
+  dev_loss: number | null;
+}
+
+export interface LabSample {
+  question: string;
+  gold: string;
+  before: string;
+  after: string;
+}
+
+/** The C8 `summary.json` of a variant that has ended. */
+export interface LabSummary {
+  v: number;
+  lesson: string;
+  variant: string;
+  label: string;
+  config: Record<string, unknown>;
+  trainable_params: number;
+  total_params: number;
+  steps: number;
+  seconds: number;
+  seconds_per_step: number;
+  tokenize_seconds: number;
+  retokenize_seconds_per_step: number | null;
+  padding_fraction: number;
+  peak_memory_mb: number;
+  train_loss_first: number | null;
+  train_loss_last: number | null;
+  dev_loss_before: number | null;
+  dev_loss_after: number | null;
+  dev_loss_best: number | null;
+  dev_loss_best_step: number | null;
+  accuracy_before: number;
+  accuracy_after: number;
+  format_rate_before: number;
+  format_rate_after: number;
+  samples: LabSample[];
+}
+
+export interface LabVariantResult {
+  name: string;
+  label: string;
+  lines: LabMetricsLine[];
+  summary: LabSummary | null;
+}
+
+/** `GET /lab/{lesson}`. */
+export interface LabLesson {
+  lesson: LabLessonInfo;
+  status: LabStatus;
+  results: LabVariantResult[];
+}
+
 export interface StreamHandlers {
   onMetric?(line: MetricsLine & { run_id: string }, lineNo: number): void;
   onStatus?(status: Status): void;
@@ -338,6 +453,14 @@ export interface Api {
   unmarkFinalist(id: string): Promise<string[]>;
   /** The reasoning comparison for one model (default: the service's, Qwen3-1.7B-Base). */
   getReasoning(model?: string): Promise<Reasoning>;
+  /** The lab lessons (C8, AC11.3.1). */
+  getLab(): Promise<LabList>;
+  /** One lesson with its status, metrics lines and summaries (C8, AC11.3.2). */
+  getLabLesson(lessonId: string): Promise<LabLesson>;
+  /** Starts a lesson on the CPU (C8, AC11.3.3); 409 `lab_busy` while another runs. */
+  runLabLesson(lessonId: string): Promise<{ lesson: string; state: "running" }>;
+  /** Stops the lab run (C8, AC11.3.4); 409 `no_lab_run` when none is going. */
+  stopLab(): Promise<{ lesson: string }>;
   /** Opens the C7 stream; the returned function closes it. */
   openStream(handlers: StreamHandlers): () => void;
 }
@@ -411,6 +534,11 @@ export function createApi(base = "/api/v1"): Api {
         "GET",
         model === undefined ? "/reasoning" : `/reasoning?model=${encodeURIComponent(model)}`,
       ),
+    getLab: () => request<LabList>("GET", "/lab"),
+    getLabLesson: (lessonId) => request<LabLesson>("GET", `/lab/${id(lessonId)}`),
+    runLabLesson: (lessonId) =>
+      request<{ lesson: string; state: "running" }>("POST", `/lab/${id(lessonId)}/run`),
+    stopLab: () => request<{ lesson: string }>("POST", "/lab/stop"),
     checkRun: (req) => request<CheckedRun>("POST", "/runs/check", req),
     confirmRun: (checkId, secondConfirmation = false) =>
       request<ConfirmResult>("POST", "/runs/confirm", {
