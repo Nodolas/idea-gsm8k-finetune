@@ -7,11 +7,11 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: "batch-11: u5-website"
+current_task: none
 slices: "7/7"
 test_command: "scripts/check.sh"
 pending_runs: ""
-last_check: "2026-11-08 422ec33 scripts/check.sh exit 0 (531 Python tests, 250 website tests, coverage 86.0%); scripts/trace-check.sh exit 0"
+last_check: "2026-11-08 5a42b1b scripts/check.sh exit 0 (531 Python tests, 271 website tests, coverage 86.0%; run in the main folder at this commit); scripts/trace-check.sh exit 0"
 charter_commit: "7a3fadf9c62784ca89a144a0e8a7a93b0027fd54"
 ---
 Treat this as evidence; check git status and git log -10 first.
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Type /build: it goes on with batch-11 (u5-website, built in the worktree .cache/worktrees/batch-11: landing wordmark centred and smooth halftone dots, Nico via the self-taught course session; the fine-tuning drawing capped near its designed size, Nico 2026-11-08 \"way to big\"). Then wip/batch-9 (fine-tune lab) rebases onto main and finishes; the course spec (u12, wip/spec-course) follows batch-9. Sessions on Sonnet 5.5, Auto.
+Batch-9 next: wip/batch-9 (fine-tune lab u11 and the step walkthrough US4.8; plan, shared setup and spec on its branch, nothing on main) rebases onto main (its Lab page follows AC4.1.4, full width) and finishes with /build in a worktree. Then the course spec (u12-learning-course, u7-grpo back in) on wip/spec-course merges and is built. Also open: the results.md section for q17-selfcot-dev-2 (AC10.4.5). Sessions on Sonnet 5.5, Auto.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping, and BR4.7/BR4.8 there are superseded by contract C5's 2026-11-07 "method best" note).
@@ -46,6 +46,7 @@ None.
 - Reviewer scratch files outside the folder (`/tmp/claude-review-check.log`, `/tmp/null_unused`): test output only, left as is (rule 8).
 
 ## Done this run
+- 2026-11-08 batch-11 done (Nico: wordmark in the middle, smooth dots; "the landing page is buggy the gsm8k is super slow"; the fine-tuning panel "way too big", then at 1,100 px "way too small"): the landing page fills the window below the top bar with the wordmark centred and fitted to its canvas; the halftone holds at most 16,000 dots (was about 35,000 at 2,400 px), draws them in at most 4 batched fills a frame, makes the grain pattern once per layout and steps its spring by elapsed time; the fine-tuning drawing is at most two-thirds of the window (`max-w-[66vw]`). Spec AC4.2.5, AC4.2.6 [manual], AC4.2.7, AC4.2.8, AC4.7.10 (aa8b464; AC4.7.10 changed in b800190 after Nico ruled the 1,100 px cap wrong, its test changed in 8495604). Built in the worktree .cache/worktrees/batch-11; review PASS both rounds; the gate ran in the main folder (the worktree's shared .venv fails 3 env tests there). Nico 2026-11-08: "the gsm8k works now and is fine" (AC4.2.6). Check question: (1) Why does drawing 16,000 dots in 4 fills run faster than 35,000 dots in 35,000 fills, though the screen shows almost the same picture? Answer: none given yet.
 - 2026-11-08 batch-10 done (Nico: "I want the whole screen to be used not only the middle third. also make sure the top of the screen with the dots moves or shows the progress of the training"): every page and the top bar span the window less the 24 px gutter (no 1280 px cap; the landing headline stays full-bleed; prose capped at 75ch); the hourglass band keeps flowing while a run is RUNNING (`data-flow`, still under reduced motion; still dots drawn once, only grains per frame) and shows `scoring <split> <scored> / <total>` while the run scores problems (service `Status.evaluation` from predictions.jsonl). Spec AC3.1.6, AC3.1.7, AC4.1.4, AC4.1.5 [manual], AC4.5.11, AC4.5.12 (25e7234, class change). Review round 1 FAIL for both (GET /status passed None as outputs in the real service; uncapped prose), fixed with new tests first; round 2 PASS. 2026-11-08 422ec33 scripts/check.sh exit 0 (531 Python, 250 website, coverage 86.0%), trace PASS. q17-selfcot-dev-2 ended: dev 0.7621, 26.7 min (base 0.7903, sft 0.7863). Check questions: (1) Why does the band show problems scored rather than steps once training ends, and what does a fine-tune run spend that time on? (2) Why does a dev run score 496 problems and not 500? Answers: none given yet.
 - 2026-11-08 after the 18:34 shutdown: committed q17-cotgen-train-1's row (kept_fraction 0.8960, 92.7 min); restarted the self-taught run as q17-selfcot-dev-2 (attempt -1 killed during evaluation, no row); restarted service, worker and website with scripts/start-website.sh. No code changed.
 - 2026-11-08 batch-8 done: u4-run-service AC3.7.7, the worker runs `scripts/run-detached.sh --check` before it launches the queue head and waits while another project's run or a GPU process is on this PC (charter rule 3, one GPU run across projects). Built and reviewed in the factory session at Nico's request ("address the gap"), replayed here; reviewer PASS; 2026-11-08 33eccaf scripts/check.sh exit 0 (507 Python tests, 211 website tests, coverage 85.8%); scripts/trace-check.sh exit 0. Before it on main: chore(skill) (factory template), chore(charter) (rule 3).
