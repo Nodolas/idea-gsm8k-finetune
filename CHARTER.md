@@ -5,7 +5,7 @@ Every run reads this file before doing anything. The source is `CHARTER.md` in t
 ## Rules
 1. Business value is argued first: who pays, why now, what it replaces.
 2. Every project must contain a compounding data feedback loop; no loop, no approval. A loop score of 1 is a kill; 2-3 passes with a flag.
-3. One project in active build at a time (Construction). Projects in Inception or Ready to build can be worked on side by side.
+3. Several projects can be in active build (Construction) at the same time, as in Inception or Ready to build, each in its own folder and session. They share this PC's GPU: one GPU run at a time across all projects.
 4. Agents never deploy to production, never spend money, never create paid accounts. No API keys, no usage credits, no paid connectors: when a usage limit is hit, the run stops and resumes later.
 5. Claude only for any LLM use inside a project.
 6. All agent-written text in English (code excepted).

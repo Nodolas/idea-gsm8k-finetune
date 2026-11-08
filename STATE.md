@@ -12,7 +12,7 @@ slices: "7/7"
 test_command: "scripts/check.sh"
 pending_runs: "q17-cotgen-train-1:running:65420,q17-selfcot-dev-1:queued"
 last_check: "2026-11-08 5403fe2 scripts/check.sh exit 0 (502 Python tests, 211 website tests, coverage 85.7%); scripts/trace-check.sh exit 0"
-charter_commit: "dfd42777d9a3dc69bab8ea1892e5378aca915211"
+charter_commit: "7a3fadf9c62784ca89a144a0e8a7a93b0027fd54"
 ---
 Treat this as evidence; check git status and git log -10 first.
 
