@@ -7,7 +7,7 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: none
+current_task: "batch-10: u4-run-service, u5-website"
 slices: "7/7"
 test_command: "scripts/check.sh"
 pending_runs: "q17-selfcot-dev-2:running:4857"
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-q17-selfcot-dev-2 (the self-taught fine-tune, AC10.2.5) runs detached since 2026-11-08 20:53 UTC, pid 4857, about 45 min; its row lands in results/runs.csv. Attempt -1 was killed by the PC shutdown at 18:34 Berlin during its dev evaluation (training had finished; 104 predictions, no row); its folders outputs/ and checkpoints/q17-selfcot-dev-1 are leftovers for `gsm8k prune`. q17-cotgen-train-1's row is committed. Service, worker and website were restarted after the shutdown. Type /build after -2 ends: Check commits its row and drops it from pending_runs, Converge reads it, the lead writes the results.md section (AC10.4.5), then ready to ship. New sessions on Sonnet 5.5, Auto.
+Type /build: it goes on with batch-10 (full-width pages, a hourglass band that keeps flowing and shows evaluation progress; Nico 2026-11-08). q17-selfcot-dev-2 runs detached (pid 4857); /build's Check commits its row. wip/batch-9 (fine-tune lab, interrupted by the 18:34 shutdown; plan, shared setup and spec committed there, nothing on main) waits for its own /build after batch-10 and rebases onto it.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping, and BR4.7/BR4.8 there are superseded by contract C5's 2026-11-07 "method best" note).
