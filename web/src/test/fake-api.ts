@@ -311,6 +311,8 @@ const ERROR_STATUS: Record<string, number> = {
   queue_full: 409,
   not_finalist: 409,
   no_active_run: 409,
+  lab_busy: 409,
+  no_lab_run: 409,
   confirmation_required: 409,
   not_found: 404,
   check_expired: 404,
