@@ -35,7 +35,7 @@ from gsm8k.run_control import launch, runs, status, stop
 from gsm8k.run_control import queue as run_queue
 from gsm8k.run_records import paths
 from gsm8k.service import gpu as gpu_module
-from gsm8k.service import progress
+from gsm8k.service import lab_routes, progress
 
 API_PREFIX = "/api/v1"
 CHECK_TTL_SECONDS = 600.0  # a check expires after 10 minutes (C6, check_expired)
@@ -432,6 +432,10 @@ def create_app(
         return JSONResponse(
             {"error": "not_found", "message": message}, status_code=exc.status_code, headers=exc.headers
         )
+
+    # --- lab (contract C8; error codes lab_busy, no_lab_run) ---
+
+    lab_routes.register(app, API_PREFIX, lambda: svc.outputs, ServiceError)
 
     # --- runs ---
 

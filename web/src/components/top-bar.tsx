@@ -49,6 +49,9 @@ export function TopBar({ activeRunId = null }: TopBarProps) {
         <NavLink to="/reasoning" end className={pageLink}>
           Reasoning
         </NavLink>
+        <NavLink to="/lab" end className={pageLink}>
+          Lab
+        </NavLink>
       </nav>
     </header>
   );

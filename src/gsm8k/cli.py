@@ -63,6 +63,7 @@ COMMAND_MODULES = (
     "gsm8k.serve_cmd",
     "gsm8k.report",
     "gsm8k.cot_cmd",
+    "gsm8k.lab_cmd",
 )
 
 

@@ -1,6 +1,7 @@
 import { createBrowserRouter, createMemoryRouter, type RouteObject } from "react-router";
 
 import { AppLayout } from "@/components/app-layout";
+import { LabPage } from "@/pages/lab";
 import { LandingPage } from "@/pages/landing";
 import { ReasoningPage } from "@/pages/reasoning";
 import { ScoresPage } from "@/pages/scores";
@@ -16,6 +17,7 @@ export const routes: RouteObject[] = [
       { path: "scores", element: <ScoresPage /> },
       { path: "training", element: <TrainingPage /> },
       { path: "reasoning", element: <ReasoningPage /> },
+      { path: "lab", element: <LabPage /> },
     ],
   },
 ];
