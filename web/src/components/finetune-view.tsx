@@ -576,7 +576,7 @@ function Drawing({ layers, trained, reading, pass, chance, batchSize, nudged }: 
       data-part="drawing"
       aria-hidden="true"
       viewBox={`0 ${VIEW_Y} ${VIEW_W} ${VIEW_H}`}
-      className="ft-drawing mx-auto block h-auto w-full min-w-[860px] max-w-[1100px]"
+      className="ft-drawing mx-auto block h-auto w-full min-w-[860px] max-w-[66vw]"
       style={style}
     >
       <defs>
