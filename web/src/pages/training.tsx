@@ -15,6 +15,7 @@ import { LiveNumbers } from "@/components/live-numbers";
 import { PastRunsList, statusWord } from "@/components/past-runs-list";
 import { RecentSteps } from "@/components/recent-steps";
 import { RunControls } from "@/components/run-controls";
+import { StepWalkthrough } from "@/components/step-walkthrough";
 import {
   toApiError,
   type EvaluationProgress,
@@ -274,6 +275,15 @@ export function TrainingPage() {
       />
 
       <FinetuneView
+        runId={shownId}
+        method={shownRun?.method ?? null}
+        model={shownRun?.model ?? null}
+        liveLines={shownId === currentId ? lines : NO_LINES}
+        live={shownLive}
+        loading={status === null}
+      />
+
+      <StepWalkthrough
         runId={shownId}
         method={shownRun?.method ?? null}
         model={shownRun?.model ?? null}

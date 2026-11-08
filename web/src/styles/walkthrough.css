@@ -1,0 +1,505 @@
+/*
+ * The step walkthrough's drawing (US4.8), in the fine-tuning view's Gateway Flow look: token chips,
+ * vectors as small dot columns, layers as dotted blocks with an orange LoRA strip, arrows for the
+ * shift-by-one targets and a right-to-left orange sweep for the gradient. Colours are the site
+ * tokens only. The drawing is rebuilt for every phase, so each phase's animations start afresh.
+ * Every animation and transition sits under [data-motion="live"]: under "still" (the operating
+ * system's reduce-motion setting) every element simply shows its final state.
+ */
+
+.wt-phase {
+  border: 0.5px solid var(--hairline);
+}
+
+.wt-phase[aria-current="step"] {
+  border-color: var(--accent-orange);
+  background-color: color-mix(in srgb, var(--accent-orange) 10%, transparent);
+}
+
+.wt-phase[aria-current="step"] h3 {
+  color: var(--accent-orange);
+}
+
+/* Sized from the window so the drawing stays readable on a very wide screen. */
+.wt-drawing {
+  color: var(--ink);
+  font-family: var(--font-mono-stack);
+  font-size: clamp(11px, 0.68vw, 17px);
+}
+
+.wt-text {
+  max-width: 75ch;
+  color: var(--ink-muted);
+  font-family: var(--font-sans-stack);
+  text-align: center;
+}
+
+.wt-text-answer {
+  color: var(--ink);
+}
+
+.wt-label {
+  color: var(--ink-muted);
+  font-size: 0.78em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wt-label-orange {
+  color: var(--accent-orange);
+}
+
+.wt-arrow {
+  color: var(--ink-muted);
+  font-size: 0.9em;
+}
+
+.wt-op {
+  color: var(--ink);
+  font-size: 1.2em;
+}
+
+.wt-ok {
+  color: var(--ok);
+}
+
+.wt-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  padding: 0.5em;
+  border: 0.5px dashed var(--hairline);
+  border-radius: var(--radius-field);
+}
+
+.wt-group-answer {
+  border-color: color-mix(in srgb, var(--accent-orange) 55%, transparent);
+}
+
+.wt-muted {
+  opacity: 0.6;
+}
+
+.wt-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3em;
+}
+
+/* Token chips. */
+.wt-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1em 0.4em;
+  border: 0.5px solid var(--hairline);
+  border-radius: 3px;
+  white-space: pre;
+}
+
+.wt-chip-prompt {
+  color: var(--ink-muted);
+}
+
+.wt-chip-answer {
+  border-color: var(--accent-orange);
+  background-color: color-mix(in srgb, var(--accent-orange) 16%, transparent);
+  color: var(--ink);
+}
+
+.wt-chip-target {
+  border-color: var(--accent-orange);
+  color: var(--accent-orange);
+}
+
+.wt-chip-eos {
+  border-style: dashed;
+  border-color: var(--ink-muted);
+  color: var(--ink-muted);
+}
+
+.wt-chip-new {
+  background-color: color-mix(in srgb, var(--accent-orange) 45%, transparent);
+}
+
+/* The batch: one small square per token id, padded into a rectangle. */
+.wt-batch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.wt-batch-row {
+  display: flex;
+  gap: 0.15em;
+}
+
+.wt-id {
+  flex: none;
+  width: 0.6em;
+  height: 0.9em;
+  border-radius: 1px;
+  background-color: color-mix(in srgb, var(--ink) 50%, transparent);
+}
+
+.wt-id-answer {
+  background-color: var(--accent-orange);
+  opacity: 0.85;
+}
+
+.wt-id-pad {
+  background-color: transparent;
+  border: 0.5px dashed var(--ink-muted);
+}
+
+/* A vector: a small column of dots. */
+.wt-vec {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.2em;
+}
+
+.wt-dot {
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background-color: var(--ink);
+  opacity: 0.55;
+}
+
+.wt-dot-orange {
+  background-color: var(--accent-orange);
+  opacity: 0.85;
+}
+
+/* The layers: dotted blocks, each with its LoRA strip on top. */
+.wt-layers {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45em;
+  padding-top: 0.9em;
+  overflow: hidden;
+}
+
+.wt-layer {
+  position: relative;
+  flex: none;
+  width: 1.3em;
+  height: 5.5em;
+  border: 0.6px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--ink) 60%, transparent) 0.7px,
+    transparent 0.9px
+  );
+  background-size: 4px 4px;
+}
+
+.wt-layer-edge {
+  width: 1.9em;
+}
+
+.wt-layer-name {
+  position: absolute;
+  bottom: 0.2em;
+  left: 50%;
+  transform: translateX(-50%) rotate(-90deg);
+  transform-origin: center;
+  color: var(--ink-muted);
+  font-size: 0.7em;
+  white-space: nowrap;
+}
+
+.wt-lora {
+  position: absolute;
+  top: -0.75em;
+  left: 0;
+  right: 0;
+  height: 0.45em;
+  background-color: var(--accent-orange);
+  opacity: 0.75;
+}
+
+.wt-lora-frozen {
+  background-color: transparent;
+  border: 0.5px dashed var(--ink-muted);
+  opacity: 0.6;
+}
+
+.wt-lora-glow {
+  opacity: 1;
+}
+
+.wt-sweep {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30%;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.wt-sweep-forward {
+  left: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--ink) 35%, transparent),
+    transparent
+  );
+}
+
+.wt-sweep-back {
+  right: 0;
+  background: linear-gradient(
+    270deg,
+    transparent,
+    color-mix(in srgb, var(--accent-orange) 55%, transparent),
+    transparent
+  );
+}
+
+/* The loss: one bar per answer token. */
+.wt-bars {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.3em;
+}
+
+.wt-bar-track {
+  display: flex;
+  align-items: flex-end;
+  width: 0.8em;
+  height: 3.5em;
+}
+
+.wt-bar {
+  width: 100%;
+  background-color: var(--accent-orange);
+  opacity: 0.8;
+  transform-origin: bottom;
+}
+
+/* The update: one layer up close. */
+.wt-matrix {
+  display: block;
+  width: 6em;
+  height: 6em;
+  border: 0.6px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--ink) 60%, transparent) 0.7px,
+    transparent 0.9px
+  );
+  background-size: 4px 4px;
+}
+
+.wt-strip-b {
+  display: block;
+  width: 1em;
+  height: 6em;
+  background-color: var(--accent-orange);
+  opacity: 0.75;
+}
+
+.wt-strip-a {
+  display: block;
+  width: 6em;
+  height: 1em;
+  background-color: var(--accent-orange);
+  opacity: 0.75;
+}
+
+/* Choose: the scores for the next token. */
+.wt-candidate {
+  display: grid;
+  grid-template-columns: 5em 10em 5em;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.wt-cand-track {
+  display: block;
+  height: 0.6em;
+  border: 0.5px solid var(--hairline);
+}
+
+.wt-cand {
+  display: block;
+  height: 100%;
+  background-color: var(--ink);
+  opacity: 0.4;
+  transform-origin: left;
+}
+
+.wt-cand-top {
+  background-color: var(--accent-orange);
+  opacity: 0.85;
+}
+
+/* --- motion: only while the walkthrough carries data-motion="live" ------------------------- */
+
+@keyframes wt-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(0.25em);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes wt-fill {
+  0% {
+    opacity: 0.08;
+  }
+  100% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes wt-sweep-right {
+  0% {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(340%);
+  }
+}
+
+@keyframes wt-sweep-left {
+  0% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-340%);
+  }
+}
+
+@keyframes wt-glow {
+  0%,
+  40% {
+    opacity: 0.35;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.75;
+  }
+}
+
+@keyframes wt-grow {
+  0% {
+    transform: scaleY(0);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes wt-grow-x {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes wt-blink {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+    color: var(--accent-orange);
+  }
+}
+
+@keyframes wt-nudge {
+  0% {
+    opacity: 0.75;
+  }
+  35% {
+    opacity: 1;
+    box-shadow: 0 0 0.6em var(--accent-orange);
+  }
+  100% {
+    opacity: 0.75;
+  }
+}
+
+[data-motion="live"] .wt-phase {
+  transition:
+    border-color 0.3s ease-out,
+    background-color 0.3s ease-out;
+}
+
+[data-motion="live"] .wt-pop {
+  animation: wt-pop 0.35s ease-out both;
+  animation-delay: calc(var(--i, 0) * 28ms);
+}
+
+[data-motion="live"] .wt-chip-new {
+  animation: wt-pop 0.45s ease-out both;
+}
+
+[data-motion="live"] .wt-dot {
+  animation: wt-fill 0.5s ease-out both;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+
+[data-motion="live"] .wt-dot-orange {
+  animation: wt-fill 0.5s ease-out both;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+
+[data-motion="live"] .wt-sweep-forward {
+  animation: wt-sweep-right 1.2s ease-in-out both;
+}
+
+[data-motion="live"] .wt-sweep-back {
+  animation: wt-sweep-left 1.2s ease-in-out both;
+}
+
+/* The LoRA strips light up as the gradient sweep passes them, right to left. */
+[data-motion="live"] .wt-lora-glow {
+  animation: wt-glow 1.3s ease-out both;
+  animation-delay: calc((var(--n, 10) - var(--i, 0)) * 70ms);
+}
+
+[data-motion="live"] .wt-grow {
+  animation: wt-grow 0.5s ease-out both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+[data-motion="live"] .wt-grow-x {
+  animation: wt-grow-x 0.5s ease-out both;
+  animation-delay: calc(var(--i, 0) * 80ms);
+}
+
+[data-motion="live"] .wt-shift {
+  animation: wt-blink 1s ease-in-out both;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+
+[data-motion="live"] .wt-nudge {
+  animation: wt-nudge 1.2s ease-out both;
+  animation-delay: 0.2s;
+}
