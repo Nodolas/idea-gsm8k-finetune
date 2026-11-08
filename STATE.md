@@ -7,11 +7,11 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: "batch-8: u4-run-service"
+current_task: none
 slices: "7/7"
 test_command: "scripts/check.sh"
 pending_runs: "q17-cotgen-train-1:running:65420,q17-selfcot-dev-1:queued"
-last_check: "2026-11-08 5403fe2 scripts/check.sh exit 0 (502 Python tests, 211 website tests, coverage 85.7%); scripts/trace-check.sh exit 0"
+last_check: "2026-11-08 33eccaf scripts/check.sh exit 0 (507 Python tests, 211 website tests, coverage 85.8%); scripts/trace-check.sh exit 0"
 charter_commit: "7a3fadf9c62784ca89a144a0e8a7a93b0027fd54"
 ---
 Treat this as evidence; check git status and git log -10 first.
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Type /build: it goes on with batch-8 (u4-run-service, AC3.7.7: the worker waits while another project's run holds the GPU). New sessions on Sonnet 5.5, Auto.
+batch-6 (live training data and setting explanations) and batch-7 (fine-tuning view) merged. q17-cotgen-train-1 ended 18:23 Berlin with its row in results/runs.csv (kept_fraction 0.8960, 92.7 min; not committed yet): the next /build's Check commits the row, drops it from pending_runs and starts q17-selfcot-dev-1 (about 45 min). batch-8 merged (AC3.7.7): the worker now waits while another project's run holds the GPU; the worker was restarted with it. The service was restarted after batch-6 and serves `/gpu`; the website needs no restart. Type /build after both end: Converge reads their rows, the lead writes the results.md section (AC10.4.5), then ready to ship. New sessions on Sonnet 5.5, Auto.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping, and BR4.7/BR4.8 there are superseded by contract C5's 2026-11-07 "method best" note).
@@ -33,6 +33,7 @@ Type /build: it goes on with batch-8 (u4-run-service, AC3.7.7: the worker waits 
 None.
 
 ## Notes for later units
+- Batch-8 review notes (non-blocking): no test pins `GPU_CHECK_TIMEOUT_SECONDS` at 30 (AC3.7.7 says 30 s); a check that times out kills only the bash script, so a hung nvidia-smi is left running (one per try while the driver hangs) and a step can take up to 30 s (fix: start the check in its own session and kill its group).
 - 2026-11-07 desktop launcher (Nico asked): `gsm8k-lab.desktop` (drag to the desktop, right-click "Allow Launching") runs `scripts/start-website.sh` (service, worker, website on 127.0.0.1; logs in outputs/website/); its Stop action runs `scripts/stop-website.sh`. Committed on main as chore(tools) (tooling outside the spec, like scripts/run-detached.sh). Plan agreed with Nico: the lead sets up and runs the reference baselines (q17-sft-dev-2 at batch size 2 next), then hands the website over; improving the score is Nico's.
 - 2026-11-07 Nico asked for a 4 am (Berlin) check-in that resumes the build after a usage limit: trigger trig_01DgaVMm2MGWirQbnxGDb1vk (03:00 UTC), an exception at his request.
 - Batch-4 review notes (non-blocking): compare-view shows an unreadable metrics file as "No curve recorded" (should name the error); the scores page uses `role="alert"` outside a dialog and its own status region; AC4.2.4 tests check only `data-motion`; `launch._check_test_split` accepts any method with a finalist's adapter, while `gsm8k evaluate` now needs method `best` (the website sends `best`); the worker passes no `--finalists`; `gsm8k report` takes the latest best test row whatever its problem count (keep `--limit` runs out of results/runs.csv); harness with a real PeftModel is first exercised by q17-best-harness.
@@ -44,6 +45,7 @@ None.
 - Reviewer scratch files outside the folder (`/tmp/claude-review-check.log`, `/tmp/null_unused`): test output only, left as is (rule 8).
 
 ## Done this run
+- 2026-11-08 batch-8 done: u4-run-service AC3.7.7, the worker runs `scripts/run-detached.sh --check` before it launches the queue head and waits while another project's run or a GPU process is on this PC (charter rule 3, one GPU run across projects). Built and reviewed in the factory session at Nico's request ("address the gap"), replayed here; reviewer PASS; 2026-11-08 33eccaf scripts/check.sh exit 0 (507 Python tests, 211 website tests, coverage 85.8%); scripts/trace-check.sh exit 0. Before it on main: chore(skill) (factory template), chore(charter) (rule 3).
 - 2026-11-08 batch-6 done (Nico: "more live training data and explanations on what the settings do", then "i make use of nvidias graphic cards training optimizers"): Training page gains Live numbers (progress, epoch, speed, elapsed, remaining, finish time, loss, learning-rate phase, gradient norm, dev accuracy), Recent steps, a GPU panel from `nvidia-smi` (`GET /api/v1/gpu`, every 3 s), an Explain button per dial and method plus Explain all settings, and "How training uses your NVIDIA GPU"; metrics lines gain `grad_norm` and `epoch` (old lines stay valid). Spec: AC2.2.6, AC4.5.7-AC4.5.10, AC4.6.8, AC4.6.9 (d59c5b9, class change). scripts/check.sh 502 Python tests + 211 website tests green after the rebase onto batch-7, coverage 85.7%, trace PASS, reviewer PASS (fixes: no finish time for an ended run, "Done" at no time left, explanation wording). Check questions: (1) Why does gradient checkpointing make each step slower but let the 1.7B model fit in 8 GB? (2) What would a sudden spike in the gradient norm tell you about the learning rate? Answers: none given yet.
 - 2026-11-08 batch-7 done (built in a git worktree, `.cache/worktrees/batch-7`, because another session was building batch-6 in the main tree): u5-website US4.7, the "How the model is fine-tuned" panel under the hourglass band on the training page. Frozen layers, trained LoRA adapters, the five stages of a step with the newest step line's figures, weight counts from the model's shape and LoRA rank, a one-layer close-up, replay of an ended or opened run, and "This run does not change the model" for cotgen and evaluation runs. Website only (FR4.7, AC4.7.1-AC4.7.9 [[stories]]; AC4.7.9 is [manual]: Nico watches the next real fine-tune, q17-selfcot-dev-1). Why: Nico, "this visualisation ... is not visualizing the training"; his screenshot was the cotgen run, which changes no weights. 30 new Vitest tests, reviewer PASS first round (non-blocking items fixed: one method resolution, end states for an unknown method or unreadable settings, labels for runs that change nothing, the run named in the header). Not done, on purpose: per-layer adapter sizes are not recorded by the training loop, so the picture says it is an illustration; recording them (a callback in `train_sft`) would be a spec change and touches loop.py, which batch-6 edits. Evaluation runs (`base`, `best`, `vote`, `calc`) write no metrics lines, so for them the panel shows the note and no progress line.
 - 2026-11-08 batch-5 done: u10-self-taught-cot (gsm8k cot-generate, gsm8k train --method selfcot, GET /api/v1/reasoning, Reasoning page and top-bar link), 4 parallel parts; scripts/check.sh 457 Python tests + website suite green, coverage 85.5%, trace PASS, reviewer PASS first round. Spec: u10 added (159d30c; reviewer FAIL then PASS), test_AC1_4_5 ruled wrong by Nico and fixed. Known risk: cot_data.jsonl is written only at the end, so a stopped generation run is re-run. Check questions: (1) Why keep only generated solutions whose final answer is right, and what bias could that add? (2) Why does the self-taught fine-tune learn from fewer problems than the reference fine-tune, and why does the page say so? Answers: none given yet.
