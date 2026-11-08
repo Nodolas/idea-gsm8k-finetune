@@ -47,6 +47,11 @@ Every story in `inception/user-stories/stories.md` (US1.1–US11.4, including US
 | US11.2 | U11 | u11-finetune-lab |
 | US11.3 | U11 | u11-finetune-lab |
 | US11.4 | U11 | u11-finetune-lab |
+| US12.1 | U12 | u12-learning-course |
+| US12.2 | U12 | u12-learning-course |
+| US12.3 | U12 | u12-learning-course |
+| US12.4 | U12 | u12-learning-course |
+| US12.5 | U12 | u12-learning-course |
 
 ## Cross-Cutting Concerns
 
@@ -57,7 +62,7 @@ Each story sits in exactly one unit. These concerns are delivered in one unit an
 | In-folder cache variables set before any import (NFR5, AC1.1.4) | U1 | every Python unit and command |
 | Run log format, attempt ids and the atomic lock (AC1.4.3, AC3.3.2) | U1 (format, the C3 `flock` lock on `outputs/run.lock`); U4 (queue, reporting a run that ended without finishing) | every unit that runs on the GPU |
 | Test-split guard (NFR8; AC1.1.3, AC2.1.5, AC3.6.4, AC8.1.4) | U1 (data), U3 (config) | U4, U6, U8 |
-| Measured times and peak memory (FR1.7; AC1.4.4, AC2.2.5, AC2.4.1) | U1, U3 | U4 (estimates in the confirm dialog), U7 |
+| Measured times and peak memory (FR1.7; AC1.4.4, AC2.2.5, AC2.4.1) | U1, U3 | U4 (estimates in the confirm dialog), U7, U12 (course run estimates) |
 | US6.3 learning check questions | U6 (traced) | asked at the end of every unit |
 
 ## Implementation Order Within Each Unit
@@ -75,9 +80,10 @@ Within each unit, tests for every criterion come first and must fail, then the c
 - **U9:** AC9.1.1–AC9.1.3 (transforms) → AC9.1.4–AC9.1.6 (`[manual]`).
 - **U10:** AC10.1.2 (keep rule, pure) → AC10.1.1, AC10.1.3, AC10.1.4 (generation) → US10.2 (self-taught training) → US10.3 (comparison and endpoint) → US10.4 (Reasoning page) → AC10.1.5, AC10.2.5 (`[manual]`) → AC10.4.5.
 - **U11:** US11.1 (lessons and configuration, pure) → US11.2 (lab run) → US11.3 (service routes) → US11.4 (Lab page) → AC11.2.10 (`[manual]`).
+- **U12:** US12.1 (steps, runs and content, pure) → US12.2 (inspect command) → US12.4 (course ids, course-only models, `quantize`, `--results` from the queue) → US12.3 (service routes, quiz, progress) → US12.5 (Course page and landing card) → AC12.4.5, AC12.5.12 (`[manual]`).
 
 ## Coverage Check
 
-- All 41 stories are assigned: U1 has 4, U2 1, U3 5, U4 7, U5 8, U6 4, U7 1, U8 2, U9 1, U10 4, U11 4 (US10.1–US10.4, US4.8 and US11.1–US11.4 added 2026-11-08).
+- All 46 stories are assigned: U1 has 4, U2 1, U3 5, U4 7, U5 8, U6 4, U7 1, U8 2, U9 1, U10 4, U11 4, U12 5 (US10.1–US10.4, US4.8, US11.1–US11.4 and US12.1–US12.5 added 2026-11-08).
 - Every unit has at least one story.
 - No story is split across units.

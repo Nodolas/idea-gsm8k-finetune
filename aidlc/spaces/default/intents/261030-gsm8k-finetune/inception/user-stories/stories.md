@@ -46,6 +46,7 @@ Bounds are inclusive.
 | 9. Ablations | US9.1 | Could |
 | 10. Self-taught chain of thought | US10.1–US10.4 | Could |
 | 11. Fine-tuning lab | US11.1–US11.4 | Could |
+| 12. Learning course | US12.1–US12.5 | Could |
 
 ---
 
@@ -774,6 +775,170 @@ As Nico, I want a Lab page that takes me through the lessons one by one, so that
 - **AC11.4.6** Given a finished lesson, when it renders, then a "What happened" list states, worked out from the summaries (losses to 3 decimals): the variant with the lowest dev loss after training and its value (for `l09`, whose variants' dev losses are over different answer texts, the variant with the higher accuracy after training and the format rates instead); for each variant whose last dev loss is more than 0.05 above its best, that it overfitted (its best and last dev loss and the best step); for each variant whose last training loss is above its first or is missing, that training diverged; for `l11`, the spread of the last dev loss across seeds (largest minus smallest) and that smaller differences in the other lessons are noise; for `l12`, how long the one-time tokenization took, what re-tokenizing added per step as seconds and a percent of a step, and the padding fraction with random and with length-grouped batches.
 - **AC11.4.7** Given a finished lesson, when it renders, then "Answers before and after" shows, for the variant chosen in a select (the one with the lowest dev loss first), each sample problem's question, its right answer, and the answers before and after training; "For the big runs" shows the lesson's big-run text and "Check question" its check question.
 - **AC11.4.8** Given the Lab page, when the lab list is loading, fails or a lesson has never run, then it shows "Reading the lab…", the error's message with a "Try again" button, or "Not run yet: press Run this lesson to fill the charts." respectively; the charts are hidden from assistive technology and their facts are in the results table.
+
+---
+
+## 12. Learning Course (Could)
+
+Nico, 2026-11-08: "a button ... to fine tune a small model and to be guided through all the steps", then "the training pipeline should walk me through different architectures and why one architecture is used and why not, basically a hands-on learning course with a tracker that displays my learning progress". His answers in session: architectures means both model designs and fine-tuning approaches; GRPO is included as a step; a step's run is short (minutes); a step is learned through multiple-choice questions the service checks plus an "in your own words" answer kept next to a model answer (FR12). The course is the guided path through the whole project: it reuses the evaluation and training commands on the GPU through the queue for short runs, the Fine-Tuning Lab (group 11) on the CPU for the lab lessons, and adds a CPU inspection of model designs. Course runs are learning runs, not project results: their rows go to `outputs/course/runs.csv` (never `results/runs.csv`) and they never appear on the Scores page or the landing page's best result.
+
+### Course Steps
+
+| Step | Part | Title | Kind | What it runs |
+|---|---|---|---|---|
+| c01 | 1. Scoring a base model | How a base model is scored | gpu | `base-06` |
+| c02 | 2. Model designs | Tokens and the prompt | inspect | `gsm8k course inspect` |
+| c03 | 2. Model designs | Inside a decoder-only transformer | inspect | `gsm8k course inspect` |
+| c04 | 2. Model designs | Five designs side by side | inspect | `gsm8k course inspect` |
+| c05 | 2. Model designs | Same test, five designs | gpu | `pythia`, `smollm2`, `qwen25`, `qwen3-17` |
+| c06 | 2. Model designs | Why Qwen3-1.7B, and why not the others | read | none |
+| c07 | 3. How fine-tuning works (lab, CPU) | What a fine-tune does | lab | lesson l01 |
+| c08 | 3. How fine-tuning works (lab, CPU) | Learning rate | lab | lesson l02 |
+| c09 | 3. How fine-tuning works (lab, CPU) | Epochs and overfitting | lab | lesson l03 |
+| c10 | 3. How fine-tuning works (lab, CPU) | How much data | lab | lesson l04 |
+| c11 | 3. How fine-tuning works (lab, CPU) | LoRA rank | lab | lesson l05 |
+| c12 | 3. How fine-tuning works (lab, CPU) | LoRA or every weight | lab | lesson l06 |
+| c13 | 3. How fine-tuning works (lab, CPU) | Batch size | lab | lesson l07 |
+| c14 | 3. How fine-tuning works (lab, CPU) | What the loss counts | lab | lesson l08 |
+| c15 | 3. How fine-tuning works (lab, CPU) | Answer format | lab | lesson l09 |
+| c16 | 3. How fine-tuning works (lab, CPU) | Warm-up and schedule | lab | lesson l10 |
+| c17 | 3. How fine-tuning works (lab, CPU) | Seed noise | lab | lesson l11 |
+| c18 | 3. How fine-tuning works (lab, CPU) | Where the time goes | lab | lesson l12 |
+| c19 | 4. Fine-tuning approaches | Memory budget: prompting, full, LoRA, QLoRA | read | none (memory calculator) |
+| c20 | 4. Fine-tuning approaches | LoRA or QLoRA on the GPU | gpu | `lora`, `qlora` |
+| c21 | 5. The training pipeline | Supervised fine-tune | gpu | `sft` |
+| c22 | 5. The training pipeline | Self-taught reasoning | gpu | `cotgen`, then `selfcot` |
+| c23 | 5. The training pipeline | Reinforcement learning with GRPO | gpu | `grpo` |
+| c24 | 5. The training pipeline | What moved the score, and noise | read | none (comparison of the course runs) |
+
+Kinds: `gpu` queues short runs on the GPU through the queue and the worker (US3.7, AC3.7.7); `inspect` runs `gsm8k course inspect` on the CPU; `lab` runs a lab lesson through the lab routes (US11.3); `read` runs nothing.
+
+### Course Runs
+
+Every course run uses the run configuration defaults (stories, Training Dials and C2) with exactly the changes below, the dev split, `limit` 100 (the first 100 scored dev problems) and seed 42. Its attempt id is `course-<step>-<run>-<n>` (for example `course-c05-pythia-1`), `n` counting up from 1 per step and run.
+
+| Step | Run | Command | Changes |
+|---|---|---|---|
+| c01 | `base-06` | evaluate | model `Qwen/Qwen3-0.6B-Base`, method `base` |
+| c05 | `pythia` | evaluate | model `EleutherAI/pythia-31m`, method `base` |
+| c05 | `smollm2` | evaluate | model `HuggingFaceTB/SmolLM2-360M`, method `base` |
+| c05 | `qwen25` | evaluate | model `Qwen/Qwen2.5-0.5B`, method `base` |
+| c05 | `qwen3-17` | evaluate | model `Qwen/Qwen3-1.7B-Base`, method `base` |
+| c20 | `lora` | train | model `Qwen/Qwen3-0.6B-Base`, method `sft`, train_examples 300 |
+| c20 | `qlora` | train | model `Qwen/Qwen3-0.6B-Base`, method `sft`, train_examples 300, quantize `4bit` |
+| c21 | `sft` | train | model `Qwen/Qwen3-0.6B-Base`, method `sft`, train_examples 400 |
+| c22 | `cotgen` | cot-generate | model `Qwen/Qwen3-0.6B-Base`, method `cotgen`, split `train`, cot_problems 100, cot_samples 4, no `limit` |
+| c22 | `selfcot` | train | model `Qwen/Qwen3-0.6B-Base`, method `selfcot`, train_examples 100 (an upper bound: it trains on min(kept solutions, 100); with fewer than 50 kept the step shows "Too few solutions were kept (<n>); run the step again" instead of queueing a run that fails), cot_data_run the `course-c22-cotgen-<n>` attempt queued with it (not checked for existence when the entry is written, since it has not run yet) |
+| c23 | `grpo` | train | model `Qwen/Qwen3-0.6B-Base`, method `grpo`, adapter the latest finished `course-c21-sft-<n>` (the base model when there is none), grpo_steps 20, grpo_generations 4 |
+
+### Course Timing
+
+A course run's estimate is worked out by the course itself (not the confirm dialog's estimate, AC2.3.1, which has no timings for the course-only models): minutes = ceil((30 s model load + work seconds) / 60). Per-unit seconds are the model's saved timings from earlier runs when there are any (seconds per scored problem from evaluation runs, seconds per training step from `sft` runs at the same batch size), otherwise the fallback below, and the estimate is then marked "unmeasured". Work seconds: evaluate = 100 × seconds per problem; train `sft` = steps × seconds per step (× 1.5 with quantize `4bit`) + 100 × seconds per problem; `selfcot` = ceil(train_examples / batch size) × seconds per step + 100 × seconds per problem; `grpo` = grpo_steps × (grpo_generations × seconds per problem + 1) + 100 × seconds per problem; `cotgen` = cot_problems × cot_samples × seconds per problem.
+
+Training steps have a fallback only for `Qwen/Qwen3-0.6B-Base`, the only model the course trains.
+
+| Model | Fallback seconds per problem | Fallback seconds per training step (batch size 4) |
+|---|---|---|
+| `EleutherAI/pythia-31m` | 0.3 | — |
+| `HuggingFaceTB/SmolLM2-360M` | 0.8 | — |
+| `Qwen/Qwen2.5-0.5B` | 1.0 | — |
+| `Qwen/Qwen3-0.6B-Base` | 1.2 | 0.5 |
+| `Qwen/Qwen3-1.7B-Base` | 3.0 | — |
+
+### Course Models
+
+The course's model-design steps add three pinned open models (Apache-2.0, not gated, no account) to the two project models. They are used only by course runs with method `base` and by `gsm8k course inspect`; training stays on the two project models.
+
+Every Course Models row has the licence Apache-2.0; `gsm8k course inspect` takes it from this table, not from a download.
+
+| Model | Revision | Weights | Why it is in the course |
+|---|---|---|---|
+| `EleutherAI/pythia-31m` | `e556ace21b489575e94e9d50b6dad2fcc7419679` | 30.5 M | the lab's model (group 11): an older GPT-NeoX design, far too small for math |
+| `HuggingFaceTB/SmolLM2-360M` | `f8027fd0eaeea54caa13c31d31b9fdc459c38b49` | 362 M | a Llama-style design trained on fewer, more curated tokens |
+| `Qwen/Qwen2.5-0.5B` | `060db6499f32faf8b98477b0a26969ef7d8b9987` | 494 M | the previous Qwen generation, the same family a size step below |
+| `Qwen/Qwen3-0.6B-Base` | (project pin) | 0.6 B | the project's small model |
+| `Qwen/Qwen3-1.7B-Base` | (project pin) | 1.7 B | the project's main model |
+
+### US12.1 Course steps and their content
+
+As Nico, I want a fixed course of steps, each saying why before it asks me to do anything, so that I learn the pipeline in order and know what each step is for.
+
+- **Priority:** Could Have
+- **Requirements:** FR12.1
+- **Depends on:** US11.1
+- **INVEST:** pure data and validation; testable without a model.
+
+- **AC12.1.1** Given the course, when its steps are listed, then there are exactly the 24 steps of the Course Steps table in its order, with its ids, parts, titles and kinds; each `gpu` step lists exactly its runs from the Course Runs table, each `lab` step names its lab lesson and that lesson exists in the lab's lessons (AC11.1.1), and each step has a non-empty "why" (read before acting), a body, two or three multiple-choice questions each with three or four options of which exactly one is right and an explanation of the right answer, an "in your own words" prompt and a model answer.
+- **AC12.1.2** Given a course run of the Course Runs table, when its configuration is built, then it is the run configuration defaults with exactly the run's changes, the dev split, `limit` 100 and seed 42 (`cotgen`: split `train` and no limit), and it passes the C2 validation; its estimate follows the Course Timing rule, and with the fallback timings alone every run of the Course Runs table is estimated at 10 minutes or less (a run estimated above 10 minutes is shown with "over 10 minutes", never refused); given saved timings for a model (fixture runs) the estimate uses them and is not marked "unmeasured".
+- **AC12.1.3** Given the content of the model-design and approach steps, when it is read, then c03 names the embeddings, the attention block with grouped-query attention, the MLP block, the norms, the residual stream and the output head (and that Qwen3-0.6B ties its output head to its embeddings); c04 explains what each compared column means; c06 gives, each in at least one sentence, why Qwen3-1.7B-Base was chosen (room to improve on GSM8K, fits LoRA training in 8 GB, Apache-2.0) and why not the alternatives: larger dense models do not fit in 8 GB, mixture-of-experts models must hold every expert in memory, encoder-decoder models are not built for few-shot step-by-step answers, gated models (Llama, Gemma) need an account (charter rule 4), and models already scoring 85–95 % leave little room and may have seen GSM8K (contamination, brief Risk 1); c19 compares prompting only, full fine-tuning, LoRA and QLoRA with what each trains and stores.
+- **AC12.1.4** Given the course data module, when it is imported, then it imports no torch, transformers, peft or bitsandbytes and changes no environment variable (the service imports it; ADR-006).
+
+### US12.2 Inspect model designs on the CPU
+
+As Nico, I want the course to read the real configuration and tokenizer of five models and lay out their designs, so that I see how they differ before I compare their scores.
+
+- **Priority:** Could Have
+- **Requirements:** FR12.2, NFR5, NFR6
+- **Depends on:** US12.1
+- **INVEST:** one CPU command; testable with tiny fixture configurations and tokenizers, no download.
+
+- **AC12.2.1** Given `gsm8k course inspect` with fixture model configurations and tokenizers and a temporary outputs folder, when it ends, then `outputs/course/architectures.json` holds one entry per Course Models row in the table's order with the C9 fields: id, revision, licence (from the Course Models table), design family (`model_type`), layers, width, attention heads, key-value heads, attention kind (`multi-head` when key-value heads equal heads, `grouped-query` otherwise), head size, MLP width, vocabulary size, context length, tied embeddings, position encoding (`rotary` when the configuration has `rope_theta` or `rotary_pct`, otherwise `learned`), activation, total weights and weights by part (embeddings, attention, MLP, norms, output head, 0 when tied; the parts sum to the total), the memory of the weights in bf16 and in 4-bit in GB, and for the first scored dev problem its token count, its first 20 tokens as text and the token count of the 4-shot prompt (FR1.2); the command exits 0.
+- **AC12.2.2** Given `gsm8k course inspect` on this PC, when it reads a model, then it downloads only the configuration and tokenizer files at the pinned revision into the project cache (NFR5), counts the weights without loading them (the model built on the `meta` device), uses the CPU only (`CUDA_VISIBLE_DEVICES` empty in its handler, as AC11.2.2) and never reads or writes `results/runs.csv`, `outputs/run.lock` or `outputs/queue/`; a model whose files cannot be read ends the command with exit 1 and a message naming the model, and writes no partial `architectures.json`.
+
+### US12.3 Course runs, quizzes and progress through the service
+
+As Nico, I want the local service to start a step's runs, check my quiz answers and keep my progress, so that the website can guide me and remember where I am.
+
+- **Priority:** Could Have
+- **Requirements:** FR12.3, FR12.4, NFR6, NFR8
+- **Depends on:** US12.1, US12.2, US3.7, US11.3
+- **INVEST:** endpoints on the existing service; testable with FastAPI's test client, a temporary outputs folder, fixture course rows and a stubbed queue and launcher.
+
+- **AC12.3.1** Given the service, when `GET /api/v1/course` is called, then it answers the C9 `CourseOverview`: the parts in order with each step's id, number, title, kind and state, the progress (steps done, total 24, percent rounded down, questions answered right on the first try and questions answered), and the next step (the first step that is not done; null when all are). A step's state is `done` when its run part is done and its quiz is passed, `in-progress` when it was opened or its run part has started, and `not-started` otherwise. The run part is done for a `read` step always; for an `inspect` step when `architectures.json` exists; for a `lab` step when its lesson's state is `finished` (AC11.3.1); for a `gpu` step when each of its runs has a finished row in `outputs/course/runs.csv`.
+- **AC12.3.2** Given a step, when `GET /api/v1/course/{step}` is called, then it answers the C9 `CourseStep`: the step as in the overview, its why, body, questions with their options (the right option and the explanation only for questions already answered), the own-words prompt and saved answer (the model answer only once an answer is saved), and per kind: for `gpu` steps each run with its latest attempt id, its state (`not-run`, `queued`, `running`, `finished`, `failed` or `stopped`, from the queue, the run folder and the course rows) and its result row (null until finished); for `inspect` steps the `architectures.json` entries (null until it exists); for `lab` steps the lesson id and state; for c19 the memory table (AC12.3.6); for c24 the comparison (AC12.3.7). An unknown step answers 404 `not_found`.
+- **AC12.3.3** Given a `gpu` step with none of its runs queued or running, when `POST /api/v1/course/{step}/run` is called, then the service adds one queue entry per run of the step, in the table's order, with the next attempt id, the run's configuration and `results` set to `outputs/course/runs.csv` (C3), and answers 202 with the attempt ids; the entries are added all or none: when the queue cannot take them all (at most 10 waiting entries, AC3.7.3) none is added and it answers 409 `queue_full` with the queue-full message; the worker launches them one at a time under the GPU lock and the GPU check (US3.3, AC3.7.7); for c22 the `selfcot` entry carries `after` set to the `cotgen` attempt id queued with it (C3), so the worker launches it only once that attempt has a row in `outputs/course/runs.csv`; when that attempt's `status.json` reads `failed` or `stopped`, or `finished` with no row, the `selfcot` entry is removed with the reason in `outputs/queue/queue.log`; while a run of the step is queued or running it answers 409 `course_busy`; for an `inspect` step it launches `[<python>, "-m", "gsm8k", "course", "inspect"]` as an argument list in its own session on the CPU (as AC11.3.3) and answers 202; for a `lab` step it answers 422 `use_lab` naming the lesson; for a `read` step 422 `nothing_to_run`.
+- **AC12.3.4** Given a step with questions, when `POST /api/v1/course/{step}/quiz` is called with one chosen option per question, then the service answers per question whether it is right, the right option and the explanation, stores the attempt (answers, time) in `outputs/course/progress.json` (C9), and marks the quiz passed when every answer is right; a later attempt is allowed and counted; a body with the wrong number of answers or an option out of range answers 422 `invalid_answers`; first-try counts use only each question's first attempt.
+- **AC12.3.5** Given a step, when `PUT /api/v1/course/{step}/own-words` is called with a text of 1 to 4,000 characters, then the text and its time are stored in `progress.json` and the answer holds the model answer; an empty or longer text answers 422 `invalid_text`; `POST /api/v1/course/{step}/open` records the first time the step was opened (later calls keep it). `progress.json` is written atomically (temporary file and rename), and a missing file reads as no progress; an unreadable one answers 500 `progress_unreadable` naming the file and is never overwritten.
+- **AC12.3.6** Given step c19, when it is answered, then its memory table lists, for each Course Models row, the estimated GB to train it with full fine-tuning (16 bytes per weight: bf16 weights and gradients, fp32 AdamW states and master weights), LoRA (2 bytes per weight plus 16 bytes per adapter weight at rank 16 on every linear layer of the decoder blocks) and QLoRA (0.55 bytes per weight plus 16 bytes per adapter weight), each with "fits" or "does not fit" against 6.5 GB (the 8 GB card less 1.5 GB for the desktop and activations), worked out from `architectures.json` (null figures until it exists); the step says the figures leave out activations, which grow with batch size and sequence length.
+- **AC12.3.7** Given step c24, when it is answered, then its comparison lists every finished course run's latest attempt except `cotgen` (whose row is a keep rate, not an accuracy) with its step, run, model, method, accuracy on its 100 problems and the 95 % interval (normal approximation, clipped to 0–1, as AC10.3.1), its gain over `course-c01-base-06` for Qwen3-0.6B runs with the label "within noise" when the intervals overlap, and minutes; and it says that 100 problems give intervals about ±10 points wide, so the reference runs in `results/runs.csv` (500 problems) are the ones to trust.
+- **AC12.3.8** Given course runs, when the run list, the Scores page's ranking or the landing page's best result are built, then they read `results/runs.csv` only, so no course run is ranked or shown as a result; the Training page's past runs list course runs from their folders with their status only (no accuracy or minutes, which are in `outputs/course/runs.csv`), each marked "Course" because its run id starts with `course-`.
+
+### US12.4 The course runs on the GPU
+
+As Nico, I want each course run to be the project's own evaluation or training command with a few more options, so that what I run in the course is what the big runs do.
+
+- **Priority:** Could Have
+- **Requirements:** FR12.3, FR7.1, NFR1, NFR8
+- **Depends on:** US12.1, US7.1, US10.1, US10.2
+- **INVEST:** small changes to the existing commands and the worker; testable on the CPU with the tiny model fixture, fixture rows and a temporary outputs folder.
+
+- **AC12.4.1** Given a course attempt id, when it is checked, then it matches `course-c[0-9]{2}-[a-z0-9-]+-[0-9]+` (C1), the run folder is `outputs/<attempt id>/` and its adapter (for training runs) `checkpoints/<attempt id>/`, like any run; a course run's row is appended to the `--results` file it was given, and the worker passes `--results` from the queue entry's `results` field (null: the default `results/runs.csv`); a queue entry whose `results` is anything other than null or `outputs/course/runs.csv` is refused when it is written.
+- **AC12.4.2** Given `gsm8k evaluate` with method `base`, when the model is one of the Course Models, then it loads it at the table's revision and scores it like any base run (the fixed 4-shot prompt, greedy, BR3.4); the three course-only models are refused for any run id that is not a course attempt id and for every method other than `base`, with a message naming the model.
+- **AC12.4.3** Given `gsm8k train` with `quantize` `4bit` (C2 field; default `none`, at its default it stays out of `config_hash`), when it loads the model, then the frozen base weights are loaded in 4-bit NF4 with bf16 compute through bitsandbytes and the LoRA adapters are trained in bf16 as for `none`; the run's `config.json` holds `quantize` and its row's `config_hash` covers it; `quantize` `4bit` with any method other than `sft`, `selfcot` or `grpo` is refused naming the field; in the quick tests the quantized load is replaced by a seam that records it was asked for.
+- **AC12.4.4** Given the course run c23 `grpo`, when it starts, then it runs `gsm8k train --method grpo` (US7.1) with grpo_steps 20 and grpo_generations 4 from the given adapter, its metrics lines hold reward, KL and answer length (AC7.1.2), and it scores the first 100 dev problems at the end.
+- **AC12.4.5** Given this PC, when Nico runs c20 and c23 from the Course page, then `course-c20-qlora-1` finishes within about 10 minutes with a lower peak GPU memory than `course-c20-lora-1`, and `course-c23-grpo-1` finishes within about 10 minutes with reward, KL and answer length on its metrics lines. [manual] Verify: rows `course-c20-lora-1`, `course-c20-qlora-1` and `course-c23-grpo-1` in `outputs/course/runs.csv` and their `outputs/<attempt id>/` peak memory, with Nico's confirmation in session.
+
+### US12.5 Learn on the Course page with a progress tracker
+
+As Nico, I want a Course page that walks me through the steps and shows my progress, so that I always know what I have learned and what comes next.
+
+- **Priority:** Could Have
+- **Requirements:** FR12.5, FR12.6, FR4.1, NFR9
+- **Depends on:** US12.3, US4.1, US11.4
+- **INVEST:** one page and a landing-page card; testable with component tests and the fake API.
+
+- **AC12.5.1** Given any page, when it renders, then the top bar has a "Course" link after "Lab" that opens `/course`; the Course page shows "Your progress: N of 24 steps done (P %)", one progress bar per part with its done count, "First-try answers right: R of Q", and a button "Continue with step N: <title>" that opens the next step (it reads "Course complete" when there is none); the bars carry their numbers as text, not colour alone (NFR9).
+- **AC12.5.2** Given the Course page, when it renders, then a list shows the five parts and their steps as "Step N · <title>", each with its state in words (Not started, In progress, Done) and its kind (GPU run, CPU inspection, Lab lesson, Reading); with no `step` in the address the next step is shown (the first step when all are done); choosing a step shows it, sets `?step=<id>` and calls `POST /course/{step}/open`.
+- **AC12.5.3** Given a shown step, when it renders, then it shows, in this order, "Why this step" (its why), the body, what the step runs, the run area, "Check what you learned" (its questions) and "In your own words"; the questions stay hidden behind "I have read this, show the questions" until the step's run part is done (always shown for `read` steps).
+- **AC12.5.4** Given a shown `gpu` step, when it renders, then the run area lists each run with its model, what it changes and its estimate ("about N min on the GPU", with "(estimate, not measured yet)" when it is unmeasured), a button "Run this step" that calls `POST /course/{step}/run`, and per run its state in words with a link "Watch it on the Training page" that opens the run there while it runs; while a run of any kind holds the GPU the page says which and that the step's runs wait in the queue; a 409 `course_busy` answer shows its message; once finished each run shows its accuracy on 100 problems with its interval and minutes.
+- **AC12.5.5** Given a shown `inspect` step, when `architectures.json` exists, then c02 shows the sample problem's first tokens as separate chips and the token counts of the problem and of the 4-shot prompt per model; c03 shows Qwen3-0.6B's parts as a stacked bar of weights by part with the numbers in a table; c04 shows the Course Models side by side in a table with every C9 field; before it exists the run area offers "Read the model designs (CPU, under a minute)".
+- **AC12.5.6** Given a shown `lab` step, when it renders, then it shows the lesson's title, question and state and a link "Open lesson N in the Lab" (`/lab?lesson=<id>`); the step's run part is done once the lesson is finished.
+- **AC12.5.7** Given a shown step's questions, when Nico chooses one option per question and presses "Check my answers", then each question shows "Right" or "Not quite" in words, the right option and the explanation; with all right the step reads "Quiz passed"; otherwise "Try again" clears the choices; the step reads "Done" once its run part is done and its quiz passed.
+- **AC12.5.8** Given "In your own words", when Nico types an answer and presses "Save my answer", then it is saved through `PUT /course/{step}/own-words` and the model answer appears under it as "One way to say it"; a saved answer is shown when the step is opened again and can be changed.
+- **AC12.5.9** Given c19 and c24, when they render, then c19 shows the memory table of AC12.3.6 with "Fits in 8 GB" or "Does not fit" in words, and c24 shows the comparison of AC12.3.7 with each interval drawn as a bar and its numbers in the table.
+- **AC12.5.10** Given the landing page, when it renders, then a "Your course" card shows the progress line of AC12.5.1 and a link "Continue the course"; when the course overview fails to load the card shows the error's message and the rest of the page still renders.
+- **AC12.5.11** Given the Course page, when the overview is loading, fails or a step fails to load, then it shows "Reading the course…", or the error's message with a "Try again" button; every control works by keyboard (NFR9).
+- **AC12.5.12** Given the Course page on this PC after the merge and a service restart, when Nico opens it, then he can run c01 from it, answer its questions and see his progress change on the Course page and the landing page. [manual] Verify: `outputs/course/progress.json` shows c01's quiz passed and the row `course-c01-base-06-1` is in `outputs/course/runs.csv`; Nico confirms in session.
 
 ---
 

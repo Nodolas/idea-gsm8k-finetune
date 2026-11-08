@@ -15,6 +15,7 @@ Nothing is exposed outside this PC: the service binds to 127.0.0.1 and there is 
 | C5 | u1-eval-skeleton (`evaluate`), u3-sft (`train`) | u4-run-service (worker) | Process launch: `gsm8k` commands, arguments and exit codes | u1-eval-skeleton |
 | C6 | u4-run-service, extended by u10-self-taught-cot (`/reasoning`) and u5-website (`/gpu`) | u5-website, u10-self-taught-cot | HTTP JSON on 127.0.0.1, `/api/v1` | u4-run-service |
 | C7 | u4-run-service | u5-website | Server-Sent Events on 127.0.0.1 | u4-run-service |
+| C9 | u12-learning-course | u12-learning-course (service routes, Course page, landing card) | Shared files `outputs/course/`, the `gsm8k course inspect` command, and the `/api/v1/course` endpoints of the service (added 2026-11-08) | u12-learning-course |
 | C8 | u11-finetune-lab | u11-finetune-lab (service routes, Lab page) | Shared files `outputs/lab/`, the `gsm8k lab` command, and the `/api/v1/lab` endpoints of the service (added 2026-11-08) | u11-finetune-lab |
 
 ## Common Rules
@@ -36,10 +37,10 @@ columns:                          # order fixed; new columns only at the end
     type: string                  # ISO 8601 UTC, when the run ended
   - name: run_id
     type: string                  # attempt id "<base id>-<n>", e.g. q06-sft-dev-2; unique across the file
-    pattern: '^(q06|q17)-[a-z0-9]+-[a-z0-9]+-[0-9]+$'
+    pattern: '^(q06|q17)-[a-z0-9]+-[a-z0-9]+-[0-9]+$'   # course rows (outputs/course/runs.csv, added 2026-11-08, US12.4): '^course-c[0-9]{2}-[a-z0-9-]+-[0-9]+$'
   - name: model
     type: string
-    enum: [Qwen/Qwen3-0.6B-Base, Qwen/Qwen3-1.7B-Base]
+    enum: [Qwen/Qwen3-0.6B-Base, Qwen/Qwen3-1.7B-Base]   # course rows only, method base (added 2026-11-08, US12.4): also EleutherAI/pythia-31m, HuggingFaceTB/SmolLM2-360M, Qwen/Qwen2.5-0.5B
   - name: method
     type: string
     enum: [base, sft, grpo, best, terse, vote, calc, optuna, cotgen, selfcot]   # cotgen, selfcot added 2026-11-08 (US10.1, US10.2)
@@ -61,6 +62,7 @@ rules:
   - exactly one row per scored run; a stopped or failed run writes no row (FR3.5)
   - a row whose field count, enum or number does not parse is skipped and counted, never fatal (AC3.1.3)
   - no file means an empty log; an unreadable file is an error naming the file (AC3.1.4)
+  - the same format is used by outputs/course/runs.csv (added 2026-11-08, C9): course runs append there through --results, never to results/runs.csv
 ```
 
 ## C2 Run Folder (`outputs/<run_id>/`)
@@ -101,6 +103,7 @@ files:
     cot_samples: integer            # cotgen: samples per problem, 1..8; default 4 (added 2026-11-08)
     cot_temperature: number         # cotgen: sampling temperature, 0.1..1.5; default 0.7 (added 2026-11-08)
     cot_data_run: string|null       # selfcot: run id of the cotgen run whose cot_data.jsonl is trained on; required for selfcot, null otherwise; default null (added 2026-11-08)
+    quantize: string                # none | 4bit (QLoRA: frozen base weights in 4-bit NF4, bf16 compute, bitsandbytes); 4bit only with sft, selfcot, grpo; default none, which stays out of config_hash (added 2026-11-08, AC12.4.3)
   metrics.jsonl:                    # one JSON object per line, appended as the run goes (FR2.3)
     line:
       v: 1
@@ -193,6 +196,8 @@ queue:
     attempt_id: string
     config: object                  # C2 config.json fields, already checked
     added_at: string
+    results: string|null            # added 2026-11-08 (AC12.4.1): null (results/runs.csv) or outputs/course/runs.csv; the worker passes it as --results; any other value is refused when the entry is written; a missing key reads as null
+    after: string|null              # added 2026-11-08 (AC12.3.3): an attempt id that must have a row in the entry's results file before this entry launches (course c22 selfcot after cotgen); the worker skips past nothing: the entry and those behind it wait; when that attempt ended without a row the entry is removed and the reason written to outputs/queue/queue.log; a missing key reads as null
   rules:
     - first in, first out by position; at most 10 entries (AC3.7.3)
     - an entry is removed only after the process it launched holds the lock
@@ -665,6 +670,112 @@ components:
 ```
 
 `LabModel` for the default configuration: `{"name": "EleutherAI/pythia-31m", "weights": 30494720, "layers": 6, "device": "cpu"}`. A lesson's `state` is `not-run` when it has no `status.json`. `active` is the `lesson` of `lab.lock` while its flock is held (the service tries a non-blocking shared or exclusive flock and releases it at once), else the lesson the service launched while that process has not ended (`Popen.poll()` is None; polling also reaps it), else null. While `active` is a lesson, that lesson's `status.state` is answered as `running`. The launch passes the parent environment with `CUDA_VISIBLE_DEVICES=""`.
+
+## C9 Learning Course (`outputs/course/`, `gsm8k course`, `/api/v1/course`)
+
+Added 2026-11-08 (FR12, US12.1–US12.5). Course runs are ordinary runs with C2 folders and C3 queue entries, whose rows go to `outputs/course/runs.csv` (the C1 format) instead of `results/runs.csv`. Python package `gsm8k.course` (`steps`: the Course Steps, Course Runs and Course Models tables of stories.md as data and the step content; `configs`: course run configurations and estimates; `inspect`: the model-design inspection; `progress`: quiz checking and the progress file); command module `gsm8k.course_cmd`; service routes in `gsm8k.service.course_routes`. `gsm8k/course/__init__.py`, `steps`, `configs`, `progress` and `gsm8k.course_cmd` import no torch, transformers, peft or bitsandbytes at module level and change no environment variable on import (ADR-006).
+
+**Steps (Python).** `gsm8k.course.steps.STEPS: tuple[Step, ...]` in table order. `Step` fields: `id` (`c01`…`c24`), `number`, `part` (1…5), `part_title`, `title`, `kind` (`gpu|inspect|lab|read`), `runs` (tuple of run names, `gpu` only), `lesson` (lab lesson id, `lab` only), `why`, `body` (Markdown paragraphs; no HTML), `questions` (tuple of `Question`: `prompt`, `options` (3–4 strings), `right` (index), `explanation`), `own_words_prompt`, `model_answer`. `gsm8k.course.configs.course_config(step, run, attempt_id, outputs) -> RunConfig`; `estimate_minutes(step, run, outputs) -> tuple[int, bool]` (minutes, measured; the Course Timing rule of stories.md); `next_attempt_id(step, run, outputs) -> str`.
+
+**Files.**
+
+```text
+outputs/course/
+  runs.csv              # C1 format; course rows only
+  architectures.json    # written atomically by gsm8k course inspect
+  progress.json         # written atomically by the service
+  inspect.log           # the inspect command's output (appended by the service's launch)
+```
+
+`architectures.json`: `{"v":1, "generated_at":"<ISO>", "sample_problem_id":"<id>", "models":[{"id","revision","licence","family","layers","width","heads","kv_heads","attention":"multi-head|grouped-query","head_size","mlp_width","vocab","context","tied_embeddings":<bool>,"position_encoding":"rotary|learned|...","activation","weights_total":<int>,"weights_by_part":{"embeddings","attention","mlp","norms","head"}:<int each>,"bf16_gb":<float 2 dp>,"int4_gb":<float 2 dp>,"problem_tokens":<int>,"prompt_tokens":<int>,"first_tokens":[<string>…20]}]}`.
+
+`progress.json`: `{"v":1, "steps":{"<step>":{"opened_at":"<ISO>"|null, "quiz":{"attempts":[{"answers":[<int>…], "right":[<bool>…], "at":"<ISO>"}], "passed_at":"<ISO>"|null}, "own_words":{"text":"<1..4000 chars>", "saved_at":"<ISO>"}|null}}}`. Unknown step ids in the file are kept and ignored.
+
+**Command.** `gsm8k course inspect [--outputs <dir>]`: exit 0 written, 1 a model could not be read (message names it; nothing written). The handler sets `CUDA_VISIBLE_DEVICES=""` first. Seams for tests (read at call time): `gsm8k.course.inspect.load_config(model, revision)` and `gsm8k.course.inspect.load_tokenizer(model, revision)`; the meta-device build uses the returned configuration. Training and evaluation commands: `--results <path>` exists already (C5); `gsm8k evaluate --model` accepts the Course Models for method `base` with a course attempt id; `gsm8k train --quantize none|4bit`.
+
+**HTTP (on the C6 service, `/api/v1`).** Errors use the C6 `Error` shape, with the codes `course_busy`, `queue_full`, `use_lab`, `nothing_to_run`, `invalid_answers`, `invalid_text` and `progress_unreadable`.
+
+```yaml
+paths:
+  /course:
+    get:
+      summary: Parts, steps with state, progress, next step (AC12.3.1)
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/CourseOverview' } } } }
+        '500': { description: progress_unreadable }
+  /course/{step}:
+    get:
+      summary: One step with its content and kind-specific data (AC12.3.2)
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/CourseStep' } } } }
+        '404': { description: not_found }
+  /course/{step}/run:
+    post:
+      summary: Queue a gpu step's runs or launch the inspection (AC12.3.3); no body
+      responses:
+        '202': { content: { application/json: { schema: { type: object, properties: { step: { type: string }, attempt_ids: { type: array, items: { type: string } } } } } } }
+        '404': { description: not_found }
+        '409': { description: course_busy (message "A run of this step is already queued or running: <attempt id>") or queue_full (none added) }
+        '422': { description: use_lab (message names the lesson) or nothing_to_run }
+  /course/{step}/quiz:
+    post:
+      summary: Check answers (AC12.3.4); body { answers: [integer] }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/QuizResult' } } } }
+        '404': { description: not_found }
+        '422': { description: invalid_answers }
+  /course/{step}/own-words:
+    put:
+      summary: Save the own-words answer (AC12.3.5); body { text: string }
+      responses:
+        '200': { content: { application/json: { schema: { type: object, properties: { saved_at: { type: string }, model_answer: { type: string } } } } } }
+        '404': { description: not_found }
+        '422': { description: invalid_text }
+  /course/{step}/open:
+    post:
+      summary: Record the first opening (AC12.3.5); no body
+      responses:
+        '200': { content: { application/json: { schema: { type: object, properties: { opened_at: { type: string } } } } } }
+        '404': { description: not_found }
+components:
+  schemas:
+    CourseStepSummary:
+      type: object
+      properties: { id: { type: string }, number: { type: integer }, part: { type: integer }, title: { type: string }, kind: { enum: [gpu, inspect, lab, read] }, state: { enum: [not-started, in-progress, done] }, run_done: { type: boolean }, quiz_passed: { type: boolean } }
+    CourseOverview:
+      type: object
+      properties:
+        v: { const: 1 }
+        parts: { type: array, items: { type: object, properties: { number: { type: integer }, title: { type: string }, done: { type: integer }, total: { type: integer }, steps: { type: array, items: { $ref: '#/components/schemas/CourseStepSummary' } } } } }
+        progress: { type: object, properties: { done: { type: integer }, total: { const: 24 }, percent: { type: integer }, first_try_right: { type: integer }, questions_answered: { type: integer } } }
+        next_step: { type: [string, 'null'] }
+    CourseQuestion:
+      type: object
+      properties: { prompt: { type: string }, options: { type: array, items: { type: string } }, answered: { type: boolean }, right: { type: [integer, 'null'] }, explanation: { type: [string, 'null'] } }
+    CourseRun:
+      type: object
+      properties: { run: { type: string }, command: { enum: [evaluate, train, cot-generate] }, model: { type: string }, changes: { type: string }, estimate_minutes: { type: integer }, estimate_measured: { type: boolean }, attempt_id: { type: [string, 'null'] }, state: { enum: [not-run, queued, running, finished, failed, stopped] }, accuracy: { type: [number, 'null'] }, interval_low: { type: [number, 'null'] }, interval_high: { type: [number, 'null'] }, minutes: { type: [number, 'null'] }, value: { type: [number, 'null'] }, metric: { type: [string, 'null'] } }
+    CourseStep:
+      type: object
+      properties:
+        v: { const: 1 }
+        step: { $ref: '#/components/schemas/CourseStepSummary' }
+        part_title: { type: string }
+        why: { type: string }
+        body: { type: string }
+        questions: { type: array, items: { $ref: '#/components/schemas/CourseQuestion' } }
+        own_words_prompt: { type: string }
+        own_words: { type: [string, 'null'] }
+        model_answer: { type: [string, 'null'] }     # only once own_words is saved
+        runs: { type: array, items: { $ref: '#/components/schemas/CourseRun' } }      # gpu steps; [] otherwise
+        architectures: { type: [object, 'null'] }    # inspect steps and c19: architectures.json; null until it exists
+        lesson: { type: [object, 'null'], properties: { id: { type: string }, number: { type: integer }, title: { type: string }, question: { type: string }, state: { type: string } } }   # lab steps
+        memory: { type: [array, 'null'], items: { type: object, properties: { model: { type: string }, full_gb: { type: [number, 'null'] }, lora_gb: { type: [number, 'null'] }, qlora_gb: { type: [number, 'null'] }, full_fits: { type: [boolean, 'null'] }, lora_fits: { type: [boolean, 'null'] }, qlora_fits: { type: [boolean, 'null'] } } } }   # c19 only
+        comparison: { type: [array, 'null'], items: { type: object, properties: { step: { type: string }, run: { type: string }, attempt_id: { type: string }, model: { type: string }, method: { type: string }, accuracy: { type: number }, interval_low: { type: number }, interval_high: { type: number }, gain_pts: { type: [number, 'null'] }, noise: { type: [string, 'null'] }, minutes: { type: number } } } }   # c24 only
+    QuizResult:
+      type: object
+      properties: { results: { type: array, items: { type: object, properties: { right: { type: boolean }, right_option: { type: integer }, explanation: { type: string } } } }, passed: { type: boolean }, attempts: { type: integer } }
+```
 
 ## Contract Ownership Rules
 

@@ -1,6 +1,6 @@
 # Units of Work
 
-Nine units grouping the building blocks in `inception/domain-design/components.md` (decisions in `inception/domain-design/decisions.md`) along the learning path. Built from `inception/requirements-analysis/requirements.md` and `inception/user-stories/stories.md`; answers in `units-generation-questions.md` Q1–Q3, plan approved. Units whose dependencies are built go in one batch, built at the same time by parallel builder agents on `wip/batch-<n>` (`/build`; team-practices.md, Way of Working; inception/changes.md, 2026-10-31). Topology is in `unit-of-work-dependency.md`, story assignment in `unit-of-work-story-map.md`.
+Twelve units (U8 and U9 deferred) grouping the building blocks in `inception/domain-design/components.md` (decisions in `inception/domain-design/decisions.md`) along the learning path. Built from `inception/requirements-analysis/requirements.md` and `inception/user-stories/stories.md`; answers in `units-generation-questions.md` Q1–Q3, plan approved. Units whose dependencies are built go in one batch, built at the same time by parallel builder agents on `wip/batch-<n>` (`/build`; team-practices.md, Way of Working; inception/changes.md, 2026-10-31). Topology is in `unit-of-work-dependency.md`, story assignment in `unit-of-work-story-map.md`.
 
 ## Unit Table
 
@@ -14,12 +14,15 @@ Nine units grouping the building blocks in `inception/domain-design/components.m
 | U6 | u6-final-and-report | library | M | Must | US5.1, US6.1, US6.2, US6.3 |
 | U10 | u10-self-taught-cot | library | M | Could | US10.1, US10.2, US10.3, US10.4 |
 | U11 | u11-finetune-lab | library | M | Could | US11.1, US11.2, US11.3, US11.4 |
+| U7 | u7-grpo | library | M | Could | US7.1 |
+| U12 | u12-learning-course | library | L | Could | US12.1, US12.2, US12.3, US12.4, US12.5 |
 
 U10 was added on 2026-11-08 (Nico: self-taught chain of thought, and a page on how it moved the score; `inception/changes.md`). U11 was added on 2026-11-08 too (Nico: a way smaller model that trains in minutes and a step-by-step lab on what affects what in fine-tuning, without touching the current run; `inception/changes.md`).
 
-Deferred (Nico, 2026-11-07, `inception/changes.md`): U7 u7-grpo, U8 u8-tuning and U9 u9-ablations (Could Have) are not built in this build; their sections below and their stories stay as written. To build them later, move their three rows back into this table and their entries back into the `units:` block of `unit-of-work-dependency.md`:
+U12 and U7 joined on 2026-11-08 (Nico: a hands-on learning course with a progress tracker that walks through model designs and fine-tuning approaches, with GRPO as a step; `inception/changes.md`): U7 came back from the deferred list because the course's GRPO step needs it.
 
-| (deferred) U7 | u7-grpo | library | M | Could | (deferred) US7.1 |
+Deferred (Nico, 2026-11-07, `inception/changes.md`): U8 u8-tuning and U9 u9-ablations (Could Have; U7 until 2026-11-08) are not built in this build; their sections below and their stories stay as written. To build them later, move their rows back into this table and their entries back into the `units:` block of `unit-of-work-dependency.md`:
+
 | (deferred) U8 | u8-tuning | library | M | Could | (deferred) US8.1, US8.2 |
 | (deferred) U9 | u9-ablations | library | M | Could | (deferred) US9.1 |
 
@@ -142,7 +145,7 @@ The deployment model of every unit is local only: nothing is deployed (team-prac
 - **Building blocks:** Training (`grpo` method), AnswerScoring (rewards), RunConfiguration (GRPO steps and sampling).
 - **Owns and delivers:** `gsm8k train --method grpo` and its `[manual]` run, `q06-grpo-dev` (or `q17-grpo-dev`).
 - **Deployment model:** embedded.
-- **Notes and constraints:** the model size is chosen from U3's measurements.
+- **Notes and constraints:** the model size is chosen from U3's measurements. Back in the build on 2026-11-08 for the learning course (U12): its short course run `course-c23-grpo` on `Qwen/Qwen3-0.6B-Base` (20 steps, 4 generations) is the first GRPO run; the default-step long run AC7.1.5 is started later by the lead on Nico's request.
 
 ## U8 u8-tuning (Could)
 
@@ -193,3 +196,21 @@ The deployment model of every unit is local only: nothing is deployed (team-prac
   - CPU only, a few threads, low priority: a GPU run keeps going while a lesson runs (Nico: "don't influence the current run"). It never writes `results/runs.csv`, `outputs/run.lock` or `outputs/queue/`.
   - Reuses DatasetsAndPrompts (the fixed split, the training frame of BR2.3, the training-data guard), AnswerScoring and Evaluation (greedy scoring with the zero-shot frame); it does not change them, so the queued GPU runs import unchanged code.
   - Tests run on the CPU with the tiny model fixture and fixture problems (NFR3).
+
+## U12 u12-learning-course (Could, added 2026-11-08)
+
+- **Description:** A hands-on course of 24 steps through the whole project, with a progress tracker: scoring a base model, five model designs and why Qwen3-1.7B-Base was chosen, the twelve lab lessons, fine-tuning approaches (memory budget, LoRA against QLoRA) and the pipeline on the real model (supervised fine-tune, self-taught reasoning, GRPO, what moved the score), each step with why, a short run, multiple-choice questions and an answer in Nico's own words.
+- **Building blocks:**
+  - LearningCourse (new): the steps and their content, the course runs' configurations, `gsm8k course inspect` (model designs from configuration and tokenizer files), progress and quiz checking, the files of contract C9.
+  - RunConfiguration and Training: the course-only models for method `base`, the `quantize` field (QLoRA), course attempt ids, `--results` passed from the queue entry.
+  - RunService: the `/api/v1/course` routes (C9), course queue entries with their `results` file (C3), the CPU launch of `gsm8k course inspect`.
+  - Website: the Course page at `/course`, its top-bar link and the landing page's "Your course" card.
+- **Owns and delivers:** `gsm8k course inspect`; `outputs/course/` (`architectures.json`, `progress.json`, `runs.csv`); `GET /api/v1/course`, `GET /api/v1/course/{step}`, `POST /api/v1/course/{step}/run`, `POST /api/v1/course/{step}/quiz`, `PUT /api/v1/course/{step}/own-words`, `POST /api/v1/course/{step}/open`; the Course page; two `[manual]` checks (AC12.4.5, AC12.5.12).
+- **Deployment model:** embedded (command), local service routes and website page.
+- **Notes and constraints:**
+  - Course runs are short (each estimated at 10 minutes or less) and go through the queue, the GPU lock and the GPU check like every GPU run; their rows go to `outputs/course/runs.csv`, never `results/runs.csv`, and they are never ranked.
+  - The lab steps reuse U11's lessons and routes; the course only reads their state.
+  - Code places that change besides the new package: `run_records/paths.py` `RUN_ID_PATTERN` and `run_records/log.py` `MODELS` (course ids and models), `run_config.py` (`quantize`, the course-only models for method `base`), `run_control/launch.py` `_MODEL_IDS` and the queue writer (`results`, `after`), `run_control/worker.py` (passes `--results`, honours `after`), `run_control/runs.py` (course runs' past-runs entries), `datasets_prompts/hub.py` `MODEL_REVISIONS` (the three pins).
+  - QLoRA adds the pinned dependency `bitsandbytes` (open source, no account). If it cannot be installed for this PC's CUDA, the `qlora` run becomes a `spec(u12-learning-course)` change, not a silent skip.
+  - Tests run on the CPU with the tiny model fixture, fixture configurations and tokenizers, and stubbed queue and launcher (NFR3).
+

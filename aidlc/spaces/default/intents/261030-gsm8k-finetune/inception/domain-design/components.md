@@ -584,6 +584,7 @@ graph TD
 | SelfTaughtCoT | Own-solution sampling and the keep rule (could-have, added 2026-11-08) | DatasetsAndPrompts, AnswerScoring, Evaluation, RunConfiguration, RunRecords | RunCommands, Training | — |
 | ReasoningReport | Base, sft and selfcot comparison for the Reasoning page (added 2026-11-08) | RunRecords | RunService | — |
 | FinetuneLab | Lab lessons, CPU training loop of the small model and the lab files of C8 (could-have, added 2026-11-08) | DatasetsAndPrompts, AnswerScoring, Evaluation | RunService (launches `gsm8k lab run` as a process) | — |
+| LearningCourse | Course steps and content, course run configurations, model-design inspection, quiz checking and progress, the files of C9 (could-have, added 2026-11-08) | FinetuneLab, RunConfiguration, RunRecords, DatasetsAndPrompts | RunService (routes, launches `gsm8k course inspect`), Website (Course page) | CourseProgress |
 
 ## Entity Ownership
 
@@ -596,12 +597,13 @@ graph TD
 | RunFolder | RunRecords | run_id | run_id, config, metrics_lines, predictions, log, seconds_per_unit, peak_gpu_memory_gb, final_status | — |
 | FinalistMark | RunRecords | run_id | run_id, marked_at | RunRow |
 | RunLock | RunRecords | lock_path | run_id, process_id, started_at, started_by | — |
-| QueueEntry | RunRecords | attempt_id | attempt_id, position, config, added_at | RunConfig |
+| QueueEntry | RunRecords | attempt_id | attempt_id, position, config, added_at, results | RunConfig |
 | RunConfig | RunConfiguration | config_hash | model, method, eleven dials, split, adapter_path | — |
 | DialRule | RunConfiguration | dial_name | dial_name, allowed, default | — |
 | AdapterCheckpoint | Training | run_id | run_id, path, base_model, method | RunRow |
 | TuningTrial | Tuning | trial_number | trial_number, params, dev_accuracy, state, minutes | RunConfig |
 | RunProposal | Tuning | proposal_id | proposal_id, config, reason, verdict, broken_rules | RunConfig |
+| CourseProgress | LearningCourse | step | step, opened_at, quiz attempts, quiz passed_at, own words, saved_at | — |
 
 ## External Dependencies
 
