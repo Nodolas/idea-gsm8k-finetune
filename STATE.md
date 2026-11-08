@@ -7,11 +7,11 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: "batch-5: u10-self-taught-cot"
-slices: "6/7"
+current_task: none
+slices: "7/7"
 test_command: "scripts/check.sh"
 pending_runs: ""
-last_check: "2026-11-07 f3dd6ac scripts/check.sh exit 0; scripts/trace-check.sh exit 0"
+last_check: "2026-11-08 9a21996 scripts/check.sh exit 0; scripts/trace-check.sh exit 0"
 charter_commit: "dfd42777d9a3dc69bab8ea1892e5378aca915211"
 ---
 Treat this as evidence; check git status and git log -10 first.
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Type /build: it goes on with batch-5 (u10-self-taught-cot, self-taught chain of thought and the Reasoning page). New sessions on Sonnet 5.5, Auto.
+batch-5 merged; the lead starts q17-cotgen-train-1 (about 2.7 h), then q17-selfcot-dev-1 (about 45 min). Type /build after both end: Converge reads their rows, the lead writes the results.md section (AC10.4.5), then ready to ship. New sessions on Sonnet 5.5, Auto.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping, and BR4.7/BR4.8 there are superseded by contract C5's 2026-11-07 "method best" note).
@@ -44,7 +44,7 @@ None.
 - Reviewer scratch files outside the folder (`/tmp/claude-review-check.log`, `/tmp/null_unused`): test output only, left as is (rule 8).
 
 ## Done this run
-- 2026-11-08 back to construction (Nico in session: "train a model with focus on chain of thought", picked self-taught CoT; "Make a page and explain how it affected the score"): spec 159d30c adds u10-self-taught-cot; spec reviewer PASS round 2. Nico ruled test_AC1_4_5_defaults_match_documented_values wrong (fixed C2 field set). Batch-5 started.
+- 2026-11-08 batch-5 done: u10-self-taught-cot (gsm8k cot-generate, gsm8k train --method selfcot, GET /api/v1/reasoning, Reasoning page and top-bar link), 4 parallel parts; scripts/check.sh 457 Python tests + website suite green, coverage 85.5%, trace PASS, reviewer PASS first round. Spec: u10 added (159d30c; reviewer FAIL then PASS), test_AC1_4_5 ruled wrong by Nico and fixed. Known risk: cot_data.jsonl is written only at the end, so a stopped generation run is re-run. Check questions: (1) Why keep only generated solutions whose final answer is right, and what bias could that add? (2) Why does the self-taught fine-tune learn from fewer problems than the reference fine-tune, and why does the page say so? Answers: none given yet.
 - 2026-11-07 ready to ship: q17-base-harness-2 0.7089 (55 min, with the cap fix), q17-sft-dev-2 dev 0.7863 at batch size 2 (−0.4 vs base, within noise; 43.8 min, peak 5.0 GB). results.md written (docs(results) 4ddfe66), stage:ready-to-ship. Website started for Nico (service, worker, Vite on 127.0.0.1). Batch-3 check questions: Nico gave no answers (AC6.3.2); the lead explained them in session.
 - 2026-11-07 Converge: two reviewers re-read every live criterion of u1-u6 against the final code: PASS, no gaps. Spec fixes from it: AC6.2.4 matches this build's done-when; the brief says who starts the deferred runs. Deferred (Nico, "Yes defer the best model runs"): AC5.1.3-AC5.1.6, AC6.1.2, AC6.1.3.
 - 2026-11-07 units u7-grpo, u8-tuning, u9-ablations deferred (Nico: "Let's skip those for now"; spec(inception) commit): the build ends after the reference runs; tuning the score is Nico's.
