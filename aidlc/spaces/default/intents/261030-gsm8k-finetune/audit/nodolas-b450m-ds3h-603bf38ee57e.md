@@ -11501,3 +11501,241 @@
 **Agent ID**: ade125422e9be9ff0
 
 ---
+
+## Sensor Fired
+**Timestamp**: 2026-11-08T15:23:03Z
+**Event**: SENSOR_FIRED
+**Fire id**: 549bb7f1
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/reasoning.test.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-08T15:23:03Z
+**Event**: SENSOR_PASSED
+**Fire id**: 549bb7f1
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: tests/web/reasoning.test.tsx
+**Duration ms**: 404
+**Note**: script-error: exit-1
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-08T15:25:33Z
+**Event**: HUMAN_TURN
+**Session**: 91360721-0a7c-5f6c-89e4-f2f997de542f
+**Origin**: person
+**Source**: typed
+**Message Id**: 346e3b6a
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-08T15:25:33Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: a8b370d5af5a77aef
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-08T15:25:35Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: afbde36e306e2f240
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-08T15:25:41Z
+**Event**: HUMAN_TURN
+**Session**: 91360721-0a7c-5f6c-89e4-f2f997de542f
+**Origin**: person
+**Source**: typed
+**Message Id**: 397007bf
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-08T15:26:18Z
+**Event**: HUMAN_TURN
+**Session**: 91360721-0a7c-5f6c-89e4-f2f997de542f
+**Origin**: person
+**Source**: typed
+**Message Id**: 6134d464
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-08T15:26:18Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: a8e14c73d2a1b90f0
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-08T15:29:15Z
+**Event**: HUMAN_TURN
+**Session**: 91360721-0a7c-5f6c-89e4-f2f997de542f
+**Origin**: person
+**Source**: typed
+**Message Id**: d3fdf7e4
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-08T15:29:15Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: af559dc0ade022dfb
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-08T15:32:59Z
+**Event**: SENSOR_FIRED
+**Fire id**: 89cc069b
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/reasoning-panels.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-08T15:32:59Z
+**Event**: SENSOR_PASSED
+**Fire id**: 89cc069b
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/components/reasoning-panels.tsx
+**Duration ms**: 425
+**Note**: tool-unavailable
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-08T15:33:22Z
+**Event**: SENSOR_FIRED
+**Fire id**: 13a0b8b2
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/pages/reasoning.tsx
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-08T15:33:23Z
+**Event**: SENSOR_PASSED
+**Fire id**: 13a0b8b2
+**Sensor ID**: type-check
+**Stage slug**: functional-design
+**Output path**: web/src/pages/reasoning.tsx
+**Duration ms**: 452
+**Note**: tool-unavailable
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-08T15:33:36Z
+**Event**: HUMAN_TURN
+**Session**: 91360721-0a7c-5f6c-89e4-f2f997de542f
+**Origin**: person
+**Source**: typed
+**Message Id**: b6e82b4b
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-08T15:33:36Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: aad2f69a854ebd55f
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-08T15:34:36Z
+**Event**: HUMAN_TURN
+**Session**: 91360721-0a7c-5f6c-89e4-f2f997de542f
+**Origin**: person
+**Source**: typed
+**Message Id**: b741bdb6
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-08T15:34:36Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: aab5d820a16a45ea2
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-08T15:36:04Z
+**Event**: HUMAN_TURN
+**Session**: 91360721-0a7c-5f6c-89e4-f2f997de542f
+**Origin**: person
+**Source**: typed
+**Message Id**: beeecf04
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-08T15:36:42Z
+**Event**: HUMAN_TURN
+**Session**: 91360721-0a7c-5f6c-89e4-f2f997de542f
+**Origin**: person
+**Source**: typed
+**Message Id**: 73d4e4d7
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-08T15:36:43Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: ab5944273bbf35307
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-08T15:40:10Z
+**Event**: HUMAN_TURN
+**Session**: 91360721-0a7c-5f6c-89e4-f2f997de542f
+**Origin**: person
+**Source**: typed
+**Message Id**: ffcf0548
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-08T15:40:11Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: builder
+**Agent ID**: a12153c028b15a599
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-08T15:50:23Z
+**Event**: HUMAN_TURN
+**Session**: 91360721-0a7c-5f6c-89e4-f2f997de542f
+**Origin**: person
+**Source**: typed
+**Message Id**: 393e4f18
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-08T15:50:23Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: reviewer
+**Agent ID**: a5f98bfafba7da38f
+
+---
