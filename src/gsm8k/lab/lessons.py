@@ -147,7 +147,10 @@ LESSONS: tuple[Lesson, ...] = (
         number=4,
         title="How much data",
         question="How much does a fine-tune gain from more training examples?",
-        watch="Dev loss after training for 200, 800 and 1,600 examples, and how much each doubling gains.",
+        watch=(
+            "Dev loss after training for 200, 800 and 1,600 examples, and how much each step up in "
+            "data gains."
+        ),
         guess_prompt="What does going from 800 to 1,600 examples do compared with 200 to 800?",
         guess_options=(
             "It gains about as much, because the gain is proportional to the data.",
@@ -308,8 +311,7 @@ LESSONS: tuple[Lesson, ...] = (
         ),
         big_run=(
             "The big sft runs already count only the answer words, as the lab's default does. "
-            "That is the right choice for the training examples dial too: every example then teaches "
-            "only the part that is graded."
+            "Keep it that way."
         ),
         check=(
             "Why can't you compare the training loss of the two variants, but you can compare their dev loss?"
@@ -338,9 +340,10 @@ LESSONS: tuple[Lesson, ...] = (
             "A language model writes one word at a time and cannot calculate in its head between words. "
             "When the answer shows the steps, each step is an easy piece of calculation that the next "
             "words can build on. In the terse format the model must jump from the question to the final "
-            "number in a single guess. The terse dev loss is small simply because the text is short, and "
-            "it is not comparable with the step-by-step one. The format rate is the fair first number to "
-            "read: both formats learn to end with '#### number'. Then compare the accuracy after training. "
+            "number in a single guess. The two dev losses are measured over different target texts, so "
+            "they cannot be compared with each other. The format rate is the fair first number to "
+            "read: both formats learn to end with '#### number'. Then compare the accuracy after "
+            "training. Accuracy and format rate are the fair comparison. "
             "A model this small is rarely right in either format, so expect low numbers and a small "
             "gap."
         ),
@@ -357,8 +360,8 @@ LESSONS: tuple[Lesson, ...] = (
         title="Warm-up and schedule",
         question="Should the learning rate start small, and should it shrink during the run?",
         watch=(
-            "The learning rate chart's shape in the training results, the training loss in the first "
-            "steps, and the dev loss after training."
+            "The training loss in the first steps of each variant (does it jump?), and the dev loss "
+            "after training."
         ),
         guess_prompt="What does starting at a high learning rate with no warm-up do?",
         guess_options=(
@@ -368,7 +371,7 @@ LESSONS: tuple[Lesson, ...] = (
         ),
         variants=(
             Variant("warmup-decay", "Warm-up, then decay", {}),
-            Variant("constant", "Warm-up, then flat", {"schedule": "constant", "warmup_ratio": 0}),
+            Variant("constant", "Flat, no warm-up", {"schedule": "constant", "warmup_ratio": 0}),
             Variant("hot-start", "High start, no warm-up", {"learning_rate": 3e-3, "warmup_ratio": 0}),
         ),
         why=(
@@ -435,11 +438,12 @@ LESSONS: tuple[Lesson, ...] = (
             "Seconds per step for the three variants, the one-time tokenize seconds, the extra seconds "
             "per step when tokenizing again, and the padding fraction."
         ),
-        guess_prompt="Which change makes the biggest difference to the time per step?",
+        guess_prompt="Which wastes more time in a step: tokenizing again, or the padding?",
         guess_options=(
-            "Tokenizing the text once instead of at every step.",
-            "Grouping examples of similar length into the same batch.",
-            "Neither: the step is dominated by the forward and backward pass of the model.",
+            "Tokenizing again at every step: it is the slow part of a step.",
+            "The padding of random batches can waste much more than tokenizing again, which adds only "
+            "a small, fixed time per step.",
+            "Both waste the same, because both are text handling.",
         ),
         variants=(
             Variant("tokenize-once", "Tokenize once", {}),
