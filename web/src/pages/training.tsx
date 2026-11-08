@@ -7,6 +7,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { CurvesPanel } from "@/components/curves-panel";
 import { FailurePanel } from "@/components/failure-panel";
+import { FinetuneView } from "@/components/finetune-view";
 import { HourglassBand, type BandStatus } from "@/components/hourglass-band";
 import { PastRunsList, statusWord } from "@/components/past-runs-list";
 import { RunControls } from "@/components/run-controls";
@@ -222,6 +223,12 @@ export function TrainingPage() {
     );
   }
 
+  // The fine-tuning view follows the run the page shows: the one opened from Past runs, else the
+  // active or last run. It reads the live run's lines here and any other run's from the service.
+  const shownId = viewing ?? currentId;
+  const shownRun = runOf(shownId);
+  const shownLive = viewing === null ? phase === "running" : viewingLive;
+
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-6 py-6">
       <h1>Training</h1>
@@ -240,6 +247,15 @@ export function TrainingPage() {
         fraction={band.fraction}
         message={band.message}
         action={band.action}
+      />
+
+      <FinetuneView
+        runId={shownId}
+        method={shownRun?.method ?? null}
+        model={shownRun?.model ?? null}
+        liveLines={shownId === currentId ? lines : NO_LINES}
+        live={shownLive}
+        loading={status === null}
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]">

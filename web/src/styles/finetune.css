@@ -1,0 +1,187 @@
+/*
+ * The fine-tuning view's drawing and passes (US4.7; refined-mockups "The fine-tuning view").
+ * Colours are the site tokens only. A pass is one step line: a light sweeps forward through the
+ * layers, an orange sweep runs back, and every adapter flashes. The passes play only while the
+ * panel carries data-motion="live" (the operating system's reduce-motion setting turns it to
+ * "still"); each pass is a new <g data-part="pass">, so a new step line starts them again.
+ */
+
+.ft-drawing {
+  color: var(--ink);
+}
+
+.ft-label {
+  fill: var(--ink-muted);
+  font-family: var(--font-mono-stack);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ft-label-orange {
+  fill: var(--accent-orange);
+}
+
+.ft-value {
+  fill: var(--ink);
+  font-family: var(--font-mono-stack);
+  font-size: 11px;
+}
+
+.ft-layer {
+  stroke: var(--ink);
+  stroke-opacity: 0.3;
+  stroke-width: 0.6px;
+}
+
+.ft-token {
+  fill: var(--ink);
+  opacity: 0.55;
+}
+
+.ft-token-answer {
+  fill: var(--accent-orange);
+  opacity: 0.85;
+}
+
+.ft-flow {
+  stroke: var(--ink);
+  stroke-opacity: 0.5;
+  stroke-width: 1px;
+  stroke-dasharray: 1 4;
+  stroke-linecap: round;
+}
+
+.ft-link {
+  stroke: var(--accent-orange);
+  stroke-opacity: 0.5;
+  stroke-width: 0.6px;
+}
+
+.ft-chip {
+  fill: var(--accent-orange);
+  fill-opacity: 0.18;
+  stroke: var(--accent-orange);
+  stroke-width: 1px;
+}
+
+.ft-chip[data-state="none"] {
+  fill: none;
+  stroke: var(--ink-muted);
+  stroke-opacity: 0.6;
+  stroke-dasharray: 2 2;
+}
+
+.ft-solid {
+  fill: var(--accent-orange);
+  fill-opacity: 0.75;
+}
+
+.ft-sweep-forward {
+  fill: var(--ink);
+  opacity: 0;
+}
+
+.ft-sweep-back {
+  fill: var(--accent-orange);
+  opacity: 0;
+}
+
+.ft-track {
+  fill: none;
+  stroke: var(--ink);
+  stroke-opacity: 0.3;
+  stroke-width: 0.6px;
+}
+
+.ft-right {
+  fill: var(--accent-orange);
+  transition: width 0.4s ease-out;
+}
+
+.ft-other {
+  fill: var(--ink);
+  opacity: 0.4;
+  transition: width 0.4s ease-out;
+}
+
+.ft-stage-card {
+  border: 0.5px solid var(--hairline);
+}
+
+@keyframes ft-forward {
+  0% {
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes ft-backward {
+  0% {
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes ft-nudge {
+  0% {
+    fill-opacity: 0.18;
+  }
+  20% {
+    fill-opacity: 1;
+  }
+  100% {
+    fill-opacity: 0.18;
+  }
+}
+
+@keyframes ft-stage {
+  0%,
+  100% {
+    background-color: transparent;
+    border-color: var(--hairline);
+  }
+  20% {
+    background-color: color-mix(in srgb, var(--accent-orange) 14%, transparent);
+    border-color: var(--accent-orange);
+  }
+}
+
+[data-motion="live"] .ft-sweep-forward {
+  animation: ft-forward 0.45s ease-out both;
+  animation-delay: calc(var(--i) * 14ms);
+}
+
+[data-motion="live"] .ft-sweep-back {
+  animation: ft-backward 0.45s ease-out both;
+  animation-delay: calc(0.55s + (var(--n) - var(--i)) * 14ms);
+}
+
+[data-motion="live"] .ft-chip[data-state="trained"] {
+  animation: ft-nudge 0.9s ease-out both;
+  animation-delay: calc(0.55s + (var(--n) - var(--i)) * 14ms);
+}
+
+[data-motion="live"] .ft-stage-card {
+  animation: ft-stage 0.6s ease-out both;
+  animation-delay: calc(var(--k) * 0.2s);
+}
+
+/* A replay that is playing moves faster than the run did: the passes shrink to a short flash. */
+[data-motion="live"][data-playing="true"] .ft-sweep-forward,
+[data-motion="live"][data-playing="true"] .ft-sweep-back,
+[data-motion="live"][data-playing="true"] .ft-chip[data-state="trained"],
+[data-motion="live"][data-playing="true"] .ft-stage-card {
+  animation-duration: 0.14s;
+  animation-delay: 0s;
+}
