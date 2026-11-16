@@ -555,3 +555,78 @@ def test_AC12_3_3_cotgen_entry_without_kind_launches_as_cot_generate(tmp_project
     run_queue.add(COTGEN_ID, dict(COTGEN_CONFIG), None, tmp_project_dirs.outputs, results=COURSE_RESULTS)
     _steps(_worker(tmp_project_dirs))
     _assert_cot_generate_launch(launches, tmp_project_dirs.outputs)
+
+
+# --- AC12.3.3: removing the awaited entry removes the entries waiting for it (changes.md 2026-11-16) ---
+
+
+def _queue_cotgen_selfcot_and_unrelated(outputs: Path) -> None:
+    from gsm8k.run_control import queue as run_queue
+
+    run_queue.add(COTGEN_ID, dict(COTGEN_CONFIG), "cot-generate", outputs, results=COURSE_RESULTS)
+    run_queue.add(SELFCOT_ID, dict(SFT_CONFIG), "train", outputs, results=COURSE_RESULTS, after=COTGEN_ID)
+    run_queue.add(COURSE_ID_A, dict(EVAL_CONFIG), "evaluate", outputs, results=COURSE_RESULTS)
+
+
+def _assert_awaiting_entry_went_with_it(outputs: Path) -> None:
+    from gsm8k.run_control import queue as run_queue
+
+    listed = run_queue.list_queue(outputs)
+    assert [(e.attempt_id, e.position) for e in listed] == [(COURSE_ID_A, 1)]  # the unrelated entry moved up
+    lines = [line for line in _queue_log(outputs) if SELFCOT_ID in line]
+    assert len(lines) == 1
+    assert COTGEN_ID in lines[0]
+
+
+def test_AC12_3_3_removing_the_awaited_entry_removes_the_entries_waiting_for_it(tmp_project_dirs):
+    from gsm8k.run_control import queue as run_queue
+
+    _queue_cotgen_selfcot_and_unrelated(tmp_project_dirs.outputs)
+    run_queue.remove(COTGEN_ID, outputs=tmp_project_dirs.outputs)
+    _assert_awaiting_entry_went_with_it(tmp_project_dirs.outputs)
+
+
+def test_AC12_3_3_deleting_the_awaited_entry_through_the_service_removes_the_waiting_one(tmp_project_dirs):
+    from fastapi.testclient import TestClient
+
+    from gsm8k.service.app import create_app
+
+    _queue_cotgen_selfcot_and_unrelated(tmp_project_dirs.outputs)
+    app = create_app(
+        results=tmp_project_dirs.results,
+        finalists=tmp_project_dirs.results.parent / "finalists.json",
+        outputs=tmp_project_dirs.outputs,
+    )
+    with TestClient(app) as client:
+        response = client.delete(f"/api/v1/queue/{COTGEN_ID}")
+    assert response.status_code == 204, response.text
+    _assert_awaiting_entry_went_with_it(tmp_project_dirs.outputs)
+
+
+def test_AC12_3_3_entry_waits_while_the_after_attempt_is_still_queued(tmp_project_dirs, launches):
+    from gsm8k.run_control import queue as run_queue
+
+    _queue_selfcot_after_cotgen(tmp_project_dirs)
+    # the awaited attempt is still in the queue, behind the entry: it will run, so the entry waits
+    run_queue.add(
+        COTGEN_ID, dict(COTGEN_CONFIG), "cot-generate", tmp_project_dirs.outputs, results=COURSE_RESULTS
+    )
+    _steps(_worker(tmp_project_dirs), 3)
+    assert launches.argvs == []
+    assert _queue_ids(tmp_project_dirs.outputs) == [SELFCOT_ID, COTGEN_ID]
+    assert _queue_log(tmp_project_dirs.outputs) == []
+
+
+def test_AC12_3_3_entry_waits_while_the_after_attempt_holds_the_lock(tmp_project_dirs, launches):
+    from gsm8k.run_records.lock import GpuLock
+
+    _queue_selfcot_after_cotgen(tmp_project_dirs)
+    holder = GpuLock()
+    holder.acquire(COTGEN_ID)  # it runs now, before it has made its run folder
+    try:
+        _steps(_worker(tmp_project_dirs), 3)
+        assert launches.argvs == []
+        assert _queue_ids(tmp_project_dirs.outputs) == [SELFCOT_ID]
+        assert _queue_log(tmp_project_dirs.outputs) == []
+    finally:
+        holder.release()
