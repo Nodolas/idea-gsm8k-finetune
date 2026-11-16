@@ -600,13 +600,14 @@ def test_AC12_2_2_never_reads_or_writes_the_run_log_the_run_lock_or_the_queue(
     before = results.read_bytes() if results.exists() else None
     spy = _OpenSpy(monkeypatch)
     assert run_inspect(tmp_project_dirs.outputs) == 0
+    recorded = list(spy.paths)  # the opens made by the command only, before this test reads the file
     assert (results.read_bytes() if results.exists() else None) == before
     outputs = tmp_project_dirs.outputs
     assert not (outputs / "run.lock").exists()
     assert not (outputs / "queue").exists()
     assert not tmp_project_dirs.results.exists()  # the fixture's temporary run log path
     assert sorted(path.name for path in outputs.iterdir()) == ["course"]
-    for opened in spy.paths:
+    for opened in recorded:
         parts = Path(opened).parts
         assert Path(opened).name not in {"runs.csv", "run.lock"}, opened
         assert "queue" not in parts, opened
