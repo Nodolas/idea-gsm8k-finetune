@@ -37,7 +37,7 @@ columns:                          # order fixed; new columns only at the end
     type: string                  # ISO 8601 UTC, when the run ended
   - name: run_id
     type: string                  # attempt id "<base id>-<n>", e.g. q06-sft-dev-2; unique across the file
-    pattern: '^(q06|q17)-[a-z0-9]+-[a-z0-9]+-[0-9]+$'   # course rows (outputs/course/runs.csv, added 2026-11-08, US12.4): '^course-c[0-9]{2}-[a-z0-9-]+-[0-9]+$'
+    pattern: '^(q06|q17)-[a-z0-9]+-[a-z0-9]+-[0-9]+$'   # course rows (outputs/course/runs.csv, added 2026-11-08, US12.4): '^course-c[0-9]{2}-[a-z0-9-]+-[1-9][0-9]*$'
   - name: model
     type: string
     enum: [Qwen/Qwen3-0.6B-Base, Qwen/Qwen3-1.7B-Base]   # course rows only, method base (added 2026-11-08, US12.4): also EleutherAI/pythia-31m, HuggingFaceTB/SmolLM2-360M, Qwen/Qwen2.5-0.5B
