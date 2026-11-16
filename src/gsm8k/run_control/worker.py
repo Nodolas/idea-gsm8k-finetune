@@ -206,9 +206,12 @@ class Worker:
             if state == "wait":
                 return None
             message = f"Removed {head.attempt_id} from the queue: it waited for {head.after}, but {state}"
-            run_queue.append_log(message, self.outputs)
+            try:
+                run_queue.append_log(message, self.outputs)
+            except OSError as exc:
+                print(f"queue.log could not be written: {exc}", file=sys.stderr)
             print(message, file=sys.stderr)
-            self._remove_entry(head.attempt_id)
+            self._remove_entry(head.attempt_id, cascade=True)
 
     def _gpu_free(self) -> bool:
         """AC3.7.7: no other long run or GPU process is on this PC, so the head may start."""
@@ -229,9 +232,11 @@ class Worker:
         self.gpu_note = note
         return True
 
-    def _remove_entry(self, attempt_id: str) -> None:
+    def _remove_entry(self, attempt_id: str, *, cascade: bool = False) -> None:
+        """Take an entry off the queue; the entries waiting for it stay (they wait for its row) unless the
+        entry is removed because it can never run (``cascade``)."""
         try:
-            run_queue.remove(attempt_id, outputs=self.outputs)
+            run_queue.remove(attempt_id, outputs=self.outputs, cascade=cascade)
         except LookupError:  # removed meanwhile
             pass
 

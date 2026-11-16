@@ -507,9 +507,11 @@ The inspection reads each model's real configuration and builds one table. What 
 - **bf16 and 4-bit GB**: the memory of the weights alone at 2 bytes a weight (bf16) and at 0.5 bytes a
   weight (4-bit). Qwen3-0.6B needs about 1.2 GB in bf16 and 0.3 GB in 4-bit; Qwen3-1.7B 3.4 GB and 0.9 GB.
 
-Look for the pattern: Pythia, SmolLM2 and the two Qwen generations all use the same recipe of norm,
-attention, norm, MLP, but they pick different sizes. The small models spend a large share of their weights
-on the embedding table: 155.6 million of Qwen3-0.6B's 596 million, and 136 million of Qwen2.5-0.5B's 494
+Look for the pattern: SmolLM2 and the Qwen models apply norm, attention, norm and MLP one after the other
+in each block, while Pythia (GPT-NeoX) computes the attention and the MLP in parallel from the same normed
+input and adds both results; apart from that they use the same parts and pick different sizes.
+The small models spend a large share of their weights on the embedding table:
+155.6 million of Qwen3-0.6B's 596 million, and 136 million of Qwen2.5-0.5B's 494
 million, which is why they tie it.
 """,
     questions=[
@@ -859,7 +861,7 @@ then rises: that is overfitting. The 768 different problems keep giving the mode
 dev loss keeps falling and ends lower. Compare the best dev loss and the step where it happened.
 
 What it shows for the big runs: epochs run from 1 to 3. A second epoch over the same training examples is
-repeating. If a second epoch does not lower the dev accuracy, spend the time on more training examples
+repeating. If a second epoch does not raise the dev accuracy, spend the time on more training examples
 instead.
 """,
     questions=[
@@ -1514,9 +1516,9 @@ starts from.
 
 What to look at: the accuracy and its interval against your c01 base run, and the loss curve on the
 Training page. Do not expect a big gain: in the project's own reference run, a fine-tune of Qwen3-0.6B on all
-6,973 training problems scored 55.2 % on dev against 59.7 % for the base model, and the reasons are the
-ones from the lab: the 4-shot prompt already gives the format, the reference solutions are terse, and the
-default learning rate may be high. A fine-tune that does not help is a result too.
+6,973 training problems scored 55.2 % on dev against 59.7 % for the base model, and the likely
+reasons are the ones from the lab: the 4-shot prompt already gives the format, the reference solutions
+are terse, and the default learning rate may be high. A fine-tune that does not help is a result too.
 """,
     questions=[
         _q(
@@ -1544,16 +1546,19 @@ default learning rate may be high. A fine-tune that does not help is a result to
             "Plus or minus 10 points of interval means 4 points is not a result on its own.",
         ),
         _q(
-            "Why does the course start step c23 from this run's adapter?",
+            "Why does step c23 continue from this run's adapter when there is one?",
             [
-                "GRPO needs a model that already writes answers in the right shape, which SFT gives.",
-                "GRPO cannot run on a base model.",
-                "The adapter holds the dev problems.",
+                "GRPO builds on a model that is already fine-tuned on this kind of answer: "
+                "reinforcement learning refines what the model already does rather than teaching "
+                "it from scratch.",
+                "GRPO cannot run on the base model.",
+                "The adapter holds the dev problems that GRPO is scored on.",
             ],
             0,
-            "Reinforcement learning works from the answers the model samples. If it never writes a "
-            "#### line, "
-            "there is little reward to find.",
+            "GRPO samples answers and rewards the better ones, so it works best on a model whose answers "
+            "are already close to what is wanted. It can also start from the base model with the 4-shot "
+            "prompt, which is what c23 does when you have no c21 run; continuing from the adapter is the "
+            "course's pipeline order.",
         ),
     ],
     own_words_prompt="In your own words: what does SFT teach the model, and what can it not teach?",
@@ -1720,11 +1725,12 @@ Qwen3-0.6B runs, and the minutes. A gain is labelled "within noise" when the two
 
 Read it with three facts in mind:
 
-- 100 problems give an interval about plus or minus 10 points wide, so two runs have to be 15 to 20 points
-  apart before the intervals clearly separate. Nothing in the course comes close to that, except the
-  comparisons between very different models in step c05.
-- The reference runs in `results/runs.csv` use 496 problems, and an interval of about plus or minus 4
-  points. Those are the numbers to trust, and even they call a gain of less than about 4 points noise.
+- 100 problems give an interval about plus or minus 10 points for one run, so two runs near 60 % have to
+  be about 20 points apart before their intervals stop overlapping. Nothing in the course comes close to that,
+  except the comparisons between very different models in step c05.
+- The reference runs in `results/runs.csv` use 496 problems, and one run's interval is about plus or
+  minus 4 points. Those are the numbers to trust, and even there a dev gain needs about 4 points to stand
+  out from noise.
 - What moved the score in the project: model size (Qwen3-1.7B-Base over Qwen3-0.6B-Base, 19 points on
   dev). The fine-tuned runs so far did not beat their base models.
 

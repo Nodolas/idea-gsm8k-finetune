@@ -270,17 +270,40 @@ def append_log(message: str, outputs: Path | None = None) -> None:
         handle.write(line + "\n")
 
 
-def remove(attempt_id: str, outputs: Path | None = None) -> None:
+def remove(attempt_id: str, outputs: Path | None = None, *, cascade: bool = True) -> None:
     """Remove a waiting run; the runs behind it move up one place (AC3.7.4).
+
+    With ``cascade`` (the default, for a removal by a person) every waiting entry whose ``after`` names the
+    removed run goes with it, and so on down the chain, each with a ``queue.log`` line naming both ids
+    (AC12.3.3). The worker passes ``cascade=False`` when it takes a launched run off the queue: those
+    entries then wait for its row.
 
     Raises ``NotQueued`` (a ``LookupError``) when no waiting run has this attempt id.
     """
     with _locked(outputs) as qdir:
-        matches = [path for _, existing, path in _scan(qdir) if existing == attempt_id]
+        found = _scan(qdir)
+        matches = [path for _, existing, path in found if existing == attempt_id]
         if not matches:
             raise NotQueued(f"No waiting run: {attempt_id}")
         for path in matches:
             path.unlink(missing_ok=True)
+        if cascade:
+            removed = [attempt_id]
+            while removed:
+                gone = removed.pop()
+                for position, existing, path in found:
+                    entry = _read_entry(path, position, existing) if path.exists() else None
+                    if entry is None or entry.after != gone:
+                        continue
+                    path.unlink(missing_ok=True)
+                    removed.append(existing)
+                    try:
+                        append_log(
+                            f"Removed {existing} from the queue: it waited for {gone}, which was removed",
+                            outputs,
+                        )
+                    except OSError as exc:
+                        print(f"queue.log could not be written: {exc}", file=sys.stderr)
         _renumber(qdir)
 
 
