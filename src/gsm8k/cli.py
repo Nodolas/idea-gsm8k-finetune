@@ -42,7 +42,8 @@ EXIT_STOPPED = 130
 
 # A run id given with --run-id must be a C1 attempt id; "adhoc-<timestamp>" is only the name the
 # command gives itself when --run-id is absent, and never goes into a real results file (C1, BR4.2).
-ATTEMPT_ID_PATTERN = re.compile(r"(?:q06|q17)-[a-z0-9]+-[a-z0-9]+-[0-9]+")
+# Course attempt ids ("course-<step>-<run>-<n>", US12.4) are attempt ids too.
+ATTEMPT_ID_PATTERN = re.compile(rf"(?:(?:q06|q17)-[a-z0-9]+-[a-z0-9]+-[0-9]+|{run_config.COURSE_ATTEMPT_ID})")
 
 # Flags that set configuration fields; with --config they may not be given (BR4.8: used unchanged).
 # --finalists is not one: it names the finalists file to check, not a field of the run's config.json.
@@ -290,7 +291,7 @@ def _prepare(args: argparse.Namespace) -> Prepared:
     if args.run_id is not None and not ATTEMPT_ID_PATTERN.fullmatch(args.run_id):
         raise InvalidInput(
             f"Invalid run id: {args.run_id!r} (--run-id takes an attempt id <base id>-<n>, "
-            "e.g. q06-base-dev-1)"
+            "e.g. q06-base-dev-1 or course-c01-base-06-1)"
         )
     try:
         paths.check_run_id(run_id)

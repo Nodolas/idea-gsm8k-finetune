@@ -100,7 +100,7 @@ def train_grpo(
     if data is None:
         data = sft.load_training_data(cfg)
     if model is None or tokenizer is None:
-        model, tokenizer = train_cmd.load_base_model(cfg.model, cfg.model_revision)
+        model, tokenizer = train_cmd.load_for_config(cfg)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
     if not data.train:

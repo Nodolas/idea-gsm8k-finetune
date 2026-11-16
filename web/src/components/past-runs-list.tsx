@@ -7,6 +7,7 @@
 import { useState } from "react";
 import { Check, CircleDot, Clock, Square, X, type LucideIcon } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -33,6 +34,11 @@ const ICONS: Record<RunStatusWord, { icon: LucideIcon; className: string }> = {
 /** The C6 status word in capitals, as the page shows it (FINISHED, FAILED, ...). */
 export function statusWord(status: RunStatusWord | null): string {
   return status ? status.toUpperCase() : "--";
+}
+
+/** A course run (AC12.3.8): its run id starts with `course-`; it shows its status only. */
+function isCourseRun(run: Run): boolean {
+  return run.run_id.startsWith("course-");
 }
 
 const RANK: Record<string, number> = { running: 0, queued: 1 };
@@ -96,9 +102,17 @@ export function PastRunsList({ runs, error = null, onOpen }: PastRunsListProps) 
             {shown.map((run) => {
               const look = run.status ? ICONS[run.status] : null;
               const Icon = look?.icon;
+              const course = isCourseRun(run);
               return (
                 <TableRow key={run.run_id}>
-                  <TableCell>{run.run_id}</TableCell>
+                  <TableCell>
+                    <span>{run.run_id}</span>
+                    {course ? (
+                      <Badge variant="outline" className="ml-2">
+                        Course
+                      </Badge>
+                    ) : null}
+                  </TableCell>
                   <TableCell>
                     <span className="inline-flex items-center gap-1.5">
                       <span>{statusWord(run.status)}</span>
@@ -108,8 +122,12 @@ export function PastRunsList({ runs, error = null, onOpen }: PastRunsListProps) 
                     </span>
                   </TableCell>
                   <TableCell>{formatDateTime(run.started_at)}</TableCell>
-                  <TableCell className="text-right">{formatMinutes(run.minutes)}</TableCell>
-                  <TableCell className="text-right">{formatPct(run.dev_accuracy)}</TableCell>
+                  <TableCell className="text-right">
+                    {course ? "--" : formatMinutes(run.minutes)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {course ? "--" : formatPct(run.dev_accuracy)}
+                  </TableCell>
                   <TableCell>
                     <Button
                       variant="link"

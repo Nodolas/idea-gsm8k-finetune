@@ -216,7 +216,12 @@ def train_sft(
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
     if model is None or tokenizer is None:
-        model, tokenizer = evaluation.load_model(cfg.model, cfg.model_revision)
+        from gsm8k import train_cmd
+
+        if cfg.quantize == "4bit":
+            model, tokenizer = train_cmd.load_quantized_model(cfg.model, cfg.model_revision)
+        else:
+            model, tokenizer = evaluation.load_model(cfg.model, cfg.model_revision)
     if data is None:
         data = load_training_data(cfg)
     if tokenizer.pad_token_id is None:

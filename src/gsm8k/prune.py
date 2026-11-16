@@ -3,7 +3,8 @@
 ``gsm8k prune`` lists the adapter folders under ``checkpoints/`` it would delete and deletes nothing
 (AC2.5.2); with ``--yes`` it deletes them (AC2.5.3). It keeps each model's best run (the highest dev
 accuracy among the runs that trained an adapter, a tie going to the earlier row, AC2.5.1), every
-finalist in ``results/finalists.json`` and the folder of the run that holds the GPU lock. A folder
+finalist in ``results/finalists.json`` and the folder of the run that holds the GPU lock. Course run folders
+(``checkpoints/course-*``) are never listed, kept or deleted (AC12.4.6). A folder
 with no row in the run log is deleted too, unless its run holds the lock. A run whose adapter folder
 is already gone is reported as already pruned (AC2.5.4).
 
@@ -31,6 +32,7 @@ FINALISTS_DEFAULT: Path = ROOT / "results" / "finalists.json"
 # Methods whose runs train an adapter of their own (saved to checkpoints/<run_id>/). A row with an
 # adapter_run scores another run's adapter (best checkpoint, generalisation) and owns no folder.
 ADAPTER_METHODS = ("sft", "grpo", "terse", "optuna", "selfcot")
+COURSE_PREFIX = "course-"
 BEST_DATA = "gsm8k-dev"
 BEST_METRIC = "accuracy"
 
@@ -110,6 +112,8 @@ def _adapter_folders(checkpoints: Path) -> dict[str, Path]:
     for entry in sorted(checkpoints.iterdir()):
         if entry.is_symlink() or not entry.is_dir() or not _valid_run_id(entry.name):
             continue
+        if entry.name.startswith(COURSE_PREFIX):  # course runs are never pruned (AC12.4.6)
+            continue
         if entry.resolve().parent != root:
             continue
         folders[entry.name] = entry
@@ -132,7 +136,7 @@ def plan_prune(rows: list[RunRow], finalists: set[str], checkpoints: Path) -> Pr
 
     already_gone: list[str] = []
     for row in rows:
-        if not _owns_adapter(row) or not _valid_run_id(row.run_id):
+        if not _owns_adapter(row) or row.run_id.startswith(COURSE_PREFIX) or not _valid_run_id(row.run_id):
             continue
         if row.run_id not in folders and row.run_id not in already_gone:
             already_gone.append(row.run_id)

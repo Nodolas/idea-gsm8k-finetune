@@ -9,15 +9,30 @@ import dataclasses
 import hashlib
 import json
 import math
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from gsm8k.datasets_prompts.hub import DATASET_REVISION, MODEL_REVISIONS
+from gsm8k.datasets_prompts.hub import (  # noqa: F401  (MODEL_REVISIONS stays importable from here)
+    COURSE_MODEL_REVISIONS,
+    DATASET_REVISION,
+    MODEL_REVISIONS,
+    revision_of,
+)
 
 SCHEMA_VERSION = 1
 DEFAULT_MODEL = "Qwen/Qwen3-0.6B-Base"
 MODELS = ("Qwen/Qwen3-0.6B-Base", "Qwen/Qwen3-1.7B-Base")
+# The course's extra models (US12.4): accepted only with method base and a course attempt id.
+COURSE_ONLY_MODELS = tuple(COURSE_MODEL_REVISIONS)
+# A course attempt id, course-<step>-<run>-<n> (C1, 2026-11-08). The attempt number has no leading zero, so
+# "course-c01-base-06" (a run name without its attempt number) is not one.
+COURSE_ATTEMPT_ID = r"course-c[0-9]{2}-[a-z0-9-]+-[1-9][0-9]*"
+COURSE_ATTEMPT_ID_PATTERN = re.compile(COURSE_ATTEMPT_ID)
+QUANTIZE_MODES = ("none", "4bit")
+# Methods that train an adapter, so the only ones whose frozen base may be quantized (QLoRA, C2).
+QUANTIZE_METHODS = ("sft", "selfcot", "grpo")
 METHODS = ("base", "sft", "grpo", "best", "terse", "vote", "calc", "optuna", "cotgen", "selfcot")
 SPLITS = ("dev", "test", "gsmplus-testmini", "gsmsym-p1", "train")
 ANSWER_FORMATS = ("step-by-step", "terse")
@@ -86,10 +101,12 @@ class RunConfig:
     cot_samples: int = 4
     cot_temperature: float = 0.7
     cot_data_run: str | None = None
+    # QLoRA (US12.4, C2): "4bit" loads the frozen base in 4 bits. At its default it stays out of the hash.
+    quantize: str = "none"
 
     def __post_init__(self) -> None:
         if self.model_revision is None:
-            self.model_revision = MODEL_REVISIONS.get(self.model)
+            self.model_revision = revision_of(self.model)
 
 
 _FIELD_NAMES = tuple(f.name for f in dataclasses.fields(RunConfig))
@@ -98,7 +115,7 @@ _FIELD_NAMES = tuple(f.name for f in dataclasses.fields(RunConfig))
 def _default_of(cfg: RunConfig, name: str) -> Any:
     """The documented default of a field; the model revision's default is the pin for cfg.model."""
     if name == "model_revision":
-        return MODEL_REVISIONS.get(cfg.model)
+        return revision_of(cfg.model)
     f = next(f for f in dataclasses.fields(RunConfig) if f.name == name)
     if f.default is dataclasses.MISSING:
         return dataclasses.MISSING
@@ -194,7 +211,14 @@ def validate(cfg: RunConfig) -> None:
         raise ConfigError(f"run_id must be a non-empty string, got {cfg.run_id!r}")
     if cfg.v != SCHEMA_VERSION or not _is_int(cfg.v):
         raise ConfigError(f"v must be {SCHEMA_VERSION}, got {cfg.v!r}")
-    _one_of("model", cfg.model, MODELS)
+    _one_of("model", cfg.model, (*MODELS, *COURSE_ONLY_MODELS))
+    if cfg.model in COURSE_ONLY_MODELS and not (
+        cfg.method == "base" and COURSE_ATTEMPT_ID_PATTERN.fullmatch(cfg.run_id)
+    ):
+        raise ConfigError(
+            f"model {cfg.model} is a course model: it is only used with method base and a course attempt "
+            f"id (course-<step>-<run>-<n>), got method {cfg.method!r} and run id {cfg.run_id!r}"
+        )
     _one_of("method", cfg.method, METHODS)
     _one_of("split", cfg.split, SPLITS)
     if cfg.method in TRAINING_METHODS and cfg.split == "test":
@@ -227,6 +251,12 @@ def validate(cfg: RunConfig) -> None:
     _optional_int_from("grpo_steps", cfg.grpo_steps, 1)
     _optional_int_from("grpo_generations", cfg.grpo_generations, 1)
     _one_of("evaluator", cfg.evaluator, EVALUATORS)
+    _one_of("quantize", cfg.quantize, QUANTIZE_MODES)
+    if cfg.quantize != "none" and cfg.method not in QUANTIZE_METHODS:
+        raise ConfigError(
+            f"quantize {cfg.quantize} is only for methods {', '.join(QUANTIZE_METHODS)}, "
+            f"got method {cfg.method!r}"
+        )
     _validate_cot(cfg)
 
 
@@ -274,6 +304,7 @@ _STR_FIELDS = (
     "dataset_revision",
     "answer_format",
     "evaluator",
+    "quantize",
 )
 _OPTIONAL_INT_FIELDS = ("limit", "grpo_steps", "grpo_generations")
 

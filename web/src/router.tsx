@@ -1,13 +1,14 @@
 import { createBrowserRouter, createMemoryRouter, type RouteObject } from "react-router";
 
 import { AppLayout } from "@/components/app-layout";
+import { CoursePage } from "@/pages/course";
 import { LabPage } from "@/pages/lab";
 import { LandingPage } from "@/pages/landing";
 import { ReasoningPage } from "@/pages/reasoning";
 import { ScoresPage } from "@/pages/scores";
 import { TrainingPage } from "@/pages/training";
 
-/** The four pages inside the shared layout. */
+/** The pages inside the shared layout. */
 export const routes: RouteObject[] = [
   {
     path: "/",
@@ -18,6 +19,7 @@ export const routes: RouteObject[] = [
       { path: "training", element: <TrainingPage /> },
       { path: "reasoning", element: <ReasoningPage /> },
       { path: "lab", element: <LabPage /> },
+      { path: "course", element: <CoursePage /> },
     ],
   },
 ];

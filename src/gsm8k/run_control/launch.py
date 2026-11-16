@@ -32,7 +32,9 @@ from gsm8k.run_records.folder import atomic_write_text
 from gsm8k.run_records.lock import is_free
 from gsm8k.run_records.log import read_rows
 
-KINDS = ("train", "evaluate")
+KINDS = ("train", "evaluate")  # the kinds ``check_run`` accepts (/runs/check)
+COT_KIND = "cot-generate"  # c22's cotgen run (u12): launched by the worker only, never checked as a run
+LAUNCH_KINDS = (*KINDS, COT_KIND)
 CHECK_TTL_SECONDS = 600.0  # C6: a check expires after 10 minutes
 SECOND_CONFIRMATION_MESSAGE = "A test-split evaluation needs a second confirmation"
 # Problems per evaluation split, for the estimate when no limit is set.
@@ -95,8 +97,8 @@ _checks_lock = threading.Lock()
 def build_argv(kind: str, attempt_id: str, config_path: Path, results: Path) -> list[str]:
     """The C5 launch command: ``python -m gsm8k <kind> --config ... --run-id ... --results ...
     --started-by worker`` as an argument list, never a shell string (AC3.2.5)."""
-    if kind not in KINDS:
-        raise ValueError(f"kind must be one of {', '.join(KINDS)}, got {kind!r}")
+    if kind not in LAUNCH_KINDS:
+        raise ValueError(f"kind must be one of {', '.join(LAUNCH_KINDS)}, got {kind!r}")
     return [
         sys.executable,
         "-m",
@@ -114,7 +116,10 @@ def build_argv(kind: str, attempt_id: str, config_path: Path, results: Path) -> 
 
 
 def kind_for_method(method: str) -> str:
-    """``train`` for a training or tuning method (``run_config.TRAINING_METHODS``), else ``evaluate``."""
+    """``train`` for a training or tuning method (``run_config.TRAINING_METHODS``), ``cot-generate`` for the
+    self-taught reasoning generation (``cotgen``), else ``evaluate``."""
+    if method == run_config.COT_METHOD:
+        return COT_KIND
     return "train" if method in run_config.TRAINING_METHODS else "evaluate"
 
 

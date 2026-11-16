@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 
 import { BestSoFar } from "@/components/best-so-far";
+import { CourseCard } from "@/components/course/course-card";
 import { HalftoneHeadline } from "@/components/halftone-headline";
 import { Button } from "@/components/ui/button";
 import { useRuns } from "@/lib/queries";
@@ -11,7 +12,8 @@ const FOCUS =
 
 /**
  * The landing page (US4.2): the halftone headline at once, then the lab's label and one-line
- * description, the best result so far and the two ways on, Go to training and See scores.
+ * description, the best result so far and the two ways on, Go to training and See scores, then the
+ * "Your course" card (AC12.5.10) as its own block.
  * The page fills the window below the top bar (`h-14`); the headline grows into the free
  * height above the text block and centres the word in it (AC4.2.5).
  */
@@ -42,6 +44,7 @@ export function LandingPage() {
           </Button>
         </div>
       </div>
+      <CourseCard />
     </div>
   );
 }

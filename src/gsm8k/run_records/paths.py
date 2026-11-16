@@ -9,12 +9,16 @@ import re
 from pathlib import Path
 
 from gsm8k._env import ROOT
+from gsm8k.run_config import COURSE_ATTEMPT_ID
 
 DEFAULT_RESULTS: Path = ROOT / "results" / "runs.csv"
 
 # C1 attempt ids ("<base id>-<n>", e.g. q06-sft-dev-2) and ad-hoc ids for runs without --run-id
 # ("adhoc-<UTC yyyymmdd-HHMMSS>").
-RUN_ID_PATTERN = re.compile(r"(?:(?:q06|q17)-[a-z0-9]+-[a-z0-9]+-[0-9]+|adhoc-[0-9]{8}-[0-9]{6})")
+# Course attempt ids "course-<step>-<run>-<n>" (US12.4) are run ids too.
+RUN_ID_PATTERN = re.compile(
+    rf"(?:(?:q06|q17)-[a-z0-9]+-[a-z0-9]+-[0-9]+|adhoc-[0-9]{{8}}-[0-9]{{6}}|{COURSE_ATTEMPT_ID})"
+)
 
 
 def outputs_root() -> Path:
@@ -31,7 +35,8 @@ def check_run_id(run_id: str) -> None:
     """Raise ValueError unless run_id is a C1 attempt id or an ad-hoc id (so it is a safe folder name)."""
     if not isinstance(run_id, str) or not RUN_ID_PATTERN.fullmatch(run_id):
         raise ValueError(
-            f"Invalid run id: {run_id!r} (expected e.g. q06-base-dev-1 or adhoc-20261101-201530)"
+            f"Invalid run id: {run_id!r} "
+            "(expected e.g. q06-base-dev-1, course-c05-pythia-1 or adhoc-20261101-201530)"
         )
 
 

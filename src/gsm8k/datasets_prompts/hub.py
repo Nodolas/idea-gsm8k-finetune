@@ -30,6 +30,14 @@ MODEL_REVISIONS: dict[str, str] = {
     "Qwen/Qwen3-1.7B-Base": "ea980cb0a6c2ae4b936e82123acc929f1cec04c1",
 }
 
+# The course's three extra open models (US12.4, "Course Models" in stories.md): used only by course runs
+# with method base and by ``gsm8k course inspect``. Pinned to the Hub heads read on 2026-11-08.
+COURSE_MODEL_REVISIONS: dict[str, str] = {
+    "EleutherAI/pythia-31m": "e556ace21b489575e94e9d50b6dad2fcc7419679",
+    "HuggingFaceTB/SmolLM2-360M": "f8027fd0eaeea54caa13c31d31b9fdc459c38b49",
+    "Qwen/Qwen2.5-0.5B": "060db6499f32faf8b98477b0a26969ef7d8b9987",
+}
+
 _REVISION_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 # A plain decimal number: an optional minus sign, digits and an optional decimal part. GSM-Plus rows
 # whose answer is anything else ("None", "1/4") cannot be compared under BR3.4 and are left out.
@@ -55,9 +63,14 @@ def _check_revision(repo_id: str, revision: str) -> None:
         raise ValueError(f"Revision for {repo_id} must be a 40-character commit hash: {revision!r}")
 
 
+def revision_of(model_id: str) -> str | None:
+    """The pinned revision of a project model or a course-only model; None for any other model."""
+    return MODEL_REVISIONS.get(model_id) or COURSE_MODEL_REVISIONS.get(model_id)
+
+
 def _check_model(model_id: str, revision: str) -> None:
-    if model_id not in MODEL_REVISIONS:
-        allowed = ", ".join(sorted(MODEL_REVISIONS))
+    if revision_of(model_id) is None:
+        allowed = ", ".join(sorted({**MODEL_REVISIONS, **COURSE_MODEL_REVISIONS}))
         raise ValueError(f"Unknown model: {model_id} (pinned models: {allowed})")
     _check_revision(model_id, revision)
 
@@ -168,11 +181,19 @@ def load_tokenizer(model_id: str, revision: str):
     return AutoTokenizer.from_pretrained(model_id, revision=revision, trust_remote_code=False, token=False)
 
 
-def load_causal_lm(model_id: str, revision: str, dtype):
-    """A pinned causal language model: safetensors only, no remote code, no token."""
+def load_causal_lm(model_id: str, revision: str, dtype, *, quantization_config=None, device_map=None):
+    """A pinned causal language model: safetensors only, no remote code, no token.
+
+    ``quantization_config`` and ``device_map`` are passed on only when given (the QLoRA load, US12.4).
+    """
     _check_model(model_id, revision)
     from transformers import AutoModelForCausalLM
 
+    extra = {}
+    if quantization_config is not None:
+        extra["quantization_config"] = quantization_config
+    if device_map is not None:
+        extra["device_map"] = device_map
     return AutoModelForCausalLM.from_pretrained(
         model_id,
         revision=revision,
@@ -180,4 +201,5 @@ def load_causal_lm(model_id: str, revision: str, dtype):
         use_safetensors=True,
         trust_remote_code=False,
         token=False,
+        **extra,
     )

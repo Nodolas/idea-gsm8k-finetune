@@ -15,7 +15,7 @@ const pageLink = ({ isActive }: { isActive: boolean }) =>
 
 /**
  * The bar on every page (US4.1): the wordmark linking home, the running tag while a run is
- * active, then Scores, Training and Reasoning (US10.4); the current page's link is underlined
+ * active, then Scores, Training, Reasoning, Lab and Course (US10.4, US12.5); the current page's link is underlined
  * and carries `aria-current="page"` (set by NavLink), so colour is never the only marker.
  */
 export function TopBar({ activeRunId = null }: TopBarProps) {
@@ -51,6 +51,9 @@ export function TopBar({ activeRunId = null }: TopBarProps) {
         </NavLink>
         <NavLink to="/lab" end className={pageLink}>
           Lab
+        </NavLink>
+        <NavLink to="/course" end className={pageLink}>
+          Course
         </NavLink>
       </nav>
     </header>

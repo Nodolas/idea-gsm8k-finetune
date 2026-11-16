@@ -10,6 +10,11 @@ seen held also removes the entry, so a broken run never blocks the queue; when t
 ``status.json``, the worker writes one (failed, or stopped for SIGTERM or SIGINT) naming the exit code.
 After a run ends, the next waiting run starts (AC3.7.2).
 
+Course runs (u12): an entry with ``results`` ``outputs/course/runs.csv`` launches with ``--results
+<outputs root>/course/runs.csv``. An entry with ``after`` waits (and so do the entries behind it) until that
+attempt has a row in the entry's results file; when that attempt failed or was stopped, or finished with no
+row, the entry is removed and a line naming both ids is appended to ``outputs/queue/queue.log`` (AC12.3.3).
+
 This PC's GPU is shared with other projects (charter rule 3: one GPU run at a time across projects).
 Before it launches the head, the worker runs ``scripts/run-detached.sh --check``: while another long run
 or a GPU process is on this PC (exit 3), or nvidia-smi fails (exit 4), it launches nothing, logs what holds
@@ -34,6 +39,7 @@ from gsm8k.run_control import launch
 from gsm8k.run_control import queue as run_queue
 from gsm8k.run_records import folder
 from gsm8k.run_records.lock import is_free, read_lock
+from gsm8k.run_records.log import read_rows
 from gsm8k.run_records.paths import DEFAULT_RESULTS, outputs_root
 
 EXIT_LOCKED = 3
@@ -116,7 +122,9 @@ class Worker:
     def _launch(self, entry: run_queue.QueueEntry) -> _Launch | None:
         attempt_id = entry.attempt_id
         kind = (
-            entry.kind if entry.kind in launch.KINDS else launch.kind_for_method(entry.config.get("method"))
+            entry.kind
+            if entry.kind in launch.LAUNCH_KINDS
+            else launch.kind_for_method(entry.config.get("method"))
         )
         run_dir = self.outputs / attempt_id
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -124,7 +132,7 @@ class Worker:
         if not config_path.exists():  # an entry added without confirm: the worker writes its config.json
             text = json.dumps(entry.config, indent=2, ensure_ascii=False) + "\n"
             folder.atomic_write_text(config_path, text)
-        argv = launch.build_argv(kind, attempt_id, config_path, self.results)
+        argv = launch.build_argv(kind, attempt_id, config_path, self._results_for(entry))
         env = dict(os.environ)
         env["PYTHONUNBUFFERED"] = "1"
         if self.explicit_outputs:
@@ -149,6 +157,58 @@ class Worker:
         self.children.append(process)
         print(f"Launched {attempt_id} (pid {process.pid}): {kind}", file=sys.stderr)
         return _Launch(attempt_id=attempt_id, process=process, run_dir=run_dir)
+
+    def _results_for(self, entry: run_queue.QueueEntry) -> Path:
+        """The run log a launched entry appends to: the course file for the course value, else the default."""
+        if entry.results == run_queue.COURSE_RESULTS:
+            return self.outputs / "course" / "runs.csv"
+        return self.results
+
+    def _has_row(self, results: Path, attempt_id: str) -> bool:
+        try:
+            rows, _ = read_rows(results)
+        except OSError as exc:
+            print(f"Run log could not be read, the entry keeps waiting: {exc}", file=sys.stderr)
+            return False
+        return any(row.run_id == attempt_id for row in rows)
+
+    def _after_state(self, entry: run_queue.QueueEntry) -> str | None:
+        """None when the entry may launch; ``"wait"`` while its ``after`` attempt has no row and has not ended
+        badly; otherwise the reason the entry is removed (AC12.3.3)."""
+        after = entry.after
+        if not after:
+            return None
+        if self._has_row(self._results_for(entry), after):
+            return None
+        status = None
+        try:
+            data = json.loads((self.outputs / after / "status.json").read_text(encoding="utf-8"))
+            status = data.get("status") if isinstance(data, dict) else None
+        except (OSError, UnicodeDecodeError, ValueError):
+            pass
+        if status in ("failed", "stopped"):
+            return f"that run {status}"
+        if status == "finished":
+            return "that run finished without a result row"
+        return "wait"
+
+    def _head_ready(self) -> run_queue.QueueEntry | None:
+        """The head of the queue when it may launch now; entries whose ``after`` attempt ended without a row
+        are removed first (with a queue.log line). A head still waiting for its ``after`` attempt blocks the
+        ones behind it."""
+        while True:
+            head = run_queue.peek_head(self.outputs)
+            if head is None:
+                return None
+            state = self._after_state(head)
+            if state is None:
+                return head
+            if state == "wait":
+                return None
+            message = f"Removed {head.attempt_id} from the queue: it waited for {head.after}, but {state}"
+            run_queue.append_log(message, self.outputs)
+            print(message, file=sys.stderr)
+            self._remove_entry(head.attempt_id)
 
     def _gpu_free(self) -> bool:
         """AC3.7.7: no other long run or GPU process is on this PC, so the head may start."""
@@ -230,7 +290,7 @@ class Worker:
         if self.pending is None:
             if not is_free(self.lock_file):
                 return
-            head = run_queue.peek_head(self.outputs)
+            head = self._head_ready()
             if head is None:
                 return
             if not self._gpu_free():  # AC3.7.7: another project's run, or other GPU use

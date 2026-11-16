@@ -11,6 +11,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from gsm8k import run_config
+
 COLUMNS = (
     "date",
     "run_id",
@@ -86,7 +88,14 @@ def append_row(path: Path, row: RunRow) -> None:
 
 
 def _parse(record: dict[str, str]) -> RunRow | None:
-    if record["model"] not in MODELS or record["method"] not in METHODS:
+    if record["method"] not in METHODS:
+        return None
+    if record["model"] not in MODELS and not (
+        # A course row (US12.4): the course-only models are base runs with a course attempt id.
+        record["model"] in run_config.COURSE_ONLY_MODELS
+        and record["method"] == "base"
+        and run_config.COURSE_ATTEMPT_ID_PATTERN.fullmatch(record["run_id"])
+    ):
         return None
     if record["data"] not in DATA or record["metric"] not in METRICS:
         return None

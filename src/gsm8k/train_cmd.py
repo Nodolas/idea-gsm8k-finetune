@@ -41,6 +41,7 @@ _DIAL_FLAGS = (
     "warmup_ratio",
     "seed",
     "answer_format",
+    "quantize",
 )
 _CONFIG_FLAGS = (
     *_DIAL_FLAGS,
@@ -59,6 +60,44 @@ TEST_SPLIT_MESSAGE = "The test split is never used for training or tuning"
 def load_base_model(model_id: str, revision: str) -> tuple[Any, Any]:
     """The pinned base model and tokenizer (``gsm8k.evaluation.load_model``, looked up at call time)."""
     return evaluation.load_model(model_id, revision)
+
+
+def load_quantized_model(model_id: str, revision: str) -> tuple[Any, Any]:
+    """The pinned base model in 4 bits (QLoRA, US12.4) prepared for training, and its tokenizer.
+
+    NF4 weights with bfloat16 compute, placed on the GPU; ``peft.prepare_model_for_kbit_training`` casts the
+    small layers to float32 and turns on gradient checkpointing. bitsandbytes is only imported here
+    (through transformers' ``BitsAndBytesConfig``) and needs the GPU.
+    """
+    import torch
+    from peft import prepare_model_for_kbit_training
+    from transformers import BitsAndBytesConfig
+
+    from gsm8k.datasets_prompts import hub
+
+    quantization = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16,
+    )
+    tokenizer = hub.load_tokenizer(model_id, revision)
+    model = hub.load_causal_lm(
+        model_id,
+        revision,
+        torch.bfloat16,
+        quantization_config=quantization,
+        device_map={"": 0} if torch.cuda.is_available() else None,
+    )
+    model = prepare_model_for_kbit_training(model)
+    return model, tokenizer
+
+
+def load_for_config(cfg: run_config.RunConfig) -> tuple[Any, Any]:
+    """The base model and tokenizer a training run starts from: quantized when ``cfg.quantize`` is 4bit.
+    Both loaders are module attributes, read at call time."""
+    if cfg.quantize == "4bit":
+        return load_quantized_model(cfg.model, cfg.model_revision)
+    return load_base_model(cfg.model, cfg.model_revision)
 
 
 @dataclasses.dataclass
@@ -122,6 +161,11 @@ def register(subparsers: Any) -> None:
         "--cot-data-run", help="selfcot: run id of the cot-generate run whose kept solutions are trained on"
     )
     tr.add_argument("--model", help="Qwen/Qwen3-0.6B-Base (default) or Qwen/Qwen3-1.7B-Base")
+    tr.add_argument(
+        "--quantize",
+        choices=run_config.QUANTIZE_MODES,
+        help="none (default), or 4bit: QLoRA, the frozen base model loaded in 4 bits",
+    )
     tr.add_argument("--learning-rate", type=_number, help="1e-5 to 5e-4 (default 2e-4)")
     tr.add_argument("--epochs", type=_whole, help="1 to 3 (default 1)")
     tr.add_argument("--lora-rank", type=_whole, help="4, 8, 16, 32 or 64 (default 16)")
@@ -327,7 +371,7 @@ def _run(prep: TrainPrepared) -> int:
             folder.write_config(prep.run_dir, cfg)
 
         data = sft.load_training_data(cfg, train=prep.train_problems)
-        model, tokenizer = load_base_model(cfg.model, cfg.model_revision)
+        model, tokenizer = load_for_config(cfg)
         trainer_fn = sft.train_sft
         if cfg.method == "grpo":
             from gsm8k.training import grpo
