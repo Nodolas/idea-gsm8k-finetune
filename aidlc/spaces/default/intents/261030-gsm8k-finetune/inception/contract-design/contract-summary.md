@@ -197,7 +197,7 @@ queue:
     config: object                  # C2 config.json fields, already checked
     added_at: string
     results: string|null            # added 2026-11-08 (AC12.4.1): null (results/runs.csv) or outputs/course/runs.csv; the worker passes it as --results; any other value is refused when the entry is written; a missing key reads as null
-    after: string|null              # added 2026-11-08 (AC12.3.3): an attempt id that must have a row in the entry's results file before this entry launches (course c22 selfcot after cotgen); the worker skips past nothing: the entry and those behind it wait; when that attempt ended without a row the entry is removed and the reason written to outputs/queue/queue.log; a missing key reads as null
+    after: string|null              # added 2026-11-08 (AC12.3.3): an attempt id that must have a row in the entry's results file before this entry launches (course c22 selfcot after cotgen); the worker skips past nothing: the entry and those behind it wait; when that attempt ended without a row, or will never run (no longer queued, no lock, no run folder), the entry is removed and the reason written to outputs/queue/queue.log; a missing key reads as null
   rules:
     - first in, first out by position; at most 10 entries (AC3.7.3)
     - an entry is removed only after the process it launched holds the lock
