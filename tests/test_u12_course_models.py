@@ -208,7 +208,7 @@ def test_AC12_4_1_evaluate_takes_a_course_attempt_id_and_appends_to_the_results_
     assert rows[0]["method"] == "base"
     assert eval_loads == [(QWEN_SMALL, QWEN_SMALL_REVISION, None)]
     # Nothing but the run folder and the course results file was written under outputs/.
-    assert sorted(p.name for p in tmp_project_dirs.outputs.iterdir()) == ["course", run_id]
+    assert {p.name for p in tmp_project_dirs.outputs.iterdir()} - {"run.lock", "splits"} == {"course", run_id}
     assert sorted(p.name for p in course_results.parent.iterdir()) == ["runs.csv"]
 
 

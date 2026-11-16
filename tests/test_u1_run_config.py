@@ -57,6 +57,7 @@ C2_FIELDS = {
     "cot_samples",
     "cot_temperature",
     "cot_data_run",
+    "quantize",
 }
 
 # One non-default value for every C2 field that enters the hash (all but run_id and v).
@@ -125,6 +126,7 @@ def test_AC1_4_5_defaults_match_documented_values():
     assert cfg.cot_samples == 4
     assert cfg.cot_temperature == pytest.approx(0.7)
     assert cfg.cot_data_run is None
+    assert cfg.quantize == "none"
 
 
 def test_AC1_4_5_same_config_and_seed_give_same_hash():
