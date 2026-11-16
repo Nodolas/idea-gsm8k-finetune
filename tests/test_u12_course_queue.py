@@ -17,6 +17,7 @@ line per removed entry that names the entry's attempt id and the `after` attempt
 import argparse
 import json
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -630,3 +631,73 @@ def test_AC12_3_3_entry_waits_while_the_after_attempt_holds_the_lock(tmp_project
         assert _queue_log(tmp_project_dirs.outputs) == []
     finally:
         holder.release()
+
+
+# --- AC12.3.3: the worker taking the awaited entry off the queue is not a removal that cascades ---------
+
+HOLD_STUB = """\
+import sys
+import time
+from pathlib import Path
+
+import gsm8k  # sets the in-folder caches first
+from gsm8k.run_records import lock
+
+run_id = sys.argv[sys.argv.index("--run-id") + 1]
+gpu = lock.GpuLock()
+gpu.acquire(run_id)
+Path({held!r}).write_text("1")
+end = time.monotonic() + 30
+while time.monotonic() < end and not Path({release!r}).exists():
+    time.sleep(0.02)
+gpu.release()
+"""
+
+
+def _queue_cotgen_then_selfcot(outputs: Path) -> None:
+    from gsm8k.run_control import queue as run_queue
+
+    run_queue.add(COTGEN_ID, dict(COTGEN_CONFIG), "cot-generate", outputs, results=COURSE_RESULTS)
+    run_queue.add(SELFCOT_ID, dict(SFT_CONFIG), "train", outputs, results=COURSE_RESULTS, after=COTGEN_ID)
+
+
+def test_AC12_3_3_launching_the_awaited_entry_keeps_the_entry_waiting_for_it(
+    tmp_project_dirs, tmp_path, monkeypatch
+):
+    from gsm8k.run_control import launch
+    from gsm8k.run_records.lock import is_free
+
+    held, release = tmp_path / "held", tmp_path / "release"
+    script = tmp_path / "hold_stub.py"
+    script.write_text(HOLD_STUB.format(held=str(held), release=str(release)), encoding="utf-8")
+    recorded: list[list[str]] = []
+    real = launch.build_argv
+
+    def holding_build_argv(kind, attempt_id, config_path, results):
+        recorded.append(real(kind, attempt_id, config_path, results))
+        return [sys.executable, str(script)] + recorded[-1][3:]
+
+    monkeypatch.setattr(launch, "build_argv", holding_build_argv)
+    _queue_cotgen_then_selfcot(tmp_project_dirs.outputs)
+    try:
+        _worker(tmp_project_dirs).step(timeout=20.0)  # returns once cotgen holds the lock
+        assert held.exists() and not is_free()
+        run_ids = [argv[argv.index("--run-id") + 1] for argv in recorded]
+        assert run_ids == [COTGEN_ID]
+        assert _queue_ids(tmp_project_dirs.outputs) == [SELFCOT_ID]
+        assert not [line for line in _queue_log(tmp_project_dirs.outputs) if SELFCOT_ID in line]
+    finally:
+        release.write_text("1")
+        deadline = time.monotonic() + 10
+        while not is_free() and time.monotonic() < deadline:
+            time.sleep(0.02)
+
+
+def test_AC12_3_3_an_awaited_entry_that_exits_before_the_lock_keeps_the_entry_waiting_for_it(
+    tmp_project_dirs, launches
+):
+    _queue_cotgen_then_selfcot(tmp_project_dirs.outputs)
+    _worker(tmp_project_dirs).step(timeout=10.0)  # the launch exits before it holds the lock
+    assert launches.run_ids() == [COTGEN_ID]
+    assert _queue_ids(tmp_project_dirs.outputs) == [SELFCOT_ID]  # no cascade from this removal
+    assert not [line for line in _queue_log(tmp_project_dirs.outputs) if SELFCOT_ID in line]
