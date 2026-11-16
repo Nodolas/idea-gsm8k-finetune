@@ -522,3 +522,36 @@ def test_AC12_4_6_prune_without_yes_does_not_name_course_folders(tmp_project_dir
     assert len(would_delete) == 1 and "q06-sft-dev-9" in would_delete[0]  # no line for a course folder
     for run_id in COURSE_FOLDERS:
         assert (tmp_project_dirs.checkpoints / run_id).is_dir()
+
+
+# --- AC12.3.3: c22's cotgen entry runs as `gsm8k cot-generate` ----------------------------------------
+
+COTGEN_CONFIG = {"method": "cotgen", "split": "train", "limit": 100}
+
+
+def _assert_cot_generate_launch(launches, outputs: Path) -> None:
+    assert launches.run_ids() == [COTGEN_ID]
+    argv = launches.argvs[0]
+    assert argv[1:3] == ["-m", "gsm8k"]
+    assert argv[3] == "cot-generate"
+    assert argv[argv.index("--config") + 1] == str(outputs / COTGEN_ID / "config.json")
+    assert argv[argv.index("--run-id") + 1] == COTGEN_ID
+    assert launches.results_of(COTGEN_ID) == str(outputs / "course" / "runs.csv")
+
+
+def test_AC12_3_3_worker_launches_cotgen_entry_as_cot_generate(tmp_project_dirs, launches):
+    from gsm8k.run_control import queue as run_queue
+
+    run_queue.add(
+        COTGEN_ID, dict(COTGEN_CONFIG), "cot-generate", tmp_project_dirs.outputs, results=COURSE_RESULTS
+    )
+    _steps(_worker(tmp_project_dirs))
+    _assert_cot_generate_launch(launches, tmp_project_dirs.outputs)
+
+
+def test_AC12_3_3_cotgen_entry_without_kind_launches_as_cot_generate(tmp_project_dirs, launches):
+    from gsm8k.run_control import queue as run_queue
+
+    run_queue.add(COTGEN_ID, dict(COTGEN_CONFIG), None, tmp_project_dirs.outputs, results=COURSE_RESULTS)
+    _steps(_worker(tmp_project_dirs))
+    _assert_cot_generate_launch(launches, tmp_project_dirs.outputs)
