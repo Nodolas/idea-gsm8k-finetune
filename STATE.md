@@ -7,7 +7,7 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: none
+current_task: "batch-13: u12-learning-course"
 slices: "9/10"
 test_command: "scripts/check.sh"
 pending_runs: ""
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Paused by Nico 2026-11-09 (\"stop all we will resume another day\"). On resume: (1) q17-grpo-dev-1 (AC7.1.5) FAILED in its first minute: Triton could not compile its CUDA helper with gcc (`outputs/q17-grpo-dev-1/run.log`: `fatal error: Python.h: No such file or directory`; confirmed, /usr/include/python3.12/Python.h is missing, the system package python3.12-dev is not installed). Either Nico installs python3.12-dev (a system package, his to do), or find which GRPO code path calls Triton (SFT runs never did) and turn it off; make it a gap (/build 3.2 step 3), find the cause without installing anything outside the folder (system packages are Nico's), fix, rerun as q17-grpo-dev-2. (2) Then batch-13, u12-learning-course (the Course page): plan outline is six parts (course data, `gsm8k course inspect`, service course routes, queue/worker/prune for course runs, 4-bit QLoRA plus course models with bitsandbytes, Course page plus landing card); worktree, subagents on Sonnet (Nico). Sessions on Sonnet 5.5, Auto.
+Type /build: it goes on with batch-13 (u12-learning-course, the Course page; branch wip/batch-13 in the worktree .cache/worktrees/batch-13). Still open after it: q17-grpo-dev-1 (AC7.1.5) failed at start (Triton needs Python.h; system package python3.12-dev missing) - make it a gap or Nico installs python3.12-dev. Sessions on Sonnet 5.5, Auto.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping, and BR4.7/BR4.8 there are superseded by contract C5's 2026-11-07 "method best" note).
