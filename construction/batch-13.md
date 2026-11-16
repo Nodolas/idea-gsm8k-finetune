@@ -60,7 +60,7 @@ Tests: `tests/test_u12_course_queue.py` (AC12.4.1 queue and worker side, AC12.3.
 
 ### Part M: course models and QLoRA in the commands
 
-Owns: `src/gsm8k/run_config.py`, `src/gsm8k/datasets_prompts/hub.py`, `src/gsm8k/run_records/paths.py`, `src/gsm8k/cli.py` (not the `COMMAND_MODULES` list), `src/gsm8k/evaluation.py`, `src/gsm8k/train_cmd.py`, `src/gsm8k/training/sft.py`, `src/gsm8k/training/grpo.py`, `src/gsm8k/training/loop.py`, `src/gsm8k/cot_cmd.py` (each only where needed).
+Owns: `src/gsm8k/run_config.py`, `src/gsm8k/datasets_prompts/hub.py`, `src/gsm8k/run_records/paths.py`, `src/gsm8k/run_records/log.py` (course rows with course-only models are read), `src/gsm8k/cli.py` (not the `COMMAND_MODULES` list), `src/gsm8k/evaluation.py`, `src/gsm8k/train_cmd.py`, `src/gsm8k/training/sft.py`, `src/gsm8k/training/grpo.py`, `src/gsm8k/training/loop.py`, `src/gsm8k/cot_cmd.py` (each only where needed).
 Tests: `tests/test_u12_course_models.py` (AC12.4.1 command side, AC12.4.2, AC12.4.3), on the CPU with the `tiny_model` fixture, patched loaders and a temporary outputs folder and results file.
 - `hub.COURSE_MODEL_REVISIONS` holds the three pinned revisions of the Course Models table; `evaluate` loads a course model at that revision (method `base`, course attempt id only). QLoRA: `BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16)`, then `peft.prepare_model_for_kbit_training` and the same LoRA as `none`; `quantize` `4bit` refused for methods other than `sft`, `selfcot`, `grpo`. bitsandbytes is imported only inside the quantized load.
 
