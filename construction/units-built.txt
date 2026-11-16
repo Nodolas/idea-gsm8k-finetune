@@ -7,3 +7,4 @@ u6-final-and-report
 u10-self-taught-cot
 u11-finetune-lab
 u7-grpo
+u12-learning-course
