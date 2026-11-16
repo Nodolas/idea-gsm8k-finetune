@@ -230,6 +230,12 @@ export type ApiErrorCode =
   | "internal"
   | "lab_busy"
   | "no_lab_run"
+  | "course_busy"
+  | "use_lab"
+  | "nothing_to_run"
+  | "invalid_answers"
+  | "invalid_text"
+  | "progress_unreadable"
   | "unreachable";
 
 export const UNREACHABLE_MESSAGE =
@@ -434,6 +440,176 @@ export interface LabLesson {
   results: LabVariantResult[];
 }
 
+/** C9: a course step's kind. */
+export type CourseKind = "gpu" | "inspect" | "lab" | "read";
+export type CourseStepState = "not-started" | "in-progress" | "done";
+export type CourseRunState = "not-run" | "queued" | "running" | "finished" | "failed" | "stopped";
+
+/** C9 `CourseStepSummary`. */
+export interface CourseStepSummary {
+  id: string;
+  number: number;
+  part: number;
+  title: string;
+  kind: CourseKind;
+  state: CourseStepState;
+  run_done: boolean;
+  quiz_passed: boolean;
+}
+
+export interface CoursePart {
+  number: number;
+  title: string;
+  done: number;
+  total: number;
+  steps: CourseStepSummary[];
+}
+
+export interface CourseProgress {
+  done: number;
+  total: 24;
+  percent: number;
+  first_try_right: number;
+  questions_answered: number;
+}
+
+/** C9 `CourseOverview`, `GET /course`. */
+export interface CourseOverview {
+  v: 1;
+  parts: CoursePart[];
+  progress: CourseProgress;
+  next_step: string | null;
+}
+
+/** C9 `CourseQuestion`; `right` and `explanation` only once answered. */
+export interface CourseQuestion {
+  prompt: string;
+  options: string[];
+  answered: boolean;
+  right: number | null;
+  explanation: string | null;
+}
+
+/** C9 `CourseRun`: one run of a `gpu` step. */
+export interface CourseRun {
+  run: string;
+  command: "evaluate" | "train" | "cot-generate";
+  model: string;
+  changes: string;
+  estimate_minutes: number;
+  estimate_measured: boolean;
+  attempt_id: string | null;
+  state: CourseRunState;
+  accuracy: number | null;
+  interval_low: number | null;
+  interval_high: number | null;
+  minutes: number | null;
+  value: number | null;
+  metric: string | null;
+}
+
+/** One model of `outputs/course/architectures.json` (C9). */
+export interface CourseArchitecture {
+  id: string;
+  revision: string;
+  licence: string;
+  family: string;
+  layers: number;
+  width: number;
+  heads: number;
+  kv_heads: number;
+  attention: "multi-head" | "grouped-query";
+  head_size: number;
+  mlp_width: number;
+  mlp_matrices: 2 | 3;
+  vocab: number;
+  context: number;
+  tied_embeddings: boolean;
+  position_encoding: string;
+  activation: string;
+  weights_total: number;
+  weights_by_part: {
+    embeddings: number;
+    attention: number;
+    mlp: number;
+    norms: number;
+    head: number;
+  };
+  bf16_gb: number;
+  int4_gb: number;
+  problem_tokens: number;
+  prompt_tokens: number;
+  first_tokens: string[];
+}
+
+export interface CourseArchitectures {
+  v: 1;
+  generated_at: string;
+  sample_problem_id: string;
+  models: CourseArchitecture[];
+}
+
+export interface CourseLessonRef {
+  id: string;
+  number: number;
+  title: string;
+  question: string;
+  state: string;
+}
+
+/** c19's memory table (AC12.3.6); figures null until architectures.json exists. */
+export interface CourseMemoryRow {
+  model: string;
+  full_gb: number | null;
+  lora_gb: number | null;
+  qlora_gb: number | null;
+  full_fits: boolean | null;
+  lora_fits: boolean | null;
+  qlora_fits: boolean | null;
+}
+
+/** c24's comparison (AC12.3.7). */
+export interface CourseComparisonRow {
+  step: string;
+  run: string;
+  attempt_id: string;
+  model: string;
+  method: string;
+  accuracy: number;
+  interval_low: number;
+  interval_high: number;
+  gain_pts: number | null;
+  noise: string | null;
+  minutes: number;
+}
+
+/** C9 `CourseStep`, `GET /course/{step}`. */
+export interface CourseStep {
+  v: 1;
+  step: CourseStepSummary;
+  part_title: string;
+  why: string;
+  body: string;
+  questions: CourseQuestion[];
+  own_words_prompt: string;
+  own_words: string | null;
+  model_answer: string | null;
+  runs: CourseRun[];
+  architectures: CourseArchitectures | null;
+  lesson: CourseLessonRef | null;
+  memory: CourseMemoryRow[] | null;
+  comparison: CourseComparisonRow[] | null;
+  /** Why the step cannot be run now (c22 too few kept solutions, c23 missing adapter); null otherwise. */
+  notice?: string | null;
+}
+
+/** C9 `QuizResult`. */
+export interface QuizResult {
+  results: Array<{ right: boolean; right_option: number; explanation: string }>;
+  passed: boolean;
+  attempts: number;
+}
+
 export interface StreamHandlers {
   onMetric?(line: MetricsLine & { run_id: string }, lineNo: number): void;
   onStatus?(status: Status): void;
@@ -470,6 +646,21 @@ export interface Api {
   runLabLesson(lessonId: string): Promise<{ lesson: string; state: "running" }>;
   /** Stops the lab run (C8, AC11.3.4); 409 `no_lab_run` when none is going. */
   stopLab(): Promise<{ lesson: string }>;
+  /** The course overview (C9, AC12.3.1). */
+  getCourse(): Promise<CourseOverview>;
+  /** One course step (C9, AC12.3.2); 404 `not_found` for an unknown step. */
+  getCourseStep(stepId: string): Promise<CourseStep>;
+  /** Queues a gpu step's runs or starts the inspection (C9, AC12.3.3). */
+  runCourseStep(stepId: string): Promise<{ step: string; attempt_ids: string[] }>;
+  /** Checks one chosen option per question (C9, AC12.3.4). */
+  submitCourseQuiz(stepId: string, answers: number[]): Promise<QuizResult>;
+  /** Saves the own-words answer (C9, AC12.3.5). */
+  saveCourseOwnWords(
+    stepId: string,
+    text: string,
+  ): Promise<{ saved_at: string; model_answer: string }>;
+  /** Records the first opening of a step (C9, AC12.3.5). */
+  openCourseStep(stepId: string): Promise<{ opened_at: string }>;
   /** Opens the C7 stream; the returned function closes it. */
   openStream(handlers: StreamHandlers): () => void;
 }
@@ -548,6 +739,22 @@ export function createApi(base = "/api/v1"): Api {
     runLabLesson: (lessonId) =>
       request<{ lesson: string; state: "running" }>("POST", `/lab/${id(lessonId)}/run`),
     stopLab: () => request<{ lesson: string }>("POST", "/lab/stop"),
+    getCourse: () => request<CourseOverview>("GET", "/course"),
+    getCourseStep: (stepId) => request<CourseStep>("GET", `/course/${id(stepId)}`),
+    runCourseStep: (stepId) =>
+      request<{ step: string; attempt_ids: string[] }>("POST", `/course/${id(stepId)}/run`),
+    submitCourseQuiz: (stepId, answers) =>
+      request<QuizResult>("POST", `/course/${id(stepId)}/quiz`, { answers }),
+    saveCourseOwnWords: (stepId, text) =>
+      request<{ saved_at: string; model_answer: string }>(
+        "PUT",
+        `/course/${id(stepId)}/own-words`,
+        {
+          text,
+        },
+      ),
+    openCourseStep: (stepId) =>
+      request<{ opened_at: string }>("POST", `/course/${id(stepId)}/open`),
     checkRun: (req) => request<CheckedRun>("POST", "/runs/check", req),
     confirmRun: (checkId, secondConfirmation = false) =>
       request<ConfirmResult>("POST", "/runs/confirm", {

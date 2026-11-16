@@ -11,6 +11,13 @@ import {
   type Api,
   type CheckedRun,
   type ConfirmResult,
+  type CourseArchitecture,
+  type CourseArchitectures,
+  type CourseKind,
+  type CourseOverview,
+  type CourseRun,
+  type CourseStep,
+  type CourseStepSummary,
   type DialSpec,
   type Gpu,
   type LabLesson,
@@ -313,6 +320,12 @@ const ERROR_STATUS: Record<string, number> = {
   no_active_run: 409,
   lab_busy: 409,
   no_lab_run: 409,
+  course_busy: 409,
+  use_lab: 422,
+  nothing_to_run: 422,
+  invalid_answers: 422,
+  invalid_text: 422,
+  progress_unreadable: 500,
   confirmation_required: 409,
   not_found: 404,
   check_expired: 404,
@@ -529,6 +542,242 @@ export function labLesson(lessonId = "l01", overrides: Partial<LabLesson> = {}):
   };
 }
 
+/** The five course parts (stories.md group 12, Course Steps). */
+export const COURSE_PARTS: string[] = [
+  "1. Scoring a base model",
+  "2. Model designs",
+  "3. How fine-tuning works (lab, CPU)",
+  "4. Fine-tuning approaches",
+  "5. The training pipeline",
+];
+
+/** The 24 steps of the Course Steps table: id, part number, title, kind, gpu runs or lab lesson. */
+const COURSE_TABLE: Array<[string, number, string, CourseKind, string[] | string | null]> = [
+  ["c01", 1, "How a base model is scored", "gpu", ["base-06"]],
+  ["c02", 2, "Tokens and the prompt", "inspect", null],
+  ["c03", 2, "Inside a decoder-only transformer", "inspect", null],
+  ["c04", 2, "Five designs side by side", "inspect", null],
+  ["c05", 2, "Same test, five designs", "gpu", ["pythia", "smollm2", "qwen25", "qwen3-17"]],
+  ["c06", 2, "Why Qwen3-1.7B, and why not the others", "read", null],
+  ["c07", 3, "What a fine-tune does", "lab", "l01"],
+  ["c08", 3, "Learning rate", "lab", "l02"],
+  ["c09", 3, "Epochs and overfitting", "lab", "l03"],
+  ["c10", 3, "How much data", "lab", "l04"],
+  ["c11", 3, "LoRA rank", "lab", "l05"],
+  ["c12", 3, "LoRA or every weight", "lab", "l06"],
+  ["c13", 3, "Batch size", "lab", "l07"],
+  ["c14", 3, "What the loss counts", "lab", "l08"],
+  ["c15", 3, "Answer format", "lab", "l09"],
+  ["c16", 3, "Warm-up and schedule", "lab", "l10"],
+  ["c17", 3, "Seed noise", "lab", "l11"],
+  ["c18", 3, "Where the time goes", "lab", "l12"],
+  ["c19", 4, "Memory budget: prompting, full, LoRA, QLoRA", "read", null],
+  ["c20", 4, "LoRA or QLoRA on the GPU", "gpu", ["lora", "qlora"]],
+  ["c21", 5, "Supervised fine-tune", "gpu", ["sft"]],
+  ["c22", 5, "Self-taught reasoning", "gpu", ["cotgen", "selfcot"]],
+  ["c23", 5, "Reinforcement learning with GRPO", "gpu", ["grpo"]],
+  ["c24", 5, "What moved the score, and noise", "read", null],
+];
+
+/** Every course step summary, all `not-started`. */
+export const COURSE_STEPS: CourseStepSummary[] = COURSE_TABLE.map(([id, part, title, kind], i) => ({
+  id,
+  number: i + 1,
+  part,
+  title,
+  kind,
+  state: "not-started",
+  run_done: kind === "read",
+  quiz_passed: false,
+}));
+
+/**
+ * `GET /course` built from step summaries (defaults: every step `not-started`). Pass `steps` to
+ * change states; parts, done counts, progress and next step are worked out from them.
+ */
+export function courseOverview(
+  options: {
+    steps?: Partial<CourseStepSummary>[];
+    first_try_right?: number;
+    questions_answered?: number;
+  } = {},
+): CourseOverview {
+  const steps = COURSE_STEPS.map((step, i) => ({ ...step, ...(options.steps?.[i] ?? {}) }));
+  const done = steps.filter((step) => step.state === "done").length;
+  return {
+    v: 1,
+    parts: COURSE_PARTS.map((title, i) => {
+      const inPart = steps.filter((step) => step.part === i + 1);
+      return {
+        number: i + 1,
+        title,
+        done: inPart.filter((step) => step.state === "done").length,
+        total: inPart.length,
+        steps: inPart,
+      };
+    }),
+    progress: {
+      done,
+      total: 24,
+      percent: Math.floor((done * 100) / 24),
+      first_try_right: options.first_try_right ?? 0,
+      questions_answered: options.questions_answered ?? 0,
+    },
+    next_step: steps.find((step) => step.state !== "done")?.id ?? null,
+  };
+}
+
+const COURSE_RUN_MODELS: Record<string, string> = {
+  pythia: "EleutherAI/pythia-31m",
+  smollm2: "HuggingFaceTB/SmolLM2-360M",
+  qwen25: "Qwen/Qwen2.5-0.5B",
+  "qwen3-17": Q17,
+};
+
+/** A C9 course run that has not run, with overrides. */
+export function courseRun(partial: Partial<CourseRun> = {}): CourseRun {
+  const run = partial.run ?? "base-06";
+  return {
+    run,
+    command: "evaluate",
+    model: COURSE_RUN_MODELS[run] ?? Q06,
+    changes: "method base",
+    estimate_minutes: 3,
+    estimate_measured: false,
+    attempt_id: null,
+    state: "not-run",
+    accuracy: null,
+    interval_low: null,
+    interval_high: null,
+    minutes: null,
+    value: null,
+    metric: null,
+    ...partial,
+  };
+}
+
+/** One architectures.json model entry, with overrides (figures shaped like Qwen3-0.6B-Base). */
+export function courseArchitecture(partial: Partial<CourseArchitecture> = {}): CourseArchitecture {
+  return {
+    id: Q06,
+    revision: "c1899de289a04d12100db370d81485cdf75e47ca",
+    licence: "Apache-2.0",
+    family: "qwen3",
+    layers: 28,
+    width: 1024,
+    heads: 16,
+    kv_heads: 8,
+    attention: "grouped-query",
+    head_size: 128,
+    mlp_width: 3072,
+    mlp_matrices: 3,
+    vocab: 151936,
+    context: 32768,
+    tied_embeddings: true,
+    position_encoding: "rotary",
+    activation: "silu",
+    weights_total: 596049920,
+    weights_by_part: {
+      embeddings: 155582464,
+      attention: 176160768,
+      mlp: 264241152,
+      norms: 65536,
+      head: 0,
+    },
+    bf16_gb: 1.19,
+    int4_gb: 0.3,
+    problem_tokens: 48,
+    prompt_tokens: 702,
+    first_tokens: ["Jan", "et", "’s", " ducks", " lay", " ", "1", "6"],
+    ...partial,
+  };
+}
+
+/** architectures.json with the five Course Models (only id and family differ), with overrides. */
+export function courseArchitectures(
+  partial: Partial<CourseArchitectures> = {},
+): CourseArchitectures {
+  const models: Array<[string, string]> = [
+    ["EleutherAI/pythia-31m", "gpt_neox"],
+    ["HuggingFaceTB/SmolLM2-360M", "llama"],
+    ["Qwen/Qwen2.5-0.5B", "qwen2"],
+    [Q06, "qwen3"],
+    [Q17, "qwen3"],
+  ];
+  return {
+    v: 1,
+    generated_at: "2026-11-16T20:00:00Z",
+    sample_problem_id: "dev-0004",
+    models: models.map(([id, family]) => courseArchitecture({ id, family })),
+    ...partial,
+  };
+}
+
+/**
+ * `GET /course/{step}` for a step nobody has opened (no answers, no runs started), with
+ * overrides; gpu steps list their runs, lab steps their lesson, c19 an all-null memory table and
+ * c24 an empty comparison.
+ */
+export function courseStep(stepId = "c01", overrides: Partial<CourseStep> = {}): CourseStep {
+  const index = COURSE_TABLE.findIndex(([id]) => id === stepId);
+  const [, part, title, kind, extra] = COURSE_TABLE[index < 0 ? 0 : index];
+  const summary = COURSE_STEPS[index < 0 ? 0 : index];
+  const lessonNumber = typeof extra === "string" ? Number(extra.slice(1)) : 0;
+  return {
+    v: 1,
+    step: { ...summary },
+    part_title: COURSE_PARTS[part - 1],
+    why: `Why ${title} comes now.`,
+    body: `What ${title} is about.\n\nA second paragraph.`,
+    questions: [
+      {
+        prompt: `First question of ${title}?`,
+        options: ["Option one", "Option two", "Option three"],
+        answered: false,
+        right: null,
+        explanation: null,
+      },
+      {
+        prompt: `Second question of ${title}?`,
+        options: ["Choice A", "Choice B", "Choice C", "Choice D"],
+        answered: false,
+        right: null,
+        explanation: null,
+      },
+    ],
+    own_words_prompt: `In your own words: what did ${title} show?`,
+    own_words: null,
+    model_answer: null,
+    runs: Array.isArray(extra) ? extra.map((run) => courseRun({ run })) : [],
+    architectures: null,
+    lesson:
+      kind === "lab" && typeof extra === "string"
+        ? {
+            id: extra,
+            number: lessonNumber,
+            title: LAB_LESSONS[lessonNumber - 1]?.title ?? title,
+            question: LAB_LESSONS[lessonNumber - 1]?.question ?? `Question of ${title}?`,
+            state: "not-run",
+          }
+        : null,
+    memory:
+      stepId === "c19"
+        ? courseArchitectures().models.map((model) => ({
+            model: model.id,
+            full_gb: null,
+            lora_gb: null,
+            qlora_gb: null,
+            full_fits: null,
+            lora_fits: null,
+            qlora_fits: null,
+          }))
+        : null,
+    comparison: stepId === "c24" ? [] : null,
+    notice: null,
+    ...overrides,
+  };
+}
+
 export type FakeApi = { [K in keyof Api]: Mock<Api[K]> } & { stream: FakeStream };
 
 function createStream(): { stream: FakeStream; openStream: Api["openStream"] } {
@@ -598,6 +847,23 @@ export function fakeApi(overrides: Partial<Api> = {}): FakeApi {
     getLabLesson: async (lessonId: string) => labLesson(lessonId),
     runLabLesson: async (lessonId: string) => ({ lesson: lessonId, state: "running" as const }),
     stopLab: async () => ({ lesson: "l01" }),
+    getCourse: async () => courseOverview(),
+    getCourseStep: async (stepId: string) => courseStep(stepId),
+    runCourseStep: async (stepId: string) => ({ step: stepId, attempt_ids: [] }),
+    submitCourseQuiz: async (_stepId: string, answers: number[]) => ({
+      results: answers.map((answer) => ({
+        right: answer === 0,
+        right_option: 0,
+        explanation: "Because.",
+      })),
+      passed: answers.every((answer) => answer === 0),
+      attempts: 1,
+    }),
+    saveCourseOwnWords: async () => ({
+      saved_at: "2026-11-16T20:00:00Z",
+      model_answer: "One way to say it.",
+    }),
+    openCourseStep: async () => ({ opened_at: "2026-11-16T20:00:00Z" }),
     checkRun: async (req: RunRequest) =>
       checkedRun({
         model: req.model ?? Q06,
