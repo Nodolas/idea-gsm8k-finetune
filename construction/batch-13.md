@@ -54,7 +54,7 @@ Tests: `tests/test_u12_course_service.py` (AC12.3.1–AC12.3.8, AC12.4.6 c23 mes
 
 ### Part Q: queue, worker and prune for course runs
 
-Owns: `src/gsm8k/run_control/queue.py`, `src/gsm8k/run_control/worker.py`, `src/gsm8k/prune.py`, `src/gsm8k/run_control/runs.py` (only if a course id needs to list or resolve there).
+Owns: `src/gsm8k/run_control/queue.py`, `src/gsm8k/run_control/worker.py`, `src/gsm8k/run_control/launch.py` (the worker launches c22's `cotgen` entry as `gsm8k cot-generate`: `build_argv` and the worker take kind `cot-generate`, `kind_for_method("cotgen")` gives it; `check_run` still refuses cotgen), `src/gsm8k/prune.py`, `src/gsm8k/run_control/runs.py` (only if a course id needs to list or resolve there).
 Tests: `tests/test_u12_course_queue.py` (AC12.4.1 queue and worker side, AC12.3.3 worker `after` rule, AC12.4.6 prune), with `tmp_project_dirs`, a stubbed `launch.build_argv`/launcher and GPU check as the existing worker tests do (`tests/test_u4_queue_worker.py`).
 - `after`: the entry and those behind it wait until the named attempt has a row in the entry's results file; when that attempt's `status.json` reads `failed` or `stopped`, or `finished` with no row, the entry is removed and the reason appended to `outputs/queue/queue.log`. A missing key reads as null; existing entries keep working.
 
