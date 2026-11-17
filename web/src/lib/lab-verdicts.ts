@@ -124,7 +124,7 @@ export function verdicts(lessonId: string, results: LabVariantResult[]): string[
   const out: string[] = [];
   if (lessonId === "l09") {
     out.push(...formatVerdict(ended));
-  } else if (lessonId !== "l12" && ended.length > 1) {
+  } else if (lessonId !== "l12") {
     const low = lowestDevLoss(ended);
     if (low) {
       out.push(
