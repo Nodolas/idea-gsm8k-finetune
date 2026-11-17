@@ -83,7 +83,7 @@ Priorities follow `scope-document.md`: FR1–FR6 are Must, FR7–FR9 are Could. 
 
 ### FR7 Reinforcement Learning, Could (IB-7)
 
-- **FR7.1** The system shall train with GRPO from the base model or the best supervised checkpoint. It uses a reward for a correct final number plus a format reward, streams metrics like FR2.3 (adding reward, KL and answer length), and uses step counts sized to fit 3 hours (scope-document.md; constraint-register.md TC-2). Back in the build on 2026-11-08: the learning course's GRPO step (FR12.3) needs it (Nico in session: "Include GRPO").
+- **FR7.1** The system shall train with GRPO from the base model or the best supervised checkpoint. It uses a reward for a correct final number plus a format reward, streams metrics like FR2.3 (adding reward, KL and answer length), and uses step counts sized so the steps and the closing dev score fit 3 hours (scope-document.md; constraint-register.md TC-2). Its Triton kernels compile against Python headers kept inside the project folder, so the PC needs no system package (2026-11-17). Back in the build on 2026-11-08: the learning course's GRPO step (FR12.3) needs it (Nico in session: "Include GRPO").
 
 ### FR8 Tuning Loop, Could (IB-8)
 
