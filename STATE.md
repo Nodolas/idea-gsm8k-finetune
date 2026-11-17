@@ -7,11 +7,11 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: none
+current_task: "gap-1: u7-grpo, u12-learning-course, u11-finetune-lab, u5-website: AC7.1.4, AC7.1.5, AC7.1.6, AC12.1.2, AC11.4.6, AC4.2.4"
 slices: "10/10"
 test_command: "scripts/check.sh"
 pending_runs: ""
-last_check: "2026-11-16 56400d6 scripts/check.sh exit 0 (870 Python tests, 421 website tests, coverage 88.2%; run in the main folder at this commit); scripts/trace-check.sh exit 0"
+last_check: "2026-11-17 8f190b6 scripts/check.sh exit 0 (870 Python tests, coverage 88.2%; Converge, main folder); scripts/trace-check.sh exit 0 (Converge reviewers, same commit)"
 charter_commit: "94aa5fdb54b14bf788eadbd66140e1d8692851df"
 ---
 Treat this as evidence; check git status and git log -10 first.
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-All 10 units built. Nico: start the website with the desktop launcher (gsm8k-lab.desktop: service, worker, website), open the Course page and run c01 (AC12.5.12), later c20 and c23 (AC12.4.5); say in session when done. Then type /build for Converge (4.1). Open there: q17-grpo-dev-1 (AC7.1.5) failed at start because Triton could not compile its CUDA helper (`Python.h` missing; the system package python3.12-dev is not installed): a gap, unless Nico installs python3.12-dev. The course's c23 GRPO run will likely hit the same error. Sessions on Sonnet 5.5, Auto.
+Type /build: it goes on with gap-1.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping).
