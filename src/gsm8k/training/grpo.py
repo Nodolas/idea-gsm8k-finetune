@@ -42,13 +42,26 @@ def generations_for(cfg: RunConfig) -> int:
     return cfg.grpo_generations or DEFAULT_GENERATIONS
 
 
+def python_headers_available() -> bool:
+    """Whether ``Python.h`` exists in the interpreter's include folder or in the project's kept headers
+    (AC7.1.6); Triton's C helper cannot compile without it."""
+    import sysconfig
+
+    from gsm8k import _env
+
+    places = [Path(sysconfig.get_paths()["include"]), _env.python_header_dirs()[0]]
+    return any((place / "Python.h").is_file() for place in places)
+
+
 def steps_for(cfg: RunConfig, max_steps: int | None = None) -> int:
     """``grpo_steps`` when set, else the step plan for the model's saved timings; capped by ``max_steps``."""
     steps = cfg.grpo_steps
     if steps is None:
-        from gsm8k.training.grpo_plan import plan_grpo_steps
+        from gsm8k.estimates import CAP_SECONDS
+        from gsm8k.training.grpo_plan import closing_dev_reserve_s, plan_grpo_steps
 
-        steps = plan_grpo_steps(cfg.model, generations_for(cfg)).steps
+        budget = CAP_SECONDS - closing_dev_reserve_s(cfg.model)
+        steps = plan_grpo_steps(cfg.model, generations_for(cfg), budget_s=budget).steps
     return min(steps, max_steps) if max_steps is not None else steps
 
 

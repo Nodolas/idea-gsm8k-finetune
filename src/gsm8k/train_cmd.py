@@ -304,6 +304,21 @@ def _prepare(args: argparse.Namespace) -> TrainPrepared:
     )
 
 
+def _on_gpu() -> bool:
+    import torch
+
+    return bool(torch.cuda.is_available())
+
+
+def _headers_missing(prep: TrainPrepared) -> bool:
+    """A GRPO run on the GPU needs Python.h for Triton's C helper (AC7.1.6)."""
+    if prep.cfg.method != "grpo" or not _on_gpu():
+        return False
+    from gsm8k.training import grpo
+
+    return not grpo.python_headers_available()
+
+
 def _print_estimate(prep: TrainPrepared) -> None:
     from gsm8k import estimates
     from gsm8k.training import sft
@@ -313,13 +328,23 @@ def _print_estimate(prep: TrainPrepared) -> None:
     if prep.train_problems is not None:
         print(f"kept solutions to train on: {planned} (from {cfg.cot_data_run})")
     if cfg.method == "grpo":
-        from gsm8k.training import grpo
+        from gsm8k.training import grpo, grpo_plan
 
         steps = grpo.steps_for(cfg, prep.max_steps)
-        print(f"grpo steps: {steps}, generations per problem: {grpo.generations_for(cfg)}")
-        estimate = estimates.estimate_training(cfg.model, steps)
-        print(f"estimate: {estimate.text}")
-        if estimate.over_cap:
+        generations = grpo.generations_for(cfg)
+        print(f"grpo steps: {steps}, generations per problem: {generations}")
+        reserve = grpo_plan.closing_dev_reserve_s(cfg.model)
+        plan = grpo_plan.check_grpo_steps(
+            steps, cfg.model, generations, budget_s=estimates.CAP_SECONDS - reserve
+        )
+        total = plan.estimate_s + reserve
+        text = (
+            f"Estimated time: about {estimates.format_duration(total)} (training and the closing dev score)"
+        )
+        if not plan.measured:
+            text += "; not measured yet, from fallback timings"
+        print(f"estimate: {text}")
+        if plan.flagged:
             print(estimates.OVER_CAP, file=sys.stderr)
         return
     steps = sft.total_steps_for(planned, cfg.batch_size, cfg.epochs, prep.max_steps)
@@ -469,6 +494,13 @@ def train_command(args: argparse.Namespace) -> int:
         print(str(exc), file=sys.stderr)
         return cli.EXIT_INVALID
 
+    if _headers_missing(prep):
+        print(
+            "Triton needs Python's C headers (Python.h) to compile its GPU helper; "
+            "run scripts/fetch-python-headers.sh",
+            file=sys.stderr,
+        )
+        return cli.EXIT_INVALID
     _print_estimate(prep)
     gpu_lock = lock.GpuLock()
     try:

@@ -15,6 +15,10 @@ from gsm8k.run_records.paths import outputs_root
 
 UPDATE_SECONDS = 10.0
 FALLBACK_SECONDS_PER_STEP = 60.0
+# The closing dev score every GRPO run ends with (AC7.1.4): 496 dev problems, at the model's saved
+# seconds per problem, else this stated fallback.
+DEV_SCORED_PROBLEMS = 496
+FALLBACK_SECONDS_PER_PROBLEM = 3.0
 
 
 class GrpoPlan(NamedTuple):
@@ -68,6 +72,12 @@ def _seconds_per_step(model: str, generations: int, outputs: Path | None) -> tup
     if per_problem is not None:
         return per_problem * max(generations, 1) * 2 + UPDATE_SECONDS, True
     return FALLBACK_SECONDS_PER_STEP, False
+
+
+def closing_dev_reserve_s(model: str, outputs: Path | None = None) -> float:
+    """Seconds to keep free inside the cap for scoring the dev split after training."""
+    per_problem = measured_seconds_per_problem(model, outputs)
+    return DEV_SCORED_PROBLEMS * (per_problem if per_problem is not None else FALLBACK_SECONDS_PER_PROBLEM)
 
 
 def plan_grpo_steps(
