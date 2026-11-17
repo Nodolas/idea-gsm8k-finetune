@@ -148,9 +148,9 @@ function restoreCanvasStubs() {
 }
 
 /** Runs the pending animation frames, one 60 Hz step at a time, until the loop sleeps. */
-function settle(): number {
+function settle(maxFrames = MAX_SETTLE_FRAMES): number {
   let n = 0;
-  while (frames.size > 0 && n < MAX_SETTLE_FRAMES) {
+  while (frames.size > 0 && n < maxFrames) {
     clock += FRAME_60;
     const due = [...frames.values()];
     frames = new Map();
@@ -221,7 +221,8 @@ describe("AC4.2.4 reduce motion keeps the landing dots still", () => {
     fireEvent.pointerMove(canvas, { clientX: 600, clientY: 260 });
     expect(requested, "the live page asks for a frame on pointer move").toBeGreaterThan(before);
     expect(frames.size).toBeGreaterThan(0);
-    settle();
+    // The pointer stays over the word, so the dots keep moving: a few frames are enough.
+    expect(settle(5), "the live loop keeps running frames").toBe(5);
     expect(counts.get("arc") ?? 0, "the live page redraws its dots").toBeGreaterThan(0);
 
     // Let the pointer go and the dots come home, so the loop sleeps before the click.
