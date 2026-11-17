@@ -10,7 +10,7 @@ spec_route: "aidlc"
 current_task: none
 slices: "10/10"
 test_command: "scripts/check.sh"
-pending_runs: ""
+pending_runs: "q17-grpo-dev-2"
 last_check: "2026-11-17 7cd6cf6 scripts/check.sh exit 0 (907 Python tests, 431 website tests, coverage 88.6%; main folder, gap-1 code); scripts/trace-check.sh exit 0"
 charter_commit: "94aa5fdb54b14bf788eadbd66140e1d8692851df"
 ---
@@ -19,13 +19,14 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Lead: submit the GRPO trial run q17-grpotrial-dev-1 (10 steps, 20 dev problems, row in outputs/trial/runs.csv) and then q17-grpo-dev-2 (AC7.1.5) to the GPU queue; Converge again once q17-grpo-dev-2 has its row.
+Type /build after q17-grpo-dev-2 ends (about 2.5 h from 19:22 UTC 2026-11-17; running on this PC, 601 GRPO steps at about 13 s each, then the 496-problem dev score): it commits the row and runs Converge again, then results.md. Meanwhile Nico can run course steps c01, c20, c23 from the Course page (AC12.5.12, AC12.4.5). Sonnet 5.5, Auto.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping).
 - Do not build on local branch `wip/hello-file` (8ac6241, never pushed); it is Nico's.
 - Do not use the 21st.dev registry or its Magic MCP (rule 4). shadcn parts come from ui.shadcn.com.
 - Do not tune on the GSM8K test split.
+- `outputs/q17-grpotrial-dev-1` and `checkpoints/q17-grpotrial-dev-1` are Nico's trial run (10 GRPO steps, row only in `outputs/trial/runs.csv`); its timings sized q17-grpo-dev-2's step plan. Not a project result; prune may delete its adapter.
 - `scripts/in-env.sh` refuses `--prefix`: npm runs from the root `package.json`.
 - Website batches build in a worktree (`.cache/worktrees/`); three tests in tests/test_u1_env.py fail there by design, so the gate runs in the main folder at the branch's commit.
 
@@ -43,6 +44,7 @@ None.
 ## Done this run
 - 2026-11-17 Converge (4.1) on main 8f190b6: check.sh exit 0 (870 Python, 421 website, coverage 88.2%), trace PASS; four reviewers re-read every criterion of the 10 units. Gaps: AC7.1.5 (q17-grpo-dev-1 crashed: TRL's Triton kernel needs Python.h, python3.12-dev not installed), AC7.1.4 (the step plan filled 3 h with training alone), AC12.1.2 (no "over 10 minutes"), AC11.4.6 (no verdict for a one-variant lesson), AC4.2.4 (marker-only test).
 - 2026-11-17 gap-1 closed: the Python headers are unpacked from Ubuntu's .deb files into .tools/python-headers/ (scripts/fetch-python-headers.sh, no root) and put on CPATH by every gsm8k process; a GPU GRPO run with no headers stops with exit 2 (new AC7.1.6); the GRPO step plan keeps the closing dev score inside 3 h and prints a GRPO estimate (AC7.1.4 changed); course runs above 10 minutes say so; a one-variant lab lesson names its dev loss; a real AC4.2.4 test. Spec change logged in inception/changes.md. 7cd6cf6 check.sh exit 0 (907 Python, 431 website, coverage 88.6%), trace PASS; reviews PASS round 1. Nico asked for a short trial training run once the build is done.
+- 2026-11-17 trial run q17-grpotrial-dev-1 (Qwen3-1.7B-Base, GRPO, 10 steps, 20 dev problems) ended 0 in 3.8 min: 15.8 s per step, peak GPU 5.0 GB, reward/KL/answer length on each step line, 13/20 on dev (too few problems to mean anything); the Triton fix works. Submitted q17-grpo-dev-2 (AC7.1.5): 601 planned steps, estimate 3 h 00 min including the closing dev score; running at about 13 s per step.
 
 ## Goal
 Ticket https://github.com/Nodolas/idea-factory/issues/6: "Fine tune model for grade math". Learning track: spec-first with AI-DLC, units ending green on main, reach the brief's done-when on this PC (the best tuned `Qwen/Qwen3-1.7B-Base` checkpoint beats its own baseline on the full GSM8K test split, noise labelled), and end with `results.md` instead of a deploy.
