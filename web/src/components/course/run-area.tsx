@@ -8,9 +8,13 @@ import { RUN_STATE_WORDS } from "@/lib/course";
 import { formatMinutes, formatPct } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-/** "about N min on the GPU" with "(estimate, not measured yet)" when unmeasured (AC12.5.4). */
+/**
+ * "about N min on the GPU" with "(over 10 minutes)" above 10 minutes (AC12.1.2, shown, never
+ * refused) and "(estimate, not measured yet)" when unmeasured (AC12.5.4).
+ */
 function estimateText(run: CourseRun): string {
-  const base = `about ${run.estimate_minutes} min on the GPU`;
+  const over = run.estimate_minutes > 10 ? " (over 10 minutes)" : "";
+  const base = `about ${run.estimate_minutes} min on the GPU${over}`;
   return run.estimate_measured ? base : `${base} (estimate, not measured yet)`;
 }
 
