@@ -7,11 +7,11 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: "gap-1: u7-grpo, u12-learning-course, u11-finetune-lab, u5-website: AC7.1.4, AC7.1.5, AC7.1.6, AC12.1.2, AC11.4.6, AC4.2.4"
+current_task: none
 slices: "10/10"
 test_command: "scripts/check.sh"
 pending_runs: ""
-last_check: "2026-11-17 8f190b6 scripts/check.sh exit 0 (870 Python tests, coverage 88.2%; Converge, main folder); scripts/trace-check.sh exit 0 (Converge reviewers, same commit)"
+last_check: "2026-11-17 7cd6cf6 scripts/check.sh exit 0 (907 Python tests, 431 website tests, coverage 88.6%; main folder, gap-1 code); scripts/trace-check.sh exit 0"
 charter_commit: "94aa5fdb54b14bf788eadbd66140e1d8692851df"
 ---
 Treat this as evidence; check git status and git log -10 first.
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Type /build: it goes on with gap-1.
+Lead: submit the GRPO trial run q17-grpotrial-dev-1 (10 steps, 20 dev problems, row in outputs/trial/runs.csv) and then q17-grpo-dev-2 (AC7.1.5) to the GPU queue; Converge again once q17-grpo-dev-2 has its row.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping).
@@ -41,7 +41,8 @@ None.
 - Deferred by Nico: AC5.1.3-AC5.1.6, AC6.1.2, AC6.1.3 (best-model runs); u8-tuning, u9-ablations.
 
 ## Done this run
-- 2026-11-16 batch-13 done: u12-learning-course, the Course page. 24 steps in five parts (scoring, model designs, the lab lessons, fine-tuning approaches, the pipeline on Qwen3-0.6B), each with why, a body, a short run, quiz and own-words answer; progress tracker on the Course page and a landing card; `gsm8k course inspect` (real run: weights match the published sizes); /api/v1/course routes and progress.json; course queue entries (`results`, `after`; removing an awaited entry removes its waiting entries; cotgen launches as cot-generate); three course-only models for base runs; 4-bit QLoRA through bitsandbytes 0.50.2. Six parts in parallel on Sonnet; Nico ruled three tests wrong (each a pinned detail, logged in changes.md); spec changes: rotary from `rope_parameters`, weight memory units, attempt numbers without a leading zero, the removal cascade. Reviews: website PASS round 1; Python FAIL round 1 (three wrong course sentences, a queue that could stick), PASS round 3. 2026-11-16 56400d6 scripts/check.sh exit 0 (870 Python, 421 website, coverage 88.2%), trace PASS. Check questions: (1) Why does QLoRA use less GPU memory than LoRA but take longer per step? (2) Why are two course runs on 100 problems "within noise" unless they are about 20 points apart?
+- 2026-11-17 Converge (4.1) on main 8f190b6: check.sh exit 0 (870 Python, 421 website, coverage 88.2%), trace PASS; four reviewers re-read every criterion of the 10 units. Gaps: AC7.1.5 (q17-grpo-dev-1 crashed: TRL's Triton kernel needs Python.h, python3.12-dev not installed), AC7.1.4 (the step plan filled 3 h with training alone), AC12.1.2 (no "over 10 minutes"), AC11.4.6 (no verdict for a one-variant lesson), AC4.2.4 (marker-only test).
+- 2026-11-17 gap-1 closed: the Python headers are unpacked from Ubuntu's .deb files into .tools/python-headers/ (scripts/fetch-python-headers.sh, no root) and put on CPATH by every gsm8k process; a GPU GRPO run with no headers stops with exit 2 (new AC7.1.6); the GRPO step plan keeps the closing dev score inside 3 h and prints a GRPO estimate (AC7.1.4 changed); course runs above 10 minutes say so; a one-variant lab lesson names its dev loss; a real AC4.2.4 test. Spec change logged in inception/changes.md. 7cd6cf6 check.sh exit 0 (907 Python, 431 website, coverage 88.6%), trace PASS; reviews PASS round 1. Nico asked for a short trial training run once the build is done.
 
 ## Goal
 Ticket https://github.com/Nodolas/idea-factory/issues/6: "Fine tune model for grade math". Learning track: spec-first with AI-DLC, units ending green on main, reach the brief's done-when on this PC (the best tuned `Qwen/Qwen3-1.7B-Base` checkpoint beats its own baseline on the full GSM8K test split, noise labelled), and end with `results.md` instead of a deploy.
