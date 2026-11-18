@@ -86,7 +86,7 @@ function seedVerdict(ended: Ended[]): string[] {
   const max = Math.max(...lasts);
   const min = Math.min(...lasts);
   return [
-    `The last dev loss spans ${loss3(max - min)} across the seeds (${loss3(min)} to ${loss3(max)}). A difference this small between two runs is noise, not an effect.`,
+    `The last dev loss spans ${loss3(max - min)} across the seeds (${loss3(min)} to ${loss3(max)}). Differences smaller than this between variants in the other lessons are noise, not an effect.`,
   ];
 }
 
@@ -124,7 +124,7 @@ export function verdicts(lessonId: string, results: LabVariantResult[]): string[
   const out: string[] = [];
   if (lessonId === "l09") {
     out.push(...formatVerdict(ended));
-  } else if (lessonId !== "l12") {
+  } else {
     const low = lowestDevLoss(ended);
     if (low) {
       out.push(
