@@ -7,7 +7,7 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: none
+current_task: "gap-2: u11-finetune-lab: AC11.4.6"
 slices: "10/10"
 test_command: "scripts/check.sh"
 pending_runs: "q17-grpo-dev-3"
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Type /build after q17-grpo-dev-2 ends (about 2.5 h from 19:22 UTC 2026-11-17; running on this PC, 601 GRPO steps at about 13 s each, then the 496-problem dev score): it commits the row and runs Converge again, then results.md. Meanwhile Nico can run course steps c01, c20, c23 from the Course page (AC12.5.12, AC12.4.5). Sonnet 5.5, Auto.
+Type /build: it goes on with gap-2. q17-grpo-dev-3 (AC7.1.5) runs on the GPU meanwhile (submitted 09:07 UTC 2026-11-18, about 3 h). Sonnet 5.5, Auto.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping).
