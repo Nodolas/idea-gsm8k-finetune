@@ -10,7 +10,7 @@ spec_route: "aidlc"
 current_task: none
 slices: "10/10"
 test_command: "scripts/check.sh"
-pending_runs: "q17-grpo-dev-2"
+pending_runs: "q17-grpo-dev-3"
 last_check: "2026-11-17 7cd6cf6 scripts/check.sh exit 0 (907 Python tests, 431 website tests, coverage 88.6%; main folder, gap-1 code); scripts/trace-check.sh exit 0"
 charter_commit: "94aa5fdb54b14bf788eadbd66140e1d8692851df"
 ---
