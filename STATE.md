@@ -45,6 +45,7 @@ None.
 - 2026-11-18 q17-grpo-dev-3 ended 0: dev 0.8085 (401/496) in 143.7 min, row committed (cdb678e). AC7.1.5 met (601 default steps, inside 3 h). Paired against q17-base-dev-1 (392/496): 26 newly right, 17 newly wrong, sign test p 0.22, within noise.
 - 2026-11-18 check.sh exit 0 (907 Python, 436 website, coverage 89%), trace PASS; no gap left at Converge.
 - 2026-11-18 4.2: results.md rewritten (0840e3b): `gsm8k report` regenerated the run table; the hand-written parts add the self-taught CoT (76.2%, -2.8) and GRPO (80.8%, +1.8) runs with paired counts, why GRPO moved little (all-right or all-wrong groups give no signal, 601 problems, lr 1e-5, KL about 0.005), and next steps (score the GRPO adapter on test as finalist, GRPO lr/generations, lower SFT lr, faster generation). Ticket moved to stage:ready-to-ship.
+- 2026-11-18 README.md rewritten for newcomers (e00023d): results so far, requirements, setup, check script, the local website and its pages, the gsm8k commands, folder layout, models and data with licences. Nothing is hosted.
 
 ## Goal
 Ticket https://github.com/Nodolas/idea-factory/issues/6: "Fine tune model for grade math". Learning track: spec-first with AI-DLC, units ending green on main, reach the brief's done-when on this PC (the best tuned `Qwen/Qwen3-1.7B-Base` checkpoint beats its own baseline on the full GSM8K test split, noise labelled), and end with `results.md` instead of a deploy.
