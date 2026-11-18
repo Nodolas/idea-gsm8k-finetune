@@ -7,11 +7,11 @@ spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 approved_spec_commit: "37fb5a4ae310a9d33f3c87dd4e011c421571ec6a"
 spec_path: "aidlc/spaces/default/intents/261030-gsm8k-finetune"
 spec_route: "aidlc"
-current_task: "gap-2: u11-finetune-lab: AC11.4.6"
+current_task: none
 slices: "10/10"
 test_command: "scripts/check.sh"
 pending_runs: "q17-grpo-dev-3"
-last_check: "2026-11-17 7cd6cf6 scripts/check.sh exit 0 (907 Python tests, 431 website tests, coverage 88.6%; main folder, gap-1 code); scripts/trace-check.sh exit 0"
+last_check: "2026-11-18 281fa27 scripts/check.sh exit 0 (907 Python tests, 436 website tests, coverage 88.6%; main folder, gap-2 code uncommitted on top, committed unchanged as 77ed7d0); scripts/trace-check.sh exit 0"
 charter_commit: "94aa5fdb54b14bf788eadbd66140e1d8692851df"
 ---
 Treat this as evidence; check git status and git log -10 first.
@@ -19,7 +19,7 @@ Treat this as evidence; check git status and git log -10 first.
 # STATE: idea-gsm8k-finetune
 
 ## NEXT ACTION
-Type /build: it goes on with gap-2. q17-grpo-dev-3 (AC7.1.5) runs on the GPU meanwhile (submitted 09:07 UTC 2026-11-18, about 3 h). Sonnet 5.5, Auto.
+Type /build after q17-grpo-dev-3 ends (about 12:15 UTC 2026-11-18; running on this PC, step 122/601 at 09:36 UTC, about 14 s per step, then the 496-problem dev score). Keep the PC on until then. It commits the row, checks AC7.1.5 (within 3 h) and goes on to results.md (4.2). Sonnet 5.5, Auto.
 
 ## DO NOT
 - Do not resume AI-DLC (stopped after Delivery Planning; its u1 Construction files are bookkeeping).
@@ -42,9 +42,10 @@ None.
 - Deferred by Nico: AC5.1.3-AC5.1.6, AC6.1.2, AC6.1.3 (best-model runs); u8-tuning, u9-ablations.
 
 ## Done this run
-- 2026-11-17 Converge (4.1) on main 8f190b6: check.sh exit 0 (870 Python, 421 website, coverage 88.2%), trace PASS; four reviewers re-read every criterion of the 10 units. Gaps: AC7.1.5 (q17-grpo-dev-1 crashed: TRL's Triton kernel needs Python.h, python3.12-dev not installed), AC7.1.4 (the step plan filled 3 h with training alone), AC12.1.2 (no "over 10 minutes"), AC11.4.6 (no verdict for a one-variant lesson), AC4.2.4 (marker-only test).
-- 2026-11-17 gap-1 closed: the Python headers are unpacked from Ubuntu's .deb files into .tools/python-headers/ (scripts/fetch-python-headers.sh, no root) and put on CPATH by every gsm8k process; a GPU GRPO run with no headers stops with exit 2 (new AC7.1.6); the GRPO step plan keeps the closing dev score inside 3 h and prints a GRPO estimate (AC7.1.4 changed); course runs above 10 minutes say so; a one-variant lab lesson names its dev loss; a real AC4.2.4 test. Spec change logged in inception/changes.md. 7cd6cf6 check.sh exit 0 (907 Python, 431 website, coverage 88.6%), trace PASS; reviews PASS round 1. Nico asked for a short trial training run once the build is done.
-- 2026-11-17 trial run q17-grpotrial-dev-1 (Qwen3-1.7B-Base, GRPO, 10 steps, 20 dev problems) ended 0 in 3.8 min: 15.8 s per step, peak GPU 5.0 GB, reward/KL/answer length on each step line, 13/20 on dev (too few problems to mean anything); the Triton fix works. Submitted q17-grpo-dev-2 (AC7.1.5): 601 planned steps, estimate 3 h 00 min including the closing dev score; running at about 13 s per step.
+- 2026-11-18 q17-grpo-dev-2 was cut off at step 107/601 by a PC shutdown (20:38 CET 2026-11-17; log clean, no row): submitted again as q17-grpo-dev-3 (same command), running since 09:07 UTC.
+- 2026-11-18 Converge (4.1) on main 35577a9: check.sh exit 0 (907 Python, 431 website, coverage 88.6%), trace PASS; four reviewers re-read every criterion of the 10 units: all PASS except AC11.4.6 (l12 had no lowest-dev-loss sentence; l11 did not say smaller differences in the other lessons are noise). AC7.1.5 pending (q17-grpo-dev-3).
+- 2026-11-18 gap-2 closed: lab-verdicts.ts fixed (u11), 5 new tests; check.sh exit 0 (907 Python, 436 website), trace PASS, review PASS round 1. Converge has no other gap; only the run is left before results.md.
+- Flaky: `AC11.4.2 shows the lesson named by ?lesson=` (tests/web/lab.test.tsx:570) failed once under heavy CPU load (GPU run plus four reviewers) and passed 3/3 alone: it checks `getLabLesson` right after the heading, which renders from the list first. Not a code gap.
 
 ## Goal
 Ticket https://github.com/Nodolas/idea-factory/issues/6: "Fine tune model for grade math". Learning track: spec-first with AI-DLC, units ending green on main, reach the brief's done-when on this PC (the best tuned `Qwen/Qwen3-1.7B-Base` checkpoint beats its own baseline on the full GSM8K test split, noise labelled), and end with `results.md` instead of a deploy.
